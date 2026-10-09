@@ -5,7 +5,7 @@ import { canAfford } from "~/lib/budget/available";
 import { redactIbans } from "~/lib/categorize/llm";
 import type { Db } from "~/lib/db/client";
 import { categories, transactions } from "~/lib/db/schema";
-import { budgetStatus, openInsights, purchasePlan, recurringPayments, spendingToday } from "~/lib/insights";
+import { budgetStatus, openInsights, purchasePlan, recurringPayments, spendingToday, weekToday } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { MONTH_PATTERN, monthRange, monthSummary, monthsWithData } from "~/lib/queries";
 
@@ -79,6 +79,20 @@ export function createAssistantTools(db: Db, now = new Date()) {
           monateBisDahin: plan.months,
           abMonat: plan.month,
           hinweis: plan.month === null ? "Im Schnitt bleibt gerade nichts übrig; erst Ausgaben senken." : null,
+        };
+      },
+    }),
+
+    woche: tool({
+      description:
+        "Wie die laufende Woche bisher war: Alltagsausgaben seit Montag (ohne Fixkosten und Umbuchungen) gegen dieselben Wochentage der letzten Wochen, und wie viele Wochen in Folge unter Schnitt.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const w = await weekToday(db, now);
+        return {
+          seitMontag: euro(w.spentCents),
+          sonstBisHeute: w.usualCents === null ? null : euro(w.usualCents),
+          wochenInFolgeUnterSchnitt: w.streakWeeks,
         };
       },
     }),

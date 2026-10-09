@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull, lte, notInArray, sql } from "drizzle-orm";
 import { availableToSpend } from "~/lib/budget/available";
 import { type MonthFlow, planPurchase } from "~/lib/budget/goals";
 import { loadGoalInputs } from "~/lib/budget/goals.server";
+import { weekReview } from "~/lib/budget/week";
 import type { Db } from "~/lib/db/client";
 import { budgets, categories, insights, meta, subscriptionCancellations, transactions } from "~/lib/db/schema";
 import { currentMonth } from "~/lib/queries";
@@ -199,6 +200,11 @@ export function todayInGermany(now = new Date()): string {
 export async function spendingToday(db: Db, now = new Date()) {
   const [bookings, goals] = await Promise.all([loadBookings(db), loadGoalInputs(db)]);
   return availableToSpend(bookings, todayInGermany(now), goals);
+}
+
+/** This week's everyday spending against the usual, plus the streak of good weeks. */
+export async function weekToday(db: Db, now = new Date()) {
+  return weekReview(await loadBookings(db), todayInGermany(now));
 }
 
 // PayPal and card settlements are transfers, but not savings: the purchases behind them are already spent.

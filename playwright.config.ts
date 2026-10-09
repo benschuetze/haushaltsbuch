@@ -45,7 +45,8 @@ export default defineConfig({
   reporter: CI ? [["github"], ["html", { open: "never" }]] : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    trace: "retain-on-failure",
+    // Only on the retry: recording every test filled the CI runner's disk (ENOSPC) once the suite passed 170 tests.
+    trace: CI ? "on-first-retry" : "retain-on-failure",
     screenshot: "only-on-failure",
   },
   projects: [
