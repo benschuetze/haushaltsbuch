@@ -14,14 +14,27 @@ import { NotificationBell } from "~/components/notification-bell";
 import { guard, isDemo, isLoggedIn } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
 import { notificationSummary, openInsights, refreshInsightsIfStale } from "~/lib/insights";
+import { applySecurityHeaders, isCrossSiteWrite } from "~/lib/security.server";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/root";
+import { useNonce } from "./nonce";
 import "./app.css";
 
 export const middleware: Route.MiddlewareFunction[] = [
   async ({ request }, next) => {
-    await guard(request);
-    return next();
+    try {
+      if (isCrossSiteWrite(request)) {
+        throw new Response("Anfrage von fremder Seite abgelehnt.", { status: 403 });
+      }
+      await guard(request);
+    } catch (error) {
+      // Redirects to the login and rejections need the same headers as everything else.
+      if (error instanceof Response) applySecurityHeaders(error.headers);
+      throw error;
+    }
+    const response = await next();
+    applySecurityHeaders(response.headers);
+    return response;
   },
 ];
 
@@ -54,6 +67,7 @@ const NAV = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const root = useRouteLoaderData<typeof loader>("root");
+  const nonce = useNonce();
   return (
     <html lang="de">
       <head>
@@ -113,8 +127,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </header>
         ) : null}
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   );
