@@ -11,7 +11,8 @@ const sessionStorage = createCookieSessionStorage<{ loggedIn: true }>({
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    // E2E runs the production build over plain http; WebKit drops Secure cookies there, Chromium does not.
+    secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
     maxAge: 60 * 60 * 24 * 30,
     secrets: [process.env.SESSION_SECRET || "nur-fuer-lokale-entwicklung"],
   },
