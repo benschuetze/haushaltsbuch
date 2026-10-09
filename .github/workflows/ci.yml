@@ -1,7 +1,9 @@
 name: CI
 
 on:
+  # Branches run once via their PR, main once after merge, not twice.
   push:
+    branches: [main]
   pull_request:
 
 permissions:
