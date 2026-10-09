@@ -8,7 +8,7 @@ import { resolveAccount } from "./accounts";
 import { withDedupeHashes } from "./dedupe";
 import { detectFormat, parseForProfile, profileLabel } from "./formats/detect";
 import { detectBankProfile } from "./profiles";
-import { linkPayPalTransfers } from "./transfers";
+import { linkOwnTransfers } from "./transfers";
 import type { ParseResult, RejectedRow } from "./types";
 
 export type ImportResult = {
@@ -70,7 +70,7 @@ export async function storeParsed(
   }
 
   // PayPal top-ups and their bank debits are transfers; filing them first also keeps them away from the LLM.
-  const transfers = new Set(await linkPayPalTransfers(db));
+  const transfers = new Set(await linkOwnTransfers(db));
   const stats = await categorizeTransactions(
     db,
     insertedIds.filter((id) => !transfers.has(id)),

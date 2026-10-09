@@ -1,4 +1,5 @@
 import type { BankProfile } from "../types";
+import { amexProfile } from "./amex";
 import { demoProfile } from "./demo";
 import { dkbProfile } from "./dkb";
 import { ingProfile } from "./ing";
@@ -7,7 +8,10 @@ import { sparkasseProfile } from "./sparkasse";
 import { volksbankProfile } from "./volksbank";
 
 export const bankProfiles: Record<string, BankProfile> = Object.fromEntries(
-  [sparkasseProfile, ingProfile, dkbProfile, volksbankProfile, paypalProfile, demoProfile].map((p) => [p.id, p]),
+  [sparkasseProfile, ingProfile, dkbProfile, volksbankProfile, paypalProfile, amexProfile, demoProfile].map((p) => [
+    p.id,
+    p,
+  ]),
 );
 
 export function getBankProfile(id: string): BankProfile {
