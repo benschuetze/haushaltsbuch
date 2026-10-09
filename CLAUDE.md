@@ -14,10 +14,11 @@ pnpm dev                 # Entwicklungsserver, Port 5173
 pnpm typecheck           # react-router typegen && tsc --noEmit
 pnpm lint                # biome check .
 pnpm test                # vitest run: Unit- und DB-Tests (PGlite, kein Netz, kein LLM)
-pnpm test:e2e            # playwright test: eigener Port 5199, lokales Postgres, LLM gemockt
+pnpm test:e2e            # playwright: Port 5199 (Demo 5198), PGlite lokal / Postgres in CI, LLM gemockt
 pnpm check               # typecheck + lint + test + test:e2e
 pnpm db:generate         # drizzle-kit generate
-pnpm db:migrate          # drizzle-kit migrate
+pnpm db:migrate          # Migrationen gegen DATABASE_URL (Neon oder Postgres)
+pnpm db:local            # lokale Datenbank ohne Postgres-Installation (PGlite, Port 5433)
 pnpm db:seed             # Standardkategorien und Demo-Konto
 pnpm eval                # Eval-Set gegen das echte LLM, braucht ANTHROPIC_API_KEY
 ```
@@ -35,9 +36,15 @@ app/
     db/schema.ts          # einzige Quelle für Tabellen und Typen
     db/client.ts          # neon-http in Produktion, node-postgres lokal/CI, PGlite in Tests
     import/profiles/      # ein Bankprofil pro Datei, Registry in index.ts
-    import/normalize.ts
-    categorize/rules.ts
+    import/csv.ts         # Encoding und CSV-Parser
+    import/dedupe.ts      # Dedupe-Hash
+    import/run.ts         # Import-Ablauf: parsen, speichern, kategorisieren
+    categorize/rules.ts   # Regel-Engine (rein, ohne DB)
     categorize/llm.ts     # Modell wird injiziert, damit Tests ein Mock-Modell übergeben
+    categorize/apply.ts   # Kategorien in die DB schreiben, manuell geschützt
+    categorize/mock-model.ts  # deterministisches Modell für E2E und Demo (AI_MOCK=1)
+    auth.server.ts        # Login, Demo-Schreibschutz, läuft als Middleware für jede Route
+    queries.ts            # Lesezugriffe: Monatsübersicht, Buchungsliste, Regeln
     money.ts              # Cent-Formatierung und Parsing
 tests/
   e2e/                    # Playwright, eine Datei pro Nutzerablauf
@@ -76,7 +83,8 @@ Details und Pflichtfälle: Skill `verify`.
 
 ## Commits und Deploy
 
-- Kleine Commits, Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`).
+- Kleine Commits nach jedem Schritt, Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`).
+- Arbeit auf Feature-Branches (`feat/…`, `fix/…`), Merge nach `main` per Pull Request mit grüner CI.
 - Jeder Push läuft durch CI. `main` deployt automatisch auf Vercel, Branches bekommen eine Preview.
 - Schema-Änderungen nur über den Skill `db-change`.
 
