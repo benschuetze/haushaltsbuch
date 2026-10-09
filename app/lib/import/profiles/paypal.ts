@@ -6,8 +6,11 @@ import { looksLike, SkipRow, walkTable } from "./shared";
 const REQUIRED = ["Datum", "Name", "Typ", "Status", "Währung", "Netto", "Transaktionscode"];
 const spec = { delimiter: ",", requiredColumns: REQUIRED };
 
-/** Money moved in from the bank account to pay for something; the purchase itself is its own row. */
-export const PAYPAL_FUNDING = /bankkonto|bankgutschrift|einzahlung|aufladung/i;
+/** Counterparty given to top-ups from the bank account; the transfer linking looks for exactly this. */
+export const PAYPAL_TOP_UP = "PayPal (vom Bankkonto)";
+
+/** Money moved in from the bank account or a card to pay for something; the purchase itself is its own row. */
+export const PAYPAL_FUNDING = /bankkonto|bankgutschrift|einzahlung|aufladung|kreditkarte/i;
 const CONVERSION = /währungsumrechnung/i;
 const NOT_BOOKED = /ausstehend|storniert|abgelehnt|fehlgeschlagen|zurückgenommen/i;
 
@@ -46,7 +49,7 @@ function parse(bytes: Uint8Array) {
     let counterparty = col("Name");
     let purpose = item || type;
     if (PAYPAL_FUNDING.test(type)) {
-      counterparty = "PayPal (vom Bankkonto)";
+      counterparty = PAYPAL_TOP_UP;
       purpose = related ? `${type} für ${related.name}` : type;
     } else if (CONVERSION.test(type) && related) {
       counterparty = related.name;

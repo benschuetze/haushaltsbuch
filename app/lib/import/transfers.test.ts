@@ -97,3 +97,30 @@ describe("PayPal und Girokonto zählen jede Ausgabe nur einmal", () => {
     expect(after).toMatchObject({ categoryId: hobby?.id, categorySource: "manual" });
   });
 });
+
+describe("Kreditkarte und Girokonto zählen jede Ausgabe nur einmal", () => {
+  const amexCsv = new Uint8Array(readFileSync("app/lib/import/profiles/__fixtures__/amex.csv"));
+  const giro = new TextEncoder().encode(
+    [
+      "Buchungstag;Wertstellung;Empfänger/Auftraggeber;Verwendungszweck;Betrag;Währung",
+      "20.09.2026;20.09.2026;AMERICAN EXPRESS EUROPE S.A.;Lastschrift Kartenabrechnung;-367,49;EUR",
+      "21.09.2026;21.09.2026;REWE Markt;Kartenzahlung;-31,20;EUR",
+    ].join("\r\n"),
+  );
+
+  it.each([
+    ["erst Karte, dann Bank", [amexCsv, giro]],
+    ["erst Bank, dann Karte", [giro, amexCsv]],
+  ])("%s: Kartenumsätze sind die Ausgaben, die Monatsabbuchung ist Umbuchung", async (_, files) => {
+    for (const bytes of files) await importAuto(db, { filename: "x.csv", bytes, model: null });
+    const rows = await all();
+    expect(
+      rows
+        .filter((r) => r.categoryId === transferId)
+        .map((r) => r.amountCents)
+        .sort((a, b) => a - b),
+    ).toEqual([-36749, 36749]);
+    // Card purchases and the fee plus groceries; the 367,49 € settlement is not counted a second time.
+    expect(await spendingCents()).toBe(1399 + 28900 + 6450 + 289 + 123456 + 3120);
+  });
+});
