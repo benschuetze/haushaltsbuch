@@ -28,7 +28,7 @@ Das Haushaltsbuch verarbeitet Kontoumsätze. Diese Seite beschreibt, wie die App
 ## Bekannte Grenzen
 
 - Ein Benutzer, ein Passwort. Keine Mehrbenutzer-Trennung.
-- Preview-Deployments haben eine Kopie der Datenbank; sie sind durch Vercel-Anmeldung geschützt, enthalten aber echte Daten.
+- Die private Instanz baut nur für die Produktion, nie als Preview (`scripts/vercel-ignore.mjs`): Eine Preview bekäme eine Kopie der Datenbank und damit echte Kontodaten. Previews gibt es nur für die Demo mit erfundenen Daten.
 - Was an die KI geht (Empfänger, Verwendungszweck), verarbeitet Anthropic außerhalb der EU.
 
 ## Lücke melden

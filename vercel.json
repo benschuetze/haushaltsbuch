@@ -7,5 +7,6 @@
       "path": "/bank/sync",
       "schedule": "0 5 * * *"
     }
-  ]
+  ],
+  "ignoreCommand": "node scripts/vercel-ignore.mjs"
 }
