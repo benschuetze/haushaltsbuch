@@ -127,3 +127,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Falling pieces when a savings goal is reached. */
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0.6;
+  }
+}

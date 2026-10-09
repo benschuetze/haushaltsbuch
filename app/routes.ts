@@ -9,6 +9,7 @@ export default [
   route("konten", "routes/konten.tsx"),
   route("budgets", "routes/budgets.tsx"),
   route("abos", "routes/abos.tsx"),
+  route("ziele", "routes/ziele.tsx"),
   route("hinweise", "routes/hinweise.tsx"),
   route("pruefen", "routes/pruefen.tsx"),
   route("banken", "routes/banken.tsx"),

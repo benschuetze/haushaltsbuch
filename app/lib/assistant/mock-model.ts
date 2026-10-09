@@ -66,6 +66,22 @@ function phrase(toolName: string, value: Row): string {
         return `Eher nicht. Dann fehlen ${until} ${String(value.freiBisGehaltDanach).replace("−", "")}.`;
     }
   }
+  if (toolName === "wann_leisten") {
+    if (value.abMonat === null)
+      return `Gerade bleibt im Schnitt nichts übrig, deshalb kann ich keinen Monat nennen. ${value.hinweis}`;
+    if (value.monateBisDahin === 0) return `Das geht schon jetzt: ${value.jetztFrei} sind bis zum Gehalt frei.`;
+    const [y, m] = String(value.abMonat).split("-").map(Number);
+    const label = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+      Date.UTC(y ?? 2026, (m ?? 1) - 1, 1),
+    );
+    return `Im ${label}. Im Schnitt bleiben dir ${value.uebrigProMonat} im Monat übrig, damit sind ${value.betrag} in ${value.monateBisDahin} ${value.monateBisDahin === 1 ? "Monat" : "Monaten"} zusammen.`;
+  }
+  if (toolName === "sparziele") {
+    const goals = (value.ziele as Row[]) ?? [];
+    return goals.length === 0
+      ? "Du hast noch kein Sparziel. Unter „Sparziele“ ist eins in zehn Sekunden angelegt."
+      : `${goals.map((g) => `${g.name}: ${g.gespart} von ${g.ziel}, ${g.proMonat} im Monat`).join("; ")}.`;
+  }
   if (toolName === "naechste_zahlungen") {
     const gehalt = value.naechstesGehalt as Row | null;
     const out = ((value.abgaenge as Row[]) ?? []).map((a) => `${a.was} ${a.betrag} am ${day(a.am)}`);
@@ -131,6 +147,8 @@ export function createMockAssistantModel(): MockLanguageModelV4 {
         typeof question === "string" ? question : (question ?? []).map((p) => p.text ?? "").join(" ")
       ).toLowerCase();
       const amount = /(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro)/.exec(text)?.[1];
+      if (amount && /wann/.test(text)) return call("wann_leisten", { betragEuro: Number(amount.replace(",", ".")) });
+      if (/sparziel|ziele|sparen für/.test(text)) return call("sparziele", {});
       if (amount && /leisten|kann ich mir|kaufen|drin/.test(text)) {
         return call("leisten", { betragEuro: Number(amount.replace(",", ".")) });
       }

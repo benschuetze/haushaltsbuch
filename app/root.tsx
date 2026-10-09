@@ -74,6 +74,7 @@ const NAV = [
   { to: "/", label: "Übersicht", end: true },
   { to: "/transaktionen", label: "Buchungen", end: false },
   { to: "/budgets", label: "Budgets", end: false },
+  { to: "/ziele", label: "Sparziele", end: false },
   { to: "/abos", label: "Abos", end: false },
   { to: "/import", label: "Import", end: false },
   { to: "/regeln", label: "Regeln", end: false },

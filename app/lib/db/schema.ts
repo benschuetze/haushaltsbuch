@@ -261,4 +261,33 @@ export const subscriptionCancellations = pgTable("subscription_cancellations", {
   createdAt: createdAt(),
 });
 
+/**
+ * "Mallorca, 800 € bis Juli". The monthly share is reserved in "Heute drin", so saving for it does not need
+ * willpower at the till. Money set aside is recorded as deposits; the goal is reached when they add up.
+ */
+export const savingsGoals = pgTable("savings_goals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  targetCents: integer("target_cents").notNull(),
+  /** yyyy-mm; null when the user prefers a fixed monthly amount instead of a deadline. */
+  dueMonth: text("due_month"),
+  monthlyCents: integer("monthly_cents"),
+  achievedAt: timestamp("achieved_at", { withTimezone: true }),
+  createdAt: createdAt(),
+});
+
+export const savingsDeposits = pgTable(
+  "savings_deposits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    goalId: uuid("goal_id")
+      .notNull()
+      .references(() => savingsGoals.id, { onDelete: "cascade" }),
+    amountCents: integer("amount_cents").notNull(),
+    depositedOn: date("deposited_on", { mode: "string" }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("savings_deposits_goal_id_idx").on(t.goalId)],
+);
+
 export type BankConnection = typeof bankConnections.$inferSelect;

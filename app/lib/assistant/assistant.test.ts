@@ -156,3 +156,21 @@ describe("Frag einfach: Geld für heute", () => {
     expect(reply.answer).toContain("Das nächste Gehalt (3.612,40 €) kommt am 1. Oktober.");
   });
 });
+
+describe("Frag einfach: größere Wünsche und Sparziele", () => {
+  const september10 = new Date("2026-09-10T10:00:00Z");
+  const askOn = (question: string) =>
+    askAssistant(db, createMockAssistantModel(), [{ role: "user", content: question }], september10);
+
+  it("„Wann kann ich mir 5000 € leisten?“ nennt einen Monat", async () => {
+    const reply = await askOn("Wann kann ich mir 5000 € für ein Auto leisten?");
+    expect(reply.tools).toEqual(["wann_leisten"]);
+    expect(reply.answer).toMatch(/^(Im \w+ \d{4}\.|Das geht schon jetzt|Gerade bleibt)/);
+  });
+
+  it("ohne Sparziele: freundlicher Hinweis, wo man eins anlegt", async () => {
+    const reply = await askOn("Wie stehen meine Sparziele?");
+    expect(reply.tools).toEqual(["sparziele"]);
+    expect(reply.answer).toContain("noch kein Sparziel");
+  });
+});
