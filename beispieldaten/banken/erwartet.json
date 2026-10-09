@@ -1,0 +1,79 @@
+{
+  "_hinweis": "Von generate.py aus Cent-Werten berechnet, nicht mit dem App-Parser. Vorgemerkte Umsätze sind in rows_total enthalten (sie stehen in der Datei), aber nicht in sum_cents.",
+  "sparkasse.csv": {
+    "profile": "sparkasse",
+    "rows_total": 20,
+    "booked": 19,
+    "pending": 1,
+    "sum_cents": 471596,
+    "months": {
+      "2026-09": {
+        "rows": 15,
+        "income_cents": 387140,
+        "expense_cents": -168854
+      },
+      "2026-10": {
+        "rows": 4,
+        "income_cents": 361240,
+        "expense_cents": -107930
+      }
+    }
+  },
+  "ing.csv": {
+    "profile": "ing",
+    "rows_total": 9,
+    "booked": 9,
+    "pending": 0,
+    "sum_cents": 27393,
+    "months": {
+      "2026-09": {
+        "rows": 6,
+        "income_cents": 55123,
+        "expense_cents": -19898
+      },
+      "2026-10": {
+        "rows": 3,
+        "income_cents": 0,
+        "expense_cents": -7832
+      }
+    }
+  },
+  "dkb.csv": {
+    "profile": "dkb",
+    "rows_total": 10,
+    "booked": 9,
+    "pending": 1,
+    "sum_cents": 8082,
+    "months": {
+      "2026-09": {
+        "rows": 8,
+        "income_cents": 45700,
+        "expense_cents": -31513
+      },
+      "2026-10": {
+        "rows": 1,
+        "income_cents": 0,
+        "expense_cents": -6105
+      }
+    }
+  },
+  "volksbank.csv": {
+    "profile": "volksbank",
+    "rows_total": 9,
+    "booked": 9,
+    "pending": 0,
+    "sum_cents": -47919,
+    "months": {
+      "2026-09": {
+        "rows": 7,
+        "income_cents": 0,
+        "expense_cents": -40919
+      },
+      "2026-10": {
+        "rows": 2,
+        "income_cents": 0,
+        "expense_cents": -7000
+      }
+    }
+  }
+}

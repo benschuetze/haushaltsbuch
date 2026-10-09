@@ -12,6 +12,7 @@ export async function resetDb(): Promise<void> {
   await client.connect();
   try {
     await client.query("truncate table rules, transactions, imports restart identity cascade");
+    await client.query("delete from accounts where name <> 'Girokonto (Demo)'");
   } finally {
     await client.end();
   }
