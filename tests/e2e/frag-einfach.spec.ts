@@ -31,3 +31,12 @@ test("eigene Frage tippen, Nachfrage behält den Zusammenhang", async ({ page })
   await expect(page.getByTestId("ask-answer")).toHaveCount(2);
   await expect(page.getByTestId("ask-answer").nth(1)).toHaveText(/^(Ja, locker|Ja, geht|Knapp|Eher nicht)\./);
 });
+
+test("„Diese Woche“: Betrag seit Montag, mit Vergleich oder ehrlichem Hinweis", async ({ page }) => {
+  await importDemo(page);
+  await page.goto("/");
+  await expect(page.getByTestId("week-spent")).toHaveText(/€$/);
+  await expect(page.getByTestId("week-compare")).toHaveText(
+    /(weniger|mehr) als sonst bis \w+|fehlen noch ein paar Wochen/,
+  );
+});

@@ -76,6 +76,10 @@ function phrase(toolName: string, value: Row): string {
     );
     return `Im ${label}. Im Schnitt bleiben dir ${value.uebrigProMonat} im Monat übrig, damit sind ${value.betrag} in ${value.monateBisDahin} ${value.monateBisDahin === 1 ? "Monat" : "Monaten"} zusammen.`;
   }
+  if (toolName === "woche") {
+    const streak = Number(value.wochenInFolgeUnterSchnitt ?? 0);
+    return `Seit Montag ${value.seitMontag} ausgegeben${value.sonstBisHeute ? `, sonst bis heute ${value.sonstBisHeute}` : ""}.${streak > 0 ? ` Und ${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge unter Schnitt.` : ""}`;
+  }
   if (toolName === "sparziele") {
     const goals = (value.ziele as Row[]) ?? [];
     return goals.length === 0
@@ -149,6 +153,7 @@ export function createMockAssistantModel(): MockLanguageModelV4 {
       const amount = /(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro)/.exec(text)?.[1];
       if (amount && /wann/.test(text)) return call("wann_leisten", { betragEuro: Number(amount.replace(",", ".")) });
       if (/sparziel|ziele|sparen für/.test(text)) return call("sparziele", {});
+      if (/woche/.test(text) && !/diese woche noch ab/.test(text)) return call("woche", {});
       if (amount && /leisten|kann ich mir|kaufen|drin/.test(text)) {
         return call("leisten", { betragEuro: Number(amount.replace(",", ".")) });
       }

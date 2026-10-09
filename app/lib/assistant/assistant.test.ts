@@ -174,3 +174,24 @@ describe("Frag einfach: größere Wünsche und Sparziele", () => {
     expect(reply.answer).toContain("noch kein Sparziel");
   });
 });
+
+describe("Frag einfach: die Woche", () => {
+  it("„Wie lief meine Woche?“ nutzt den Wochenvergleich, „Was geht diese Woche noch ab?“ weiter die Zahlungen", async () => {
+    const on = new Date("2026-09-24T10:00:00Z");
+    const week = await askAssistant(
+      db,
+      createMockAssistantModel(),
+      [{ role: "user", content: "Wie lief meine Woche?" }],
+      on,
+    );
+    expect(week.tools).toEqual(["woche"]);
+    expect(week.answer).toMatch(/^Seit Montag .* ausgegeben/);
+    const due = await askAssistant(
+      db,
+      createMockAssistantModel(),
+      [{ role: "user", content: "Was geht diese Woche noch ab?" }],
+      on,
+    );
+    expect(due.tools).toEqual(["naechste_zahlungen"]);
+  });
+});

@@ -8,7 +8,14 @@ import { Button } from "~/components/ui/button";
 import { getAssistantModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { formatMonth } from "~/lib/format";
-import { budgetStatus, notificationSummary, openInsights, recurringPayments, spendingToday } from "~/lib/insights";
+import {
+  budgetStatus,
+  notificationSummary,
+  openInsights,
+  recurringPayments,
+  spendingToday,
+  weekToday,
+} from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { currentMonth, monthSummary, monthsWithData } from "~/lib/queries";
 import type { Route } from "./+types/home";
@@ -22,7 +29,7 @@ export async function loader() {
   // Bank exports lag behind; if this month has nothing yet, the latest month with data is the useful one.
   const month = months.includes(now) ? now : months[0];
   if (!month) return { month: null } as const;
-  const [summary, budgets, insights, recurring, notifications, today, assistant] = await Promise.all([
+  const [summary, budgets, insights, recurring, notifications, today, assistant, week] = await Promise.all([
     monthSummary(db, month),
     budgetStatus(db),
     openInsights(db, 20),
@@ -30,11 +37,13 @@ export async function loader() {
     notificationSummary(db),
     spendingToday(db),
     getAssistantModel(),
+    weekToday(db),
   ]);
   const subscriptions = recurring.filter((r) => r.active && r.kind === "subscription");
   return {
     month,
     today,
+    week,
     assistant: assistant !== null,
     isCurrent: month === now,
     summary,
@@ -75,6 +84,42 @@ function Card({
   );
 }
 
+const WEEKDAY = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+
+/** One line about the week, compared with the same weekdays before; the streak makes good weeks count. */
+function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }) {
+  if (!week) return null;
+  const day = WEEKDAY[(new Date(`${week.today}T00:00:00Z`).getUTCDay() + 6) % 7];
+  const diff = week.usualCents === null ? null : week.usualCents - week.spentCents;
+  return (
+    <section
+      aria-labelledby="week-title"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
+    >
+      <div className="space-y-0.5">
+        <h2 id="week-title" className="text-sm font-medium text-muted-foreground">
+          Diese Woche
+        </h2>
+        <p className="text-2xl font-semibold tabular-nums" data-testid="week-spent">
+          {formatCents(week.spentCents)}
+        </p>
+        <p className="text-sm" data-testid="week-compare">
+          {diff === null
+            ? "Für einen Vergleich fehlen noch ein paar Wochen."
+            : diff >= 0
+              ? `${formatCents(diff)} weniger als sonst bis ${day}`
+              : `${formatCents(-diff)} mehr als sonst bis ${day}`}
+        </p>
+      </div>
+      {week.streakWeeks > 0 ? (
+        <p className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-950" data-testid="week-streak">
+          🔥 {week.streakWeeks === 1 ? "1 Woche" : `${week.streakWeeks} Wochen`} in Folge unter Schnitt
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 export default function Home({ loaderData }: Route.ComponentProps) {
   if (!loaderData.month) {
     return (
@@ -92,6 +137,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const {
     month,
     today,
+    week,
     assistant,
     isCurrent,
     summary,
@@ -117,6 +163,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         </p>
       </div>
       <AskToday today={today} assistant={assistant} />
+      <WeekCard week={week} />
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Einnahmen" testId="income">
           <Amount cents={summary.incomeCents} />
