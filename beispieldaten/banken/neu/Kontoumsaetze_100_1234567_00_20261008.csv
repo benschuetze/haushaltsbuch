@@ -1,0 +1,11 @@
+Umsätze Girokonto;Zeitraum: 01.09.2026 - 08.10.2026;
+Kontonummer;DE00 1007 0000 0000 0000 03;
+
+Buchungstag;Wert;Umsatzart;Begünstigter / Auftraggeber;Verwendungszweck;IBAN;BIC;Kundenreferenz;Mandatsreferenz ;Gläubiger ID;Fremde Gebühren;Abweichender Empfänger;Anzahl der Aufträge;Anzahl der Schecks;Soll;Haben;Währung
+06.10.2026;06.10.2026;SEPA-Lastschrift;Tierarztpraxis Pfote;Rechnung 2026-331 Impfung;DE00500105170000000004;INGDDEFFXXX;;;;;;;;-89,60;;EUR
+01.10.2026;01.10.2026;SEPA-Gutschrift;Versorgungswerk Beispiel;Rente 10/2026;DE00500105170000000004;INGDDEFFXXX;;;;;;;;;1.420,00;EUR
+24.09.2026;24.09.2026;SEPA-Lastschrift;Rossmann;Kartenzahlung;DE00500105170000000004;INGDDEFFXXX;;;;;;;;-15,34;;EUR
+15.09.2026;15.09.2026;SEPA-Lastschrift;Allianz Versicherungs-AG;KFZ-Versicherung VS-Nr 123456;DE00500105170000000004;INGDDEFFXXX;;;;;;;;-48,50;;EUR
+03.09.2026;03.09.2026;SEPA-Lastschrift;Vodafone GmbH;Kabel Internet Kundennr 4711;DE00500105170000000004;INGDDEFFXXX;;;;;;;;-39,99;;EUR
+01.09.2026;01.09.2026;SEPA-Gutschrift;Versorgungswerk Beispiel;Rente 09/2026;DE00500105170000000004;INGDDEFFXXX;;;;;;;;;1.420,00;EUR
+Kontostand;08.10.2026;;;3.456,78;EUR

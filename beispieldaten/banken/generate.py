@@ -76,6 +76,42 @@ VOLKSBANK = [
 ]
 
 
+# Formate, die die App nicht eingebaut hat: Sie muss sie beim ersten Upload selbst erkennen.
+N26 = [
+    ("2026-09-02", "Edeka Center", "Kartenzahlung", -2245, "booked"),
+    ("2026-09-05", "Max Mustermann", "Pizza Freitag", 1500, "booked"),
+    ("2026-09-11", "Uber BV", "Uber Fahrt", -1873, "booked"),
+    ("2026-09-19", "Steam Games", "Steam Purchase", -1999, "booked"),
+    ("2026-10-01", "Alex Beispiel", "Taschengeld Oktober", 20000, "booked"),
+    ("2026-10-04", "Lieferando", "Bestellung 7788", -2650, "booked"),
+]
+
+DEUTSCHE_BANK = [
+    ("2026-09-01", "Versorgungswerk Beispiel", "Rente 09/2026", 142000, "booked"),
+    ("2026-09-03", "Vodafone GmbH", "Kabel Internet Kundennr 4711", -3999, "booked"),
+    ("2026-09-15", "Allianz Versicherungs-AG", "KFZ-Versicherung VS-Nr 123456", -4850, "booked"),
+    ("2026-09-24", "Rossmann", "Kartenzahlung", -1534, "booked"),
+    ("2026-10-01", "Versorgungswerk Beispiel", "Rente 10/2026", 142000, "booked"),
+    ("2026-10-06", "Tierarztpraxis Pfote", "Rechnung 2026-331 Impfung", -8960, "booked"),
+]
+
+COMDIRECT = [
+    ("2026-09-01", "Arbeitgeber Beispiel AG", "Gehalt 09/2026", 285000, "booked"),
+    ("2026-09-06", "REWE Markt GmbH", "Kartenzahlung", -5612, "booked"),
+    ("2026-09-14", "Hansemerkur", "Zahnzusatz Beitrag", -2390, "booked"),
+    ("2026-09-27", "Kino Lichtspiele", "Kartenzahlung", -2600, "booked"),
+    ("2026-10-01", "Arbeitgeber Beispiel AG", "Gehalt 10/2026", 285000, "booked"),
+    ("2026-10-05", "Thalia Bücher", "Kartenzahlung", -3498, "booked"),
+]
+
+# Fantasieformat mit Abkürzungen, die keine Heuristik errät: hier muss die KI die Spalten zuordnen.
+KONTOFLOW = [
+    ("2026-09-08", "Fitnessstudio Kraftwerk", "Monatsbeitrag", -2990, "booked"),
+    ("2026-09-21", "Flohmarkt Verkauf", "Verkauf Plattenspieler", 8000, "booked"),
+    ("2026-10-02", "Stadtwerke Beispielstadt", "Wasser Abschlag", -3100, "booked"),
+]
+
+
 def de_date(iso, short=False):
     y, m, d = iso.split("-")
     return f"{d}.{m}.{y[2:] if short else y}"
@@ -179,6 +215,64 @@ def volksbank():
     write("volksbank.csv", "\r\n".join(lines) + "\r\n", "utf-8", bom=True)
 
 
+def n26():
+    header = ["Booking Date", "Value Date", "Partner Name", "Partner Iban", "Type", "Payment Reference",
+              "Account Name", "Amount (EUR)", "Original Amount", "Original Currency", "Exchange Rate"]
+    lines = [",".join(q(h) for h in header)]
+    for date, who, purpose, cents, _ in sorted(N26, key=lambda t: t[0], reverse=True):
+        kind = "Income" if cents > 0 else "Presentment"
+        amount = f"{cents / 100:.2f}"
+        lines.append(",".join(q(v) for v in [date, date, who, "", kind, purpose, "Hauptkonto", amount, "", "", ""]))
+    write("neu/n26-csv-transactions.csv", "\n".join(lines) + "\n", "utf-8")
+
+
+def deutsche_bank():
+    lines = [
+        "Umsätze Girokonto;Zeitraum: 01.09.2026 - 08.10.2026;",
+        "Kontonummer;DE00 1007 0000 0000 0000 03;",
+        "",
+        "Buchungstag;Wert;Umsatzart;Begünstigter / Auftraggeber;Verwendungszweck;IBAN;BIC;Kundenreferenz;"
+        "Mandatsreferenz ;Gläubiger ID;Fremde Gebühren;Abweichender Empfänger;Anzahl der Aufträge;"
+        "Anzahl der Schecks;Soll;Haben;Währung",
+    ]
+    for date, who, purpose, cents, _ in sorted(DEUTSCHE_BANK, key=lambda t: t[0], reverse=True):
+        kind = "SEPA-Gutschrift" if cents > 0 else "SEPA-Lastschrift"
+        soll = de_amount(cents) if cents < 0 else ""
+        haben = de_amount(cents) if cents > 0 else ""
+        lines.append(";".join([de_date(date), de_date(date), kind, who, purpose, "DE00500105170000000004",
+                               "INGDDEFFXXX", "", "", "", "", "", "", "", soll, haben, "EUR"]))
+    lines += ["Kontostand;08.10.2026;;;3.456,78;EUR"]
+    write("neu/Kontoumsaetze_100_1234567_00_20261008.csv", "\r\n".join(lines) + "\r\n", "cp1252")
+
+
+def comdirect():
+    lines = [
+        ";",
+        q("Umsätze Girokonto") + ";" + q("Zeitraum: 01.09.2026 - 08.10.2026") + ";",
+        q("Neuer Kontostand") + ";" + q("4.321,00 EUR") + ";",
+        "",
+        ";".join(q(h) for h in ["Buchungstag", "Wertstellung (Valuta)", "Vorgang", "Buchungstext", "Umsatz in EUR"]) + ";",
+    ]
+    for date, who, purpose, cents, _ in sorted(COMDIRECT, key=lambda t: t[0], reverse=True):
+        if cents > 0:
+            vorgang, text = "Übertrag / Überweisung", f"Auftraggeber: {who} Buchungstext: {purpose} Ref. 7Z2C21SJ3G1V8J1M/1"
+        else:
+            vorgang = "Visa-Umsatz" if "Karte" in purpose else "Lastschrift / Belastung"
+            text = f"Empfänger: {who} Kto/IBAN: DE00200411110000000005 BLZ/BIC: COBADEHD001 Buchungstext: {purpose} Ref. 3K1Q9P/2"
+        lines.append(";".join(q(v) for v in [de_date(date), de_date(date), vorgang, text, de_amount(cents)]) + ";")
+    lines += ["", q("Alter Kontostand") + ";" + q("1.234,56 EUR") + ";"]
+    write("neu/umsaetze_1234567890_20261008-2114.csv", "\n".join(lines) + "\n", "cp1252")
+
+
+def kontoflow():
+    lines = ["Txn Dt;Ccy;Amt;Ctpy;Memo;Bal"]
+    balance = 50000
+    for date, who, purpose, cents, _ in sorted(KONTOFLOW, key=lambda t: t[0]):
+        balance += cents
+        lines.append(";".join([date, "EUR", f"{cents / 100:.2f}", who, purpose, f"{balance / 100:.2f}"]))
+    write("neu/kontoflow-export.csv", "\n".join(lines) + "\n", "utf-8")
+
+
 def expected():
     def summary(rows, pending_counts_as_row=True):
         booked = [r for r in rows if r[4] == "booked"]
@@ -202,6 +296,11 @@ def expected():
         "ing.csv": {"profile": "ing", **summary(ING, pending_counts_as_row=False)},
         "dkb.csv": {"profile": "dkb", **summary(DKB)},
         "volksbank.csv": {"profile": "volksbank", **summary(VOLKSBANK)},
+        # Unbekannte Formate: rows_total zählt nur Buchungszeilen, Fußzeilen mit Kontostand kommen als „übersprungen“ dazu.
+        "neu/n26-csv-transactions.csv": {"profile": "auto", "learned": "heuristic", "own_iban": False, "footer_lines": 0, **summary(N26)},
+        "neu/Kontoumsaetze_100_1234567_00_20261008.csv": {"profile": "auto", "learned": "heuristic", "own_iban": True, "footer_lines": 1, **summary(DEUTSCHE_BANK)},
+        "neu/umsaetze_1234567890_20261008-2114.csv": {"profile": "auto", "learned": "heuristic", "own_iban": False, "footer_lines": 1, **summary(COMDIRECT)},
+        "neu/kontoflow-export.csv": {"profile": "auto", "learned": "ai", "own_iban": False, "footer_lines": 0, **summary(KONTOFLOW)},
     }
     (OUT / "erwartet.json").write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -211,5 +310,10 @@ if __name__ == "__main__":
     ing()
     dkb()
     volksbank()
+    (OUT / "neu").mkdir(exist_ok=True)
+    n26()
+    deutsche_bank()
+    comdirect()
+    kontoflow()
     expected()
-    print("geschrieben:", ", ".join(sorted(p.name for p in OUT.glob("*.csv"))))
+    print("geschrieben:", ", ".join(sorted(str(p.relative_to(OUT)) for p in OUT.rglob("*.csv"))))

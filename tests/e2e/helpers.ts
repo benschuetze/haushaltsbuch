@@ -13,6 +13,7 @@ export async function resetDb(): Promise<void> {
   try {
     await client.query("truncate table rules, transactions, imports restart identity cascade");
     await client.query("delete from accounts where name <> 'Girokonto (Demo)'");
+    await client.query("truncate table bank_formats");
   } finally {
     await client.end();
   }
@@ -20,9 +21,9 @@ export async function resetDb(): Promise<void> {
 
 export async function importDemo(page: Page): Promise<void> {
   await page.goto("/import");
-  await page.getByLabel("CSV-Datei").setInputFiles(DEMO_CSV);
+  await page.getByLabel("CSV-Dateien").setInputFiles(DEMO_CSV);
   await page.getByRole("button", { name: "Importieren" }).click();
-  await expect(page.getByRole("status", { name: "Ergebnis des Imports" })).toBeVisible();
+  await expect(page.getByRole("status", { name: /^Ergebnis für/ })).toBeVisible();
 }
 
 export function collectConsoleErrors(page: Page): string[] {

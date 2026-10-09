@@ -17,7 +17,7 @@ test("Demo-CSV hochladen zeigt 44 neu, erneut hochladen zeigt 44 Duplikate", asy
 
 test("kaputte Zeilen werden mit Zeilennummer und Grund gezeigt, der Rest wird importiert", async ({ page }) => {
   await page.goto("/import");
-  await page.getByLabel("CSV-Datei").setInputFiles({
+  await page.getByLabel("CSV-Dateien").setInputFiles({
     name: "kaputt.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
@@ -36,11 +36,11 @@ test("kaputte Zeilen werden mit Zeilennummer und Grund gezeigt, der Rest wird im
 
 test("falsches Dateiformat wird verständlich abgelehnt", async ({ page }) => {
   await page.goto("/import");
-  await page.getByLabel("CSV-Datei").setInputFiles({
+  await page.getByLabel("CSV-Dateien").setInputFiles({
     name: "andere-bank.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Datum,Betrag\n01.10.2026,5.00"),
   });
   await page.getByRole("button", { name: "Importieren" }).click();
-  await expect(page.getByRole("alert")).toContainText("Kopfzeile passt nicht");
+  await expect(page.getByRole("alert")).toContainText("sieht nicht nach einer Umsatz-Tabelle aus");
 });

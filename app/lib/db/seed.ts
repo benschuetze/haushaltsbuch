@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import type { Db } from "./client";
 import { accounts, categories, type NewCategory } from "./schema";
 
@@ -18,7 +19,7 @@ export const DEFAULT_CATEGORIES: Omit<NewCategory, "sortOrder">[] = [
   { name: "Sonstiges", kind: "expense", color: "#6f6f6f" },
 ];
 
-export const DEMO_ACCOUNT = { name: "Girokonto (Demo)", bankProfile: "demo" } as const;
+export const DEMO_ACCOUNT = { name: "Girokonto (Demo)", bankProfile: "demo", accountKey: "demo:default" } as const;
 
 /** Idempotent: safe on every deploy and before every test run. */
 export async function seed(db: Db): Promise<void> {
@@ -26,5 +27,12 @@ export async function seed(db: Db): Promise<void> {
     .insert(categories)
     .values(DEFAULT_CATEGORIES.map((c, i) => ({ ...c, sortOrder: i })))
     .onConflictDoNothing({ target: categories.name });
-  await db.insert(accounts).values(DEMO_ACCOUNT).onConflictDoNothing({ target: accounts.name });
+  // Older databases have the demo account without a key; giving it one lets uploads of the demo file find it.
+  await db
+    .insert(accounts)
+    .values(DEMO_ACCOUNT)
+    .onConflictDoUpdate({
+      target: accounts.name,
+      set: { accountKey: sql`coalesce(${accounts.accountKey}, excluded.account_key)` },
+    });
 }

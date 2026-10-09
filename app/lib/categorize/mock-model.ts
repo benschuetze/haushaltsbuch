@@ -18,6 +18,37 @@ const KEYWORDS: [RegExp, string, number][] = [
   [/tagesgeld|sparrate/i, "Umbuchung", 0.9],
 ];
 
+// Abbreviations a column-mapping request may contain; anything else stays unmapped.
+const COLUMN_HINTS: [RegExp, string][] = [
+  [/dt|date|datum/i, "date"],
+  [/^amt$|amount|betrag/i, "amount"],
+  [/ctpy|partner|empf/i, "counterparty"],
+  [/memo|zweck|reference/i, "purpose"],
+  [/ccy|currency|währung/i, "currency"],
+];
+
+function answerColumnMapping(text: string): string {
+  const columns = [...text.matchAll(/^(\d+): (.+)$/gm)].map((m) => ({ index: Number(m[1]), name: m[2] ?? "" }));
+  const answer: Record<string, number | string | null> = {
+    bank: "Kontoflow",
+    date: null,
+    amount: null,
+    debit: null,
+    credit: null,
+    counterparty: null,
+    payer: null,
+    payee: null,
+    purpose: null,
+    currency: null,
+    status: null,
+  };
+  for (const [pattern, field] of COLUMN_HINTS) {
+    const hit = columns.find((c) => pattern.test(c.name));
+    if (hit && answer[field] === null) answer[field] = hit.index;
+  }
+  return JSON.stringify(answer);
+}
+
 export function createMockModel(): MockLanguageModelV4 {
   return new MockLanguageModelV4({
     doGenerate: async ({ prompt }) => {
@@ -28,6 +59,17 @@ export function createMockModel(): MockLanguageModelV4 {
             : m.content.map((part) => (part.type === "text" ? part.text : "")).join("\n"),
         )
         .join("\n");
+      if (text.includes("Maskierte Beispielzeilen")) {
+        return {
+          content: [{ type: "text", text: answerColumnMapping(text) }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage: {
+            inputTokens: { total: 0, noCache: 0, cacheRead: undefined, cacheWrite: undefined },
+            outputTokens: { total: 0, text: 0, reasoning: undefined },
+          },
+          warnings: [],
+        };
+      }
       const results = text
         .split("\n")
         .filter((line) => line.startsWith("{"))

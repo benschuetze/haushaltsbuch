@@ -41,12 +41,19 @@ Regeln:
 - confidence ist eine Zahl zwischen 0 und 1: wie sicher du bist.
 - Gib für jede Buchung genau ein Ergebnis mit ihrer ref zurück.`;
 
+// Real purposes often carry IBANs ("Kto/IBAN: DE…"). They never help categorising and must not leave the app.
+const IBAN_IN_TEXT = /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,4})?\b/g;
+
+export function redactIbans(text: string): string {
+  return text.replace(IBAN_IN_TEXT, "[IBAN]");
+}
+
 export function buildPrompt(categories: LlmCategory[], items: LlmInput[]): string {
   const lines = items.map((item, i) =>
     JSON.stringify({
       ref: `t${i + 1}`,
-      counterparty: item.counterparty,
-      purpose: item.purpose,
+      counterparty: redactIbans(item.counterparty),
+      purpose: redactIbans(item.purpose),
       amount: (item.amountCents / 100).toFixed(2),
       date: item.bookingDate,
     }),

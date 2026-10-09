@@ -5,6 +5,8 @@ description: Use when the user wants to import a CSV export from a bank whose fo
 
 # Neues Bankprofil
 
+Die App lernt unbekannte Formate beim Upload selbst (`app/lib/import/formats/`). Ein eingebautes Profil lohnt sich nur, wenn die Erkennung für eine Bank scheitert oder etwas falsch zuordnet (z. B. Gegenpartei steckt im Text). Erst prüfen: Lernt `importAuto` die Beispieldatei richtig? Wenn ja, reicht ein Test in `formats/auto.test.ts`.
+
 Ein Bankprofil übersetzt die CSV einer Bank in das einheitliche Format `NormalizedRow`
 (`bookingDate`, `amountCents`, `currency`, `counterparty`, `purpose`, `raw`).
 
