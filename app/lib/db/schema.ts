@@ -19,6 +19,15 @@ export const categorySource = pgEnum("category_source", ["rule", "ai", "manual"]
 export const ruleField = pgEnum("rule_field", ["counterparty", "purpose"]);
 export const ruleMatchType = pgEnum("rule_match_type", ["contains", "equals", "regex"]);
 export const formatSource = pgEnum("format_source", ["heuristic", "ai"]);
+export const insightKind = pgEnum("insight_kind", [
+  "budget_exceeded",
+  "budget_warning",
+  "subscriptions",
+  "price_increase",
+  "duplicate_service",
+  "spending_spike",
+  "fees",
+]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -110,6 +119,8 @@ export const rules = pgTable(
     createdFromTransactionId: uuid("created_from_transaction_id").references(() => transactions.id, {
       onDelete: "set null",
     }),
+    /** Why the app created this rule on its own, e.g. after a PayPal export was imported. */
+    note: text("note"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -125,3 +136,47 @@ export type NewCategory = typeof categories.$inferInsert;
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type Rule = typeof rules.$inferSelect;
+
+/** One monthly budget per category. */
+export const budgets = pgTable("budgets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  categoryId: uuid("category_id")
+    .notNull()
+    .unique()
+    .references(() => categories.id, { onDelete: "cascade" }),
+  amountCents: integer("amount_cents").notNull(),
+  createdAt: createdAt(),
+});
+
+/**
+ * Savings hints the app works out itself. The key makes regeneration idempotent: the same finding for the
+ * same month updates in place and keeps its read/dismissed state.
+ */
+export const insights = pgTable(
+  "insights",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    key: text("key").notNull().unique(),
+    kind: insightKind("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    /** Estimated yearly saving if acted on; null when the hint is informational. */
+    savingsCentsPerYear: integer("savings_cents_per_year"),
+    month: text("month").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("insights_month_idx").on(t.month)],
+);
+
+/** Small key-value store for one-off facts like "default budgets were created once". */
+export const meta = pgTable("meta", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
+export type Budget = typeof budgets.$inferSelect;
+export type Insight = typeof insights.$inferSelect;
+export type NewInsight = typeof insights.$inferInsert;

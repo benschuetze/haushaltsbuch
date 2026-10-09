@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "./client";
-import { accounts, categories, type NewCategory } from "./schema";
+import { accounts, budgets, categories, meta, type NewCategory } from "./schema";
 
 export const DEFAULT_CATEGORIES: Omit<NewCategory, "sortOrder">[] = [
   { name: "Wohnen", kind: "expense", color: "#2a78d6" },
@@ -14,10 +14,26 @@ export const DEFAULT_CATEGORIES: Omit<NewCategory, "sortOrder">[] = [
   { name: "Freizeit", kind: "expense", color: "#6aa82a" },
   { name: "Kleidung", kind: "expense", color: "#a8552a" },
   { name: "Haushalt", kind: "expense", color: "#8a8f2a" },
+  { name: "Restaurant & Lieferdienst", kind: "expense", color: "#d65f2a" },
+  { name: "Haustier", kind: "expense", color: "#9a6b4a" },
+  { name: "Gebühren", kind: "expense", color: "#b03a3a" },
   { name: "Einkommen", kind: "income", color: "#178a3c" },
   { name: "Umbuchung", kind: "transfer", color: "#8c8c8c" },
   { name: "Sonstiges", kind: "expense", color: "#6f6f6f" },
 ];
+
+/** Starting points, in euros per month. Users change or delete them; they are created only once. */
+export const DEFAULT_BUDGETS: Record<string, number> = {
+  Lebensmittel: 450,
+  "Restaurant & Lieferdienst": 120,
+  Freizeit: 150,
+  "Abos & Software": 50,
+  Kleidung: 80,
+  Mobilität: 180,
+  Haushalt: 70,
+  "Musik & Equipment": 60,
+  Gesundheit: 40,
+};
 
 export const DEMO_ACCOUNT = { name: "Girokonto (Demo)", bankProfile: "demo", accountKey: "demo:default" } as const;
 
@@ -35,4 +51,21 @@ export async function seed(db: Db): Promise<void> {
       target: accounts.name,
       set: { accountKey: sql`coalesce(${accounts.accountKey}, excluded.account_key)` },
     });
+
+  await seedBudgetsOnce(db);
+}
+
+async function seedBudgetsOnce(db: Db): Promise<void> {
+  const [marker] = await db
+    .insert(meta)
+    .values({ key: "default_budgets_seeded", value: new Date().toISOString() })
+    .onConflictDoNothing()
+    .returning();
+  // Already done once: a budget the user deleted must not come back with the next deploy.
+  if (!marker) return;
+  const rows = await db.select({ id: categories.id, name: categories.name }).from(categories);
+  const values = rows
+    .filter((c) => DEFAULT_BUDGETS[c.name] !== undefined)
+    .map((c) => ({ categoryId: c.id, amountCents: (DEFAULT_BUDGETS[c.name] ?? 0) * 100 }));
+  if (values.length > 0) await db.insert(budgets).values(values).onConflictDoNothing();
 }
