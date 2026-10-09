@@ -53,6 +53,7 @@ export function buildMappingPrompt(table: Table): string {
 export async function guessMappingWithLlm(
   model: LanguageModel,
   table: Table,
+  onError: (error: unknown) => void = (error) => console.error("Spaltenzuordnung per LLM fehlgeschlagen", error),
 ): Promise<{ mapping: ColumnMapping; bank: string } | null> {
   let answer: z.infer<typeof answerSchema>;
   try {
@@ -67,7 +68,7 @@ export async function guessMappingWithLlm(
     });
     answer = output;
   } catch (error) {
-    console.error("Spaltenzuordnung per LLM fehlgeschlagen", error);
+    onError(error);
     return null;
   }
   const { bank, ...columns } = answer;
