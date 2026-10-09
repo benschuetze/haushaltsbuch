@@ -27,6 +27,6 @@ Das Eval-Set `evals/kategorisierung.json` enthält erfundene Buchungen mit erwar
 
 ## Regeln für den Prompt
 
-- Kategorien werden mit ID und Name übergeben, das Schema erlaubt nur diese IDs.
+- Kategorien werden per Name übergeben. Jede Antwort wird einzeln gegen die Liste geprüft: Ein unbekannter Name schickt nur diese Buchung nach „prüfen“, nicht den ganzen Batch.
 - Kein Raten bei Umbuchungen zwischen eigenen Konten: `Umbuchung` nur, wenn der Text das klar zeigt.
 - Bei Unklarheit niedrige Konfidenz statt einer plausiblen, aber unsicheren Kategorie.
