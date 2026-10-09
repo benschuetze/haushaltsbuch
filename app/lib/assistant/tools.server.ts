@@ -1,10 +1,11 @@
 import { tool } from "ai";
 import { and, desc, eq, gte, ilike, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { canAfford } from "~/lib/budget/available";
 import { redactIbans } from "~/lib/categorize/llm";
 import type { Db } from "~/lib/db/client";
 import { categories, transactions } from "~/lib/db/schema";
-import { budgetStatus, openInsights, recurringPayments } from "~/lib/insights";
+import { budgetStatus, openInsights, recurringPayments, spendingToday } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { MONTH_PATTERN, monthRange, monthSummary, monthsWithData } from "~/lib/queries";
 
@@ -15,8 +16,68 @@ const month = z.string().regex(MONTH_PATTERN).describe("Monat als JJJJ-MM, z. B.
  * Read-only tools over the user's own data. Nothing here writes, and every text that goes back to the model
  * passes through redactIbans, like everything else that reaches the LLM.
  */
-export function createAssistantTools(db: Db) {
+export function createAssistantTools(db: Db, now = new Date()) {
   return {
+    heute_verfuegbar: tool({
+      description:
+        "Wie viel Geld heute frei ist und bis zum nächsten Gehalt: Einnahmen seit dem letzten Gehalt minus Ausgaben minus noch fällige Fixkosten, Abos und Sparrate, verteilt auf die restlichen Tage. Für Fragen wie „Wie viel kann ich heute ausgeben?“.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const a = await spendingToday(db, now);
+        return {
+          heute: a.today,
+          heuteDrin: euro(a.perDayCents),
+          freiBisGehalt: euro(a.freeCents),
+          tageBisGehalt: a.daysLeft,
+          naechstesGehalt: a.nextIncome
+            ? { von: redactIbans(a.nextIncome.name), am: a.nextIncome.date, betrag: euro(a.nextIncome.amountCents) }
+            : null,
+          seitLetztemGehalt: { eingenommen: euro(a.incomeCents), ausgegeben: euro(a.spentCents) },
+          gehaltNochNichtGebucht: a.missingIncome ? { erwartetAm: a.missingIncome.date } : null,
+          nochFaellig: a.upcoming.map((u) => ({ was: redactIbans(u.name), am: u.date, betrag: euro(u.amountCents) })),
+        };
+      },
+    }),
+
+    leisten: tool({
+      description:
+        "Prüft, ob eine Ausgabe gerade drin ist („Kann ich mir 80 € fürs Feiern leisten?“). Urteil: locker (passt in den heutigen Anteil), geht (kostet ein paar Tage), knapp, nein (bis zum Gehalt im Minus).",
+      inputSchema: z.object({
+        betragEuro: z.number().positive().max(1_000_000).describe("Betrag ohne Vorzeichen"),
+        wofuer: z.string().max(60).optional(),
+      }),
+      execute: async ({ betragEuro, wofuer }) => {
+        const a = await spendingToday(db, now);
+        const r = canAfford(a, Math.round(betragEuro * 100));
+        return {
+          urteil: r.verdict,
+          wofuer: wofuer ?? null,
+          betrag: euro(r.amountCents),
+          heuteDrinVorher: euro(a.perDayCents),
+          freiBisGehaltDanach: euro(r.afterCents),
+          proTagDanach: euro(r.perDayAfterCents),
+          tageBisGehalt: a.daysLeft,
+          naechstesGehaltAm: a.nextIncome?.date ?? null,
+        };
+      },
+    }),
+
+    naechste_zahlungen: tool({
+      description:
+        "Was demnächst kommt und abgeht: nächstes Gehalt und fällige Fixkosten, Abos und Sparrate bis dahin. Für „Wann kommt mein Gehalt?“ oder „Was geht diese Woche noch ab?“.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const a = await spendingToday(db, now);
+        return {
+          heute: a.today,
+          naechstesGehalt: a.nextIncome
+            ? { von: redactIbans(a.nextIncome.name), am: a.nextIncome.date, betrag: euro(a.nextIncome.amountCents) }
+            : null,
+          abgaenge: a.upcoming.map((u) => ({ was: redactIbans(u.name), am: u.date, betrag: euro(u.amountCents) })),
+        };
+      },
+    }),
+
     monate: tool({
       description: "Liste der Monate, für die Buchungen vorhanden sind (neueste zuerst).",
       inputSchema: z.object({}),

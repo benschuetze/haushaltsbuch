@@ -39,7 +39,38 @@ function say(text: string) {
 
 type Row = Record<string, unknown>;
 
+function day(iso: unknown): string {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  if (!y || !m || !d) return String(iso);
+  return new Intl.DateTimeFormat("de-DE", { day: "numeric", month: "long", timeZone: "UTC" }).format(
+    Date.UTC(y, m - 1, d),
+  );
+}
+
 function phrase(toolName: string, value: Row): string {
+  if (toolName === "heute_verfuegbar") {
+    const gehalt = value.naechstesGehalt as Row | null;
+    const missing = value.gehaltNochNichtGebucht as Row | null;
+    return `Heute sind ${value.heuteDrin} drin. Bis ${gehalt ? `zum Gehalt am ${day(gehalt.am)}` : "Monatsende"} bleiben ${value.freiBisGehalt} für ${value.tageBisGehalt} Tage, Fixkosten und Sparrate schon abgezogen.${missing ? ` Das Gehalt vom ${day(missing.erwartetAm)} ist noch nicht gebucht, deshalb rechne ich vorsichtig ohne.` : ""}`;
+  }
+  if (toolName === "leisten") {
+    const until = value.naechstesGehaltAm ? `bis zum Gehalt am ${day(value.naechstesGehaltAm)}` : "bis Monatsende";
+    switch (value.urteil) {
+      case "locker":
+        return `Ja, locker. ${value.betrag} passen in die ${value.heuteDrinVorher}, die heute drin sind.`;
+      case "geht":
+        return `Ja, geht. Danach bleiben ${until} noch ${value.proTagDanach} pro Tag statt ${value.heuteDrinVorher}.`;
+      case "knapp":
+        return `Knapp. Danach bleiben ${until} nur noch ${value.proTagDanach} pro Tag.`;
+      default:
+        return `Eher nicht. Dann fehlen ${until} ${String(value.freiBisGehaltDanach).replace("−", "")}.`;
+    }
+  }
+  if (toolName === "naechste_zahlungen") {
+    const gehalt = value.naechstesGehalt as Row | null;
+    const out = ((value.abgaenge as Row[]) ?? []).map((a) => `${a.was} ${a.betrag} am ${day(a.am)}`);
+    return `${gehalt ? `Das nächste Gehalt (${gehalt.betrag}) kommt am ${day(gehalt.am)}.` : "Ein regelmäßiges Gehalt habe ich nicht gefunden."} ${out.length > 0 ? `Bis dahin geht noch ab: ${out.join(", ")}.` : "Bis dahin geht nichts Festes mehr ab."}`;
+  }
   if (toolName === "abos_und_fixkosten") {
     const all = (value.zahlungen as Row[]) ?? [];
     const abos = all.filter((z) => z.art === "Abo");
@@ -99,6 +130,12 @@ export function createMockAssistantModel(): MockLanguageModelV4 {
       const text = (
         typeof question === "string" ? question : (question ?? []).map((p) => p.text ?? "").join(" ")
       ).toLowerCase();
+      const amount = /(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro)/.exec(text)?.[1];
+      if (amount && /leisten|kann ich mir|kaufen|drin/.test(text)) {
+        return call("leisten", { betragEuro: Number(amount.replace(",", ".")) });
+      }
+      if (/gehalt|wann kommt|geht noch ab|abgeht|diese woche/.test(text)) return call("naechste_zahlungen", {});
+      if (/heute|ausgeben|drin|verfügbar|übrig|frei/.test(text)) return call("heute_verfuegbar", {});
       if (/abo|vertrag|versteckt|wiederkehr|monatlich zahl/.test(text)) return call("abos_und_fixkosten", {});
       if (/budget/.test(text)) return call("budgets", {});
       if (/hinweis|sparen|spar/.test(text)) return call("hinweise", {});

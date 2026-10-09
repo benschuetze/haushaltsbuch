@@ -1,12 +1,14 @@
 import { Link } from "react-router";
 import { Amount } from "~/components/amount";
+import { AskToday } from "~/components/ask-today";
 import { CategoryBars } from "~/components/category-bars";
 import { BudgetBar } from "~/components/progress";
 import { Stat } from "~/components/stat";
 import { Button } from "~/components/ui/button";
+import { getAssistantModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { formatMonth } from "~/lib/format";
-import { budgetStatus, notificationSummary, openInsights, recurringPayments } from "~/lib/insights";
+import { budgetStatus, notificationSummary, openInsights, recurringPayments, spendingToday } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { currentMonth, monthSummary, monthsWithData } from "~/lib/queries";
 import type { Route } from "./+types/home";
@@ -20,16 +22,20 @@ export async function loader() {
   // Bank exports lag behind; if this month has nothing yet, the latest month with data is the useful one.
   const month = months.includes(now) ? now : months[0];
   if (!month) return { month: null } as const;
-  const [summary, budgets, insights, recurring, notifications] = await Promise.all([
+  const [summary, budgets, insights, recurring, notifications, today, assistant] = await Promise.all([
     monthSummary(db, month),
     budgetStatus(db),
     openInsights(db, 20),
     recurringPayments(db),
     notificationSummary(db),
+    spendingToday(db),
+    getAssistantModel(),
   ]);
   const subscriptions = recurring.filter((r) => r.active && r.kind === "subscription");
   return {
     month,
+    today,
+    assistant: assistant !== null,
     isCurrent: month === now,
     summary,
     // Same number the bell shows: everything waiting, not only this month.
@@ -83,8 +89,19 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       </div>
     );
   }
-  const { month, isCurrent, summary, reviewCount, insightCount, budgets, insights, savingsCents, subscriptions } =
-    loaderData;
+  const {
+    month,
+    today,
+    assistant,
+    isCurrent,
+    summary,
+    reviewCount,
+    insightCount,
+    budgets,
+    insights,
+    savingsCents,
+    subscriptions,
+  } = loaderData;
   const topExpenses = summary.byCategory
     .filter((c) => c.kind !== "transfer" && c.kind !== "income" && c.cents < 0)
     .sort((a, b) => a.cents - b.cents)
@@ -99,6 +116,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           {isCurrent ? "" : " (letzter Monat mit Buchungen)"}
         </p>
       </div>
+      <AskToday today={today} assistant={assistant} />
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Einnahmen" testId="income">
           <Amount cents={summary.incomeCents} />
