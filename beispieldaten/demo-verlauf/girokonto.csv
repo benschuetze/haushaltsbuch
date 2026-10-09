@@ -1,0 +1,100 @@
+Buchungstag;Wertstellung;Empfänger/Auftraggeber;Verwendungszweck;Betrag;Währung
+01.04.2026;01.04.2026;Arbeitgeber Muster GmbH;Gehalt 04/2026;3.612,40;EUR
+01.04.2026;01.04.2026;Hausverwaltung Sonnenhof;Miete 04/2026 Whg 3;-890,00;EUR
+02.04.2026;02.04.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+02.04.2026;02.04.2026;FitX Deutschland GmbH;Mitgliedsbeitrag Studio Beispielstadt;-24,99;EUR
+03.04.2026;03.04.2026;Familienkasse;Kindergeld;259,00;EUR
+03.04.2026;03.04.2026;Disney Plus;Disney+ Monatsabo;-9,99;EUR
+04.04.2026;04.04.2026;REWE Markt;Kartenzahlung girocard;-67,70;EUR
+05.04.2026;05.04.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.04.2026;05.04.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+07.04.2026;07.04.2026;Spotify AB;Spotify Premium;-10,99;EUR
+08.04.2026;08.04.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+10.04.2026;10.04.2026;Telekom Deutschland;Mobilfunk Rechnung;-34,95;EUR
+11.04.2026;11.04.2026;Lidl;Kartenzahlung girocard;-87,40;EUR
+12.04.2026;12.04.2026;Aral Station;Kartenzahlung Tankstelle;-68,00;EUR
+15.04.2026;15.04.2026;Eigenes Tagesgeld;Sparrate;-300,00;EUR
+18.04.2026;18.04.2026;Lidl;Kartenzahlung girocard;-45,50;EUR
+20.04.2026;20.04.2026;dm-drogerie markt;Kartenzahlung girocard;-30,55;EUR
+25.04.2026;25.04.2026;REWE Markt;Kartenzahlung girocard;-91,95;EUR
+27.04.2026;27.04.2026;Baeckerei Kern;Kartenzahlung girocard;-11,50;EUR
+01.05.2026;01.05.2026;Arbeitgeber Muster GmbH;Gehalt 05/2026;3.612,40;EUR
+01.05.2026;01.05.2026;Hausverwaltung Sonnenhof;Miete 05/2026 Whg 3;-890,00;EUR
+02.05.2026;02.05.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+02.05.2026;02.05.2026;FitX Deutschland GmbH;Mitgliedsbeitrag Studio Beispielstadt;-24,99;EUR
+03.05.2026;03.05.2026;Familienkasse;Kindergeld;259,00;EUR
+03.05.2026;03.05.2026;Disney Plus;Disney+ Monatsabo;-9,99;EUR
+04.05.2026;04.05.2026;ALDI SUED;Kartenzahlung girocard;-59,55;EUR
+05.05.2026;05.05.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.05.2026;05.05.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+07.05.2026;07.05.2026;Spotify AB;Spotify Premium;-10,99;EUR
+08.05.2026;08.05.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+09.05.2026;09.05.2026;Aral Station;Kartenzahlung Tankstelle;-68,80;EUR
+10.05.2026;10.05.2026;Telekom Deutschland;Mobilfunk Rechnung;-34,95;EUR
+11.05.2026;11.05.2026;REWE Markt;Kartenzahlung girocard;-43,25;EUR
+15.05.2026;15.05.2026;Eigenes Tagesgeld;Sparrate;-300,00;EUR
+18.05.2026;18.05.2026;REWE Markt;Kartenzahlung girocard;-64,40;EUR
+19.05.2026;19.05.2026;dm-drogerie markt;Kartenzahlung girocard;-26,35;EUR
+25.05.2026;25.05.2026;REWE Markt;Kartenzahlung girocard;-81,00;EUR
+25.05.2026;25.05.2026;Baeckerei Kern;Kartenzahlung girocard;-6,60;EUR
+01.06.2026;01.06.2026;Arbeitgeber Muster GmbH;Gehalt 06/2026;3.612,40;EUR
+01.06.2026;01.06.2026;Hausverwaltung Sonnenhof;Miete 06/2026 Whg 3;-890,00;EUR
+02.06.2026;02.06.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+02.06.2026;02.06.2026;FitX Deutschland GmbH;Mitgliedsbeitrag Studio Beispielstadt;-24,99;EUR
+03.06.2026;03.06.2026;Familienkasse;Kindergeld;259,00;EUR
+03.06.2026;03.06.2026;Disney Plus;Disney+ Monatsabo;-9,99;EUR
+04.06.2026;04.06.2026;ALDI SUED;Kartenzahlung girocard;-60,75;EUR
+05.06.2026;05.06.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.06.2026;05.06.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+07.06.2026;07.06.2026;Spotify AB;Spotify Premium;-10,99;EUR
+08.06.2026;08.06.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+10.06.2026;10.06.2026;Telekom Deutschland;Mobilfunk Rechnung;-34,95;EUR
+11.06.2026;11.06.2026;ALDI SUED;Kartenzahlung girocard;-71,50;EUR
+13.06.2026;13.06.2026;dm-drogerie markt;Kartenzahlung girocard;-23,25;EUR
+13.06.2026;13.06.2026;PayPal Europe;7D000000000001002 PP.4471.PP . Netflix International B.V., Ihr Einkauf bei Netflix International B.V.;-13,99;EUR
+14.06.2026;14.06.2026;Aral Station;Kartenzahlung Tankstelle;-56,70;EUR
+15.06.2026;15.06.2026;Eigenes Tagesgeld;Sparrate;-300,00;EUR
+18.06.2026;18.06.2026;ALDI SUED;Kartenzahlung girocard;-87,55;EUR
+24.06.2026;24.06.2026;Baeckerei Kern;Kartenzahlung girocard;-7,60;EUR
+24.06.2026;24.06.2026;PayPal Europe;7D000000000001004 PP.4471.PP . Zalando SE, Ihr Einkauf bei Zalando SE;-44,30;EUR
+25.06.2026;25.06.2026;Lidl;Kartenzahlung girocard;-42,80;EUR
+01.07.2026;01.07.2026;Arbeitgeber Muster GmbH;Gehalt 07/2026;3.612,40;EUR
+01.07.2026;01.07.2026;Hausverwaltung Sonnenhof;Miete 07/2026 Whg 3;-890,00;EUR
+02.07.2026;02.07.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+02.07.2026;02.07.2026;FitX Deutschland GmbH;Mitgliedsbeitrag Studio Beispielstadt;-24,99;EUR
+03.07.2026;03.07.2026;Familienkasse;Kindergeld;259,00;EUR
+03.07.2026;03.07.2026;Disney Plus;Disney+ Monatsabo;-9,99;EUR
+04.07.2026;04.07.2026;Lidl;Kartenzahlung girocard;-94,10;EUR
+05.07.2026;05.07.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.07.2026;05.07.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+07.07.2026;07.07.2026;Spotify AB;Spotify Premium;-10,99;EUR
+07.07.2026;07.07.2026;PayPal Europe;7D000000000001010 PP.4471.PP . Lieferando.de, Ihr Einkauf bei Lieferando.de;-31,50;EUR
+08.07.2026;08.07.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+10.07.2026;10.07.2026;Telekom Deutschland;Mobilfunk Rechnung;-34,95;EUR
+11.07.2026;11.07.2026;ALDI SUED;Kartenzahlung girocard;-37,50;EUR
+12.07.2026;12.07.2026;Aral Station;Kartenzahlung Tankstelle;-50,30;EUR
+13.07.2026;13.07.2026;PayPal Europe;7D000000000001006 PP.4471.PP . Netflix International B.V., Ihr Einkauf bei Netflix International B.V.;-13,99;EUR
+15.07.2026;15.07.2026;Eigenes Tagesgeld;Sparrate;-300,00;EUR
+18.07.2026;18.07.2026;Lidl;Kartenzahlung girocard;-72,75;EUR
+18.07.2026;18.07.2026;dm-drogerie markt;Kartenzahlung girocard;-31,80;EUR
+19.07.2026;19.07.2026;Deutsche Bahn;DB Fernverkehr Ticket Urlaub;-189,00;EUR
+23.07.2026;23.07.2026;PayPal Europe;7D000000000001008 PP.4471.PP . Zalando SE, Ihr Einkauf bei Zalando SE;-81,70;EUR
+25.07.2026;25.07.2026;ALDI SUED;Kartenzahlung girocard;-82,20;EUR
+27.07.2026;27.07.2026;Baeckerei Kern;Kartenzahlung girocard;-5,40;EUR
+13.08.2026;13.08.2026;PayPal Europe;7D000000000001012 PP.4471.PP . Netflix International B.V., Ihr Einkauf bei Netflix International B.V.;-13,99;EUR
+13.09.2026;13.09.2026;PayPal Europe;7D000000000001014 PP.4471.PP . Netflix International B.V., Ihr Einkauf bei Netflix International B.V.;-13,99;EUR
+01.10.2026;01.10.2026;Arbeitgeber Muster GmbH;Gehalt 10/2026;3.612,40;EUR
+01.10.2026;01.10.2026;Hausverwaltung Sonnenhof;Miete 10/2026 Whg 3;-890,00;EUR
+02.10.2026;02.10.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+02.10.2026;02.10.2026;FitX Deutschland GmbH;Mitgliedsbeitrag Studio Beispielstadt;-24,99;EUR
+03.10.2026;03.10.2026;Familienkasse;Kindergeld;259,00;EUR
+03.10.2026;03.10.2026;Disney Plus;Disney+ Monatsabo;-9,99;EUR
+03.10.2026;03.10.2026;PayPal Europe;7D000000000001016 PP.4471.PP . Lieferando.de, Ihr Einkauf bei Lieferando.de;-28,90;EUR
+04.10.2026;04.10.2026;REWE Markt;Kartenzahlung girocard;-68,40;EUR
+05.10.2026;05.10.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.10.2026;05.10.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+05.10.2026;05.10.2026;PayPal Europe;7D000000000001018 PP.4471.PP . Lieferando.de, Ihr Einkauf bei Lieferando.de;-34,20;EUR
+07.10.2026;07.10.2026;Spotify AB;Spotify Premium;-11,99;EUR
+07.10.2026;07.10.2026;PayPal Europe;7D000000000001020 PP.4471.PP . Lieferando.de, Ihr Einkauf bei Lieferando.de;-26,50;EUR
+08.10.2026;08.10.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+09.10.2026;09.10.2026;PayPal Europe;7D000000000001022 PP.4471.PP . Lieferando.de, Ihr Einkauf bei Lieferando.de;-39,80;EUR
