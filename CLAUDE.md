@@ -38,7 +38,9 @@ app/
     import/profiles/      # ein Bankprofil pro Datei, Registry in index.ts
     import/csv.ts         # Encoding und CSV-Parser
     import/dedupe.ts      # Dedupe-Hash
-    import/run.ts         # Import-Ablauf: parsen, speichern, kategorisieren
+    import/run.ts         # Import-Ablauf: importAuto (erkennt alles) und importCsv (Konto gewählt)
+    import/formats/       # unbekannte Formate: Kopfzeile finden, Spalten per Namen oder LLM zuordnen, lernen
+    import/accounts.ts    # Konto über Bank + IBAN-Hash finden oder anlegen
     categorize/rules.ts   # Regel-Engine (rein, ohne DB)
     categorize/llm.ts     # Modell wird injiziert, damit Tests ein Mock-Modell übergeben
     categorize/apply.ts   # Kategorien in die DB schreiben, manuell geschützt
@@ -63,7 +65,8 @@ beispieldaten/            # erfundene Demo-Daten und nachgerechnete Erwartungswe
 - Datum als `date` ohne Zeitzone. Monate als `yyyy-mm`.
 - Eine Buchung mit `category_source = 'manual'` wird nie automatisch überschrieben.
 - Datenzugriff nur in `loader`/`action` oder `app/lib`, nie in Komponenten.
-- An das LLM gehen nur `counterparty`, `purpose`, `amount_cents`, `booking_date`. Keine IBAN, keine Kontonummer, kein `raw`.
+- An das LLM gehen nur `counterparty`, `purpose`, `amount_cents`, `booking_date`, IBANs darin geschwärzt. Keine Kontonummer, kein `raw`. Für die Spaltenzuordnung nur Spaltennamen und maskierte Muster, nie Vorspann-Zeilen.
+- LLM-Aufrufe kosten echtes Guthaben: das Günstigste zuerst (Regeln, Heuristik, gespeicherte Formate), das LLM zuletzt. `pnpm eval` nur nach Rückfrage.
 - Keine echten Kontodaten in Tests, Fixtures oder Commits. Testdaten erfinden.
 - UI-Texte auf Deutsch, Code und Bezeichner auf Englisch.
 - Kommentare erklären warum, nicht was.

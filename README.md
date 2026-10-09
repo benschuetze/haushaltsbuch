@@ -19,7 +19,8 @@ CSV ──► Bankprofil ──► Dedupe ──► Regeln ──► LLM ──�
 Korrektur in der UI ──► manuell (nie wieder überschrieben) ──► optional Regel ──► alle passenden Buchungen neu
 ```
 
-- **Import:** Ein Bankprofil übersetzt das CSV-Format einer Bank. Encoding (UTF-8, BOM, Windows-1252), deutsche Beträge und Datumsangaben werden ohne Float gelesen, alles ist in Cent. Jede Zeile ist danach neu, Duplikat oder mit Zeilennummer und Grund abgelehnt. Keine verschwindet still.
+- **Import ohne Einstellungen:** Kontoauszüge hochladen, auch mehrere auf einmal. Die App erkennt die Bank, ordnet das Konto über die eigene IBAN zu oder legt es an. Ein Format, das sie noch nicht kennt, lernt sie beim ersten Upload: erst kostenlos über die Spaltennamen, nur wenn das nicht reicht mit einem LLM-Aufruf, der ausschließlich Spaltennamen und maskierte Muster sieht (`99.99.9999`, `-999,99`). Gelernte Formate werden gespeichert, dieselbe Bank kostet nie einen zweiten Aufruf.
+- **Bankprofile:** Ein Bankprofil übersetzt das CSV-Format einer Bank. Encoding (UTF-8, BOM, Windows-1252), deutsche Beträge und Datumsangaben werden ohne Float gelesen, alles ist in Cent. Jede Zeile ist danach neu, Duplikat oder mit Zeilennummer und Grund abgelehnt. Keine verschwindet still.
 - **Duplikate:** Ein Hash aus Konto, Datum, Betrag, Empfänger und Zweck. Zwei echte, gleiche Kartenzahlungen am selben Tag bleiben beide erhalten, weil Wiederholungen in einer Datei mitgezählt werden.
 - **Regeln:** Empfänger oder Verwendungszweck, „enthält“, „ist gleich“ oder Regex. Höhere Priorität gewinnt, bei Gleichstand die ältere Regel.
 - **LLM:** Batches à 25 und strukturierter Output über das Vercel AI SDK. Das Modell bekommt nur Empfänger, Zweck, Betrag und Datum, keine IBAN und keine Rohdaten. Jede Antwort wird einzeln geprüft: Bei unbekannter Kategorie, fehlender Antwort, kaputtem JSON oder Netzwerkfehler landet genau diese Buchung in „prüfen“, und der Import läuft trotzdem durch.
@@ -60,7 +61,7 @@ Die wichtigste Zahl im Eval ist „falsch mit Konfidenz ≥ 0,7“. Diese Fehler
 ## Grenzen
 
 - Ein Benutzer, Login per Passwort. Für mehrere Haushalte fehlen Mandanten und echte Konten.
-- Bankprofile für Sparkasse (CSV-CAMT V2), ING, DKB und Volksbank/Raiffeisenbank, nachgebaut nach den Exportformaten mit erfundenen Daten in [`beispieldaten/banken/`](beispieldaten/banken). Weicht ein echter Export ab, wird das Profil über den Skill `bank-profile` angepasst.
+- Eingebaute Bankprofile für Sparkasse (CSV-CAMT V2), ING, DKB und Volksbank/Raiffeisenbank, nachgebaut nach den Exportformaten. Andere Banken lernt die App beim ersten Upload; getestet mit nachgebauten Exporten von N26, Deutscher Bank (Soll/Haben), comdirect (Empfänger im Buchungstext) und einem Fantasieformat. Alle Beispieldaten sind erfunden: [`beispieldaten/banken/`](beispieldaten/banken).
 - Budgets und das Erkennen wiederkehrender Zahlungen sind geplant, aber noch nicht gebaut.
 - Das Modell sieht keine Historie: Eine Buchung, die es letzten Monat richtig hatte, kann es diesen Monat anders einordnen. Regeln machen das stabil.
 
