@@ -86,6 +86,8 @@ export async function categorizeWithLlm(
         output: Output.object({ schema: responseSchema }),
         temperature: 0,
         maxRetries: 2,
+        // 25 short answers fit easily; the cap only stops a runaway response from eating credits.
+        maxOutputTokens: 3000,
       });
       results = output.results;
     } catch (error) {

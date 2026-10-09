@@ -63,6 +63,7 @@ export async function guessMappingWithLlm(
       output: Output.object({ schema: answerSchema }),
       temperature: 0,
       maxRetries: 1,
+      maxOutputTokens: 500,
     });
     answer = output;
   } catch (error) {
