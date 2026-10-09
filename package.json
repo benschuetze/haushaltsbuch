@@ -22,6 +22,7 @@
     "eval": "tsx evals/run.ts",
     "db:local": "tsx scripts/local-db.ts",
     "smoke:ai": "tsx scripts/smoke-ai.ts",
+    "smoke:bank": "tsx scripts/smoke-bank.ts",
     "security:osv": "tsx scripts/osv-check.ts"
   },
   "dependencies": {
