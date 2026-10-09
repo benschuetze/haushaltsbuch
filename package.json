@@ -21,7 +21,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "eval": "tsx evals/run.ts",
     "db:local": "tsx scripts/local-db.ts",
-    "smoke:ai": "tsx scripts/smoke-ai.ts"
+    "smoke:ai": "tsx scripts/smoke-ai.ts",
+    "security:osv": "tsx scripts/osv-check.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.76",
