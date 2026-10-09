@@ -17,8 +17,14 @@ createServer(async (req, res) => {
     res.end("ok");
     return;
   }
+  if (req.url === "/__inactive") {
+    bank.state.inactive = true;
+    res.end("ok");
+    return;
+  }
   if (req.url === "/__reset") {
     bank.state.expireSessions = false;
+    bank.state.inactive = false;
     res.end("ok");
     return;
   }

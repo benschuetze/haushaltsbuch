@@ -19,7 +19,7 @@ const PAGES = [
   { path: "/abos", heading: "Abos und feste Kosten", action: { role: "link" as const, name: "Abos" } },
   { path: "/hinweise", heading: "Hinweise", action: { role: "link" as const, name: "Übersicht" } },
   { path: "/pruefen", heading: "Prüfen", action: { role: "link" as const, name: "Überspringen" } },
-  { path: "/banken", heading: "Banken", action: { role: "button" as const, name: "Weiter zur Bank" } },
+  { path: "/banken", heading: "Banken", action: { role: "button" as const, name: "PayPal hinzufügen" } },
 ];
 
 test.beforeAll(resetDb);
