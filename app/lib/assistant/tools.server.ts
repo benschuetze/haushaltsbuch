@@ -5,7 +5,7 @@ import { canAfford } from "~/lib/budget/available";
 import { redactIbans } from "~/lib/categorize/llm";
 import type { Db } from "~/lib/db/client";
 import { categories, transactions } from "~/lib/db/schema";
-import { budgetStatus, openInsights, recurringPayments, spendingToday } from "~/lib/insights";
+import { budgetStatus, openInsights, purchasePlan, recurringPayments, spendingToday } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { MONTH_PATTERN, monthRange, monthSummary, monthsWithData } from "~/lib/queries";
 
@@ -58,6 +58,45 @@ export function createAssistantTools(db: Db, now = new Date()) {
           proTagDanach: euro(r.perDayAfterCents),
           tageBisGehalt: a.daysLeft,
           naechstesGehaltAm: a.nextIncome?.date ?? null,
+        };
+      },
+    }),
+
+    wann_leisten: tool({
+      description:
+        "Für größere Wünsche („Wann kann ich mir ein iPhone für 1.200 € leisten?“, oder wenn leisten „nein“ sagt): wie viel im Schnitt pro Monat übrig bleibt (nach Ausgaben, Sparrate und Sparzielen) und ab welchem Monat der Betrag zusammen ist.",
+      inputSchema: z.object({
+        betragEuro: z.number().positive().max(10_000_000),
+        wofuer: z.string().max(60).optional(),
+      }),
+      execute: async ({ betragEuro, wofuer }) => {
+        const { available, plan } = await purchasePlan(db, Math.round(betragEuro * 100), now);
+        return {
+          wofuer: wofuer ?? null,
+          betrag: euro(Math.round(betragEuro * 100)),
+          jetztFrei: euro(Math.max(0, available.freeCents)),
+          uebrigProMonat: euro(plan.surplusPerMonthCents),
+          monateBisDahin: plan.months,
+          abMonat: plan.month,
+          hinweis: plan.month === null ? "Im Schnitt bleibt gerade nichts übrig; erst Ausgaben senken." : null,
+        };
+      },
+    }),
+
+    sparziele: tool({
+      description: "Die Sparziele mit Stand, Monatsrate und was diesen Monat noch offen ist.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const a = await spendingToday(db, now);
+        return {
+          ziele: a.goals.map((g) => ({
+            name: redactIbans(g.name),
+            ziel: euro(g.targetCents),
+            gespart: euro(g.savedCents),
+            proMonat: euro(g.perMonthCents),
+            bisMonat: g.dueMonth,
+            diesenMonatOffen: euro(g.stillToReserveCents),
+          })),
         };
       },
     }),

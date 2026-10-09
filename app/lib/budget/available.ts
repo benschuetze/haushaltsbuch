@@ -1,4 +1,5 @@
 import { type Booking, detectRecurring, isAggregator, merchantKey, merchantOf } from "~/lib/insights/recurring";
+import { type GoalInput, type GoalStatus, goalStatus } from "./goals";
 
 /**
  * "How much can I spend today?" The app does not know the account balance (CSV exports rarely carry it), so it
@@ -22,6 +23,8 @@ export type Available = {
   spentCents: number;
   upcoming: Due[];
   upcomingCents: number;
+  /** Savings goals with what this period still puts aside for them (already part of upcoming). */
+  goals: GoalStatus[];
   /** May be negative: then the period is already overdrawn. */
   freeCents: number;
   perDayCents: number;
@@ -100,7 +103,7 @@ function monthlyTransfers(bookings: AvailableBooking[], today: string) {
     .filter((last) => daysBetween(last.bookingDate, today) <= 40);
 }
 
-export function availableToSpend(bookings: AvailableBooking[], today: string): Available {
+export function availableToSpend(bookings: AvailableBooking[], today: string, goalInputs: GoalInput[] = []): Available {
   const salary = findSalary(bookings, today);
   let periodStart: string;
   let nextIncome: Due | null = null;
@@ -154,6 +157,11 @@ export function availableToSpend(bookings: AvailableBooking[], today: string): A
       upcoming.push({ name: merchantOf(t), date: due > today ? due : today, amountCents: -t.amountCents });
     }
   }
+  const goals = goalInputs.map((g) => goalStatus(g, today, periodStart));
+  for (const g of goals) {
+    if (g.stillToReserveCents > 0)
+      upcoming.push({ name: `Sparziel ${g.name}`, date: today, amountCents: g.stillToReserveCents });
+  }
   upcoming.sort((a, b) => a.date.localeCompare(b.date));
   const upcomingCents = upcoming.reduce((s, u) => s + u.amountCents, 0);
   const freeCents = incomeCents - spentCents - upcomingCents;
@@ -168,6 +176,7 @@ export function availableToSpend(bookings: AvailableBooking[], today: string): A
     spentCents,
     upcoming,
     upcomingCents,
+    goals,
     freeCents,
     perDayCents: freeCents > 0 ? Math.floor(freeCents / daysLeft) : 0,
   };

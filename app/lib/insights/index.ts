@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, isNull, lte, notInArray, sql } from "drizzle-orm";
 import { availableToSpend } from "~/lib/budget/available";
+import { type MonthFlow, planPurchase } from "~/lib/budget/goals";
+import { loadGoalInputs } from "~/lib/budget/goals.server";
 import type { Db } from "~/lib/db/client";
 import { budgets, categories, insights, meta, subscriptionCancellations, transactions } from "~/lib/db/schema";
 import { currentMonth } from "~/lib/queries";
@@ -193,9 +195,34 @@ export function todayInGermany(now = new Date()): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(now);
 }
 
-/** "How much can I spend today": see availableToSpend. */
+/** "How much can I spend today": see availableToSpend. Open savings goals are reserved. */
 export async function spendingToday(db: Db, now = new Date()) {
-  return availableToSpend(await loadBookings(db), todayInGermany(now));
+  const [bookings, goals] = await Promise.all([loadBookings(db), loadGoalInputs(db)]);
+  return availableToSpend(bookings, todayInGermany(now), goals);
+}
+
+// PayPal and card settlements are transfers, but not savings: the purchases behind them are already spent.
+const SETTLEMENT = /paypal|klarna|american express|amex|kreditkarte|kartenabrechnung/i;
+
+/** Income, spending and money moved to own savings per month, for "when can I afford it". */
+export async function monthFlows(db: Db): Promise<MonthFlow[]> {
+  const flows = new Map<string, MonthFlow>();
+  for (const b of await loadBookings(db)) {
+    const month = b.bookingDate.slice(0, 7);
+    const f = flows.get(month) ?? { month, incomeCents: 0, spentCents: 0, savedCents: 0 };
+    if (b.categoryKind === "transfer") {
+      if (b.amountCents < 0 && !SETTLEMENT.test(`${b.counterparty} ${b.purpose}`)) f.savedCents -= b.amountCents;
+    } else if (b.amountCents > 0) f.incomeCents += b.amountCents;
+    else f.spentCents -= b.amountCents;
+    flows.set(month, f);
+  }
+  return [...flows.values()].sort((a, b) => a.month.localeCompare(b.month));
+}
+
+export async function purchasePlan(db: Db, amountCents: number, now = new Date()) {
+  const [available, flows] = await Promise.all([spendingToday(db, now), monthFlows(db)]);
+  const goalsPerMonth = available.goals.reduce((s, g) => s + g.perMonthCents, 0);
+  return { available, plan: planPurchase(flows, amountCents, available.today, available.freeCents, goalsPerMonth) };
 }
 
 const STALE_MS = 6 * 60 * 60 * 1000;
