@@ -2,6 +2,8 @@
 
 Kontoauszüge als CSV importieren, Buchungen automatisch kategorisieren, Monatsübersicht.
 
+**Demo:** [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app) mit erfundenen Beispieldaten, nur lesend und ohne Login.
+
 Die Kategorisierung läuft zweistufig: Zuerst greifen eigene Regeln, für den Rest schlägt ein LLM eine Kategorie vor. Was das Modell nicht sicher weiß, wird nicht geraten, sondern landet in „prüfen“. Jede Korrektur kann mit einem Klick zur Regel werden, damit derselbe Fehler nicht zweimal passiert.
 
 ## Problem
