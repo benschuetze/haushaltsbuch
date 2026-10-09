@@ -5,6 +5,7 @@ import { Link, useLocation } from "react-router";
 export type Notifications = {
   reviewCount: number;
   unreadInsights: number;
+  bankIssues: { id: string; title: string }[];
   insights: { id: string; title: string; savingsCentsPerYear: number | null }[];
 };
 
@@ -15,7 +16,7 @@ export type Notifications = {
 export function NotificationBell({ notifications, demo }: { notifications: Notifications; demo: boolean }) {
   const ref = useRef<HTMLDetailsElement>(null);
   const location = useLocation();
-  const pending = notifications.reviewCount + notifications.unreadInsights;
+  const pending = notifications.reviewCount + notifications.unreadInsights + notifications.bankIssues.length;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: closing is exactly what a location change should do
   useEffect(() => {
@@ -46,6 +47,15 @@ export function NotificationBell({ notifications, demo }: { notifications: Notif
       </summary>
       {/* Phones: full width below the header (the bell is not at the screen edge). Wider screens: under the bell. */}
       <div className="fixed inset-x-4 top-14 z-20 space-y-3 rounded-lg border bg-background p-3 shadow-lg sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem]">
+        {notifications.bankIssues.map((issue) => (
+          <Link
+            key={issue.id}
+            to="/banken"
+            className="block rounded-md border border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            {issue.title}
+          </Link>
+        ))}
         {notifications.reviewCount > 0 && !demo ? (
           <Link
             to="/pruefen"

@@ -12,6 +12,7 @@ import {
 } from "react-router";
 import { NotificationBell } from "~/components/notification-bell";
 import { guard, isDemo, isLoggedIn } from "~/lib/auth.server";
+import { bankIssues } from "~/lib/bank/index.server";
 import { getDb } from "~/lib/db/client";
 import { notificationSummary, openInsights, refreshInsightsIfStale } from "~/lib/insights";
 import { applySecurityHeaders, isCrossSiteWrite } from "~/lib/security.server";
@@ -44,12 +45,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (!loggedIn) return data({ demo, loggedIn, notifications: null });
   const db = getDb();
   await refreshInsightsIfStale(db);
-  const [summary, top] = await Promise.all([notificationSummary(db), openInsights(db, 5)]);
+  const [summary, top, bank] = await Promise.all([notificationSummary(db), openInsights(db, 5), bankIssues(db)]);
   return data({
     demo,
     loggedIn,
     notifications: {
       ...summary,
+      bankIssues: bank,
       insights: top.map((i) => ({ id: i.id, title: i.title, savingsCentsPerYear: i.savingsCentsPerYear })),
     },
   });
@@ -62,6 +64,7 @@ const NAV = [
   { to: "/abos", label: "Abos", end: false },
   { to: "/import", label: "Import", end: false },
   { to: "/regeln", label: "Regeln", end: false },
+  { to: "/banken", label: "Banken", end: false },
   { to: "/konten", label: "Konten", end: false },
 ];
 
@@ -127,6 +130,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </header>
         ) : null}
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+        <footer className="mx-auto flex max-w-5xl gap-4 px-4 pb-8 text-xs text-muted-foreground">
+          <a href="/datenschutz" className="underline underline-offset-2">
+            Datenschutz
+          </a>
+          <a href="/nutzungsbedingungen" className="underline underline-offset-2">
+            Nutzungsbedingungen
+          </a>
+        </footer>
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>

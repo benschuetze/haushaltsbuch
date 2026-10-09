@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm db:migrate && pnpm db:seed && pnpm smoke:ai && pnpm build",
-  "regions": ["fra1"]
+  "regions": ["fra1"],
+  "crons": [
+    {
+      "path": "/bank/sync",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
