@@ -160,6 +160,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         <p className="text-muted-foreground">
           {formatMonth(month)}
           {isCurrent ? "" : " (letzter Monat mit Buchungen)"}
+          {" · "}
+          <Link to="/rueckblick" className="underline underline-offset-4">
+            Monatsrückblick ansehen
+          </Link>
         </p>
       </div>
       <AskToday today={today} assistant={assistant} />
