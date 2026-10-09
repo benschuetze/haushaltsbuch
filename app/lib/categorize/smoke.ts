@@ -4,6 +4,7 @@ import { DEFAULT_CATEGORIES } from "~/lib/db/seed";
 import { readTable } from "~/lib/import/formats/generic";
 import { guessMappingWithLlm } from "~/lib/import/formats/llm-mapping";
 import { categorizeWithLlm } from "./llm";
+import { proposeRule } from "./rule-agent";
 
 // Invented, tiny inputs: a few hundred tokens per deploy, fractions of a cent.
 const SAMPLE_BOOKING = {
@@ -35,6 +36,20 @@ export async function aiSmokeTest(model: LanguageModel, assistantModel: Language
   const mapping = table ? await guessMappingWithLlm(model, table, (e) => errors.push(e)) : null;
   if (errors.length > before) problems.push(`Spaltenzuordnung: ${describe(errors[before])}`);
   else if (!mapping) problems.push("Spaltenzuordnung: keine gültige Zuordnung");
+
+  // The rule agent: a sentence the local parser does not get, so it really goes to the model.
+  const ruleErrors: unknown[] = [];
+  const proposals = await proposeRule(
+    "Den Supermarkt REWE bitte unter Essen einsortieren",
+    categories,
+    ["REWE Markt GmbH"],
+    model,
+    (e) => ruleErrors.push(e),
+  );
+  if (ruleErrors.length > 0) problems.push(`Regel-Agent: ${describe(ruleErrors[0])}`);
+  else if (proposals[0]?.categoryName !== "Lebensmittel" || !/rewe/i.test(proposals[0]?.pattern ?? "")) {
+    problems.push("Regel-Agent: kein brauchbarer Vorschlag für „REWE → Lebensmittel“");
+  }
 
   // The assistant relies on tool calling, a different API path; a harmless tool, no data involved.
   try {

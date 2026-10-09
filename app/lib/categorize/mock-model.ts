@@ -50,6 +50,34 @@ function answerColumnMapping(text: string): string {
   return JSON.stringify(answer);
 }
 
+/** Rule wishes: a known payee plus a keyword makes a rule, anything else is "not understood". */
+function answerRuleWish(text: string): string {
+  const line = text.split("\n").find((l) => l.includes('"wunsch"')) ?? "{}";
+  const { wunsch = "", bekannteEmpfaenger = [] } = JSON.parse(line) as {
+    wunsch?: string;
+    bekannteEmpfaenger?: string[];
+  };
+  const payee = bekannteEmpfaenger[0];
+  const hit = KEYWORDS.find(([re]) => re.test(`${wunsch} ${payee ?? ""}`));
+  if (!payee || !hit) {
+    return JSON.stringify({
+      understood: false,
+      field: "counterparty",
+      matchType: "contains",
+      patterns: [],
+      category: "",
+    });
+  }
+  const pattern = payee.split(/\s+/)[0]?.toLowerCase() ?? payee;
+  return JSON.stringify({
+    understood: true,
+    field: "counterparty",
+    matchType: "contains",
+    patterns: [pattern],
+    category: hit[1],
+  });
+}
+
 export function createMockModel(): MockLanguageModelV4 {
   return new MockLanguageModelV4({
     doGenerate: async ({ prompt }) => {
@@ -60,6 +88,17 @@ export function createMockModel(): MockLanguageModelV4 {
             : m.content.map((part) => (part.type === "text" ? part.text : "")).join("\n"),
         )
         .join("\n");
+      if (text.includes('"wunsch"')) {
+        return {
+          content: [{ type: "text", text: answerRuleWish(text) }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage: {
+            inputTokens: { total: 0, noCache: 0, cacheRead: undefined, cacheWrite: undefined },
+            outputTokens: { total: 0, text: 0, reasoning: undefined },
+          },
+          warnings: [],
+        };
+      }
       if (text.includes("Maskierte Beispielzeilen")) {
         return {
           content: [{ type: "text", text: answerColumnMapping(text) }],

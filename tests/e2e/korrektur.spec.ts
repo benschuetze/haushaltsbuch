@@ -42,7 +42,8 @@ test("Kategorie ändern, Regel anlegen: alle Buchungen des Empfängers sind umka
 
 test("Regel mit ungültigem Regex wird mit Hinweis abgelehnt", async ({ page }) => {
   await page.goto("/regeln");
-  const form = page.getByRole("region", { name: "Neue Regel" });
+  await page.getByText("Regel selbst einstellen (für Profis)").click();
+  const form = page.getByRole("region", { name: "Regel selbst einstellen" });
   await form.getByLabel("Vergleich").selectOption("regex");
   await form.getByLabel("Muster").fill("(");
   await form.getByLabel("Kategorie").selectOption({ label: "Sonstiges" });

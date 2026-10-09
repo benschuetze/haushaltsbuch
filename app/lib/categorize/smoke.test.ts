@@ -5,7 +5,7 @@ import { createMockModel } from "./mock-model";
 import { aiSmokeTest } from "./smoke";
 
 describe("aiSmokeTest", () => {
-  it("meldet nichts, wenn alle drei Wege funktionieren", async () => {
+  it("meldet nichts, wenn alle vier Wege funktionieren", async () => {
     expect(await aiSmokeTest(createMockModel(), toolModel())).toEqual([]);
   });
 
@@ -16,10 +16,11 @@ describe("aiSmokeTest", () => {
 
   it("meldet einen API-Fehler mit seiner Ursache, statt still in „prüfen“ zu landen", async () => {
     const problems = await aiSmokeTest(failingModel());
-    expect(problems).toHaveLength(3);
+    expect(problems).toHaveLength(4);
     expect(problems[0]).toMatch(/^Kategorisierung: Netzwerk weg/);
     expect(problems[1]).toMatch(/^Spaltenzuordnung: Netzwerk weg/);
-    expect(problems[2]).toMatch(/^Assistent: Netzwerk weg/);
+    expect(problems[2]).toMatch(/^Regel-Agent: Netzwerk weg/);
+    expect(problems[3]).toMatch(/^Assistent: Netzwerk weg/);
   });
 
   it("meldet unbrauchbare Antworten", async () => {
