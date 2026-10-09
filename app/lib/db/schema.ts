@@ -12,18 +12,33 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { ColumnMapping } from "~/lib/import/formats/mapping";
 
 export const categoryKind = pgEnum("category_kind", ["expense", "income", "transfer"]);
 export const categorySource = pgEnum("category_source", ["rule", "ai", "manual"]);
 export const ruleField = pgEnum("rule_field", ["counterparty", "purpose"]);
 export const ruleMatchType = pgEnum("rule_match_type", ["contains", "equals", "regex"]);
+export const formatSource = pgEnum("format_source", ["heuristic", "ai"]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull().unique(),
+  /** Built-in profile id ("sparkasse") or "format:<uuid>" for a learned format. */
   bankProfile: text("bank_profile").notNull(),
+  /** Profile plus a hash of the own IBAN: lets an upload find its account without the user choosing one. */
+  accountKey: text("account_key").unique(),
+  createdAt: createdAt(),
+});
+
+/** Bank formats the app worked out itself, so the next export of the same bank needs neither guessing nor the LLM. */
+export const bankFormats = pgTable("bank_formats", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  label: text("label").notNull(),
+  headerSignature: text("header_signature").notNull().unique(),
+  mapping: jsonb("mapping").$type<ColumnMapping>().notNull(),
+  source: formatSource("source").notNull(),
   createdAt: createdAt(),
 });
 
@@ -104,6 +119,7 @@ export const rules = pgTable(
 );
 
 export type Account = typeof accounts.$inferSelect;
+export type BankFormat = typeof bankFormats.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type Transaction = typeof transactions.$inferSelect;
