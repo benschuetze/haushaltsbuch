@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, lte, notInArray, sql } from "drizzle-orm";
 import type { Db } from "~/lib/db/client";
-import { budgets, categories, insights, meta, transactions } from "~/lib/db/schema";
+import { budgets, categories, insights, meta, subscriptionCancellations, transactions } from "~/lib/db/schema";
 import { currentMonth } from "~/lib/queries";
+import { cancellationStatus } from "~/lib/subscriptions/status";
 import { computeInsights } from "./compute";
-import { detectRecurring } from "./recurring";
+import { detectRecurring, merchantKey } from "./recurring";
 
 async function loadBookings(db: Db) {
   return db
@@ -48,10 +49,20 @@ async function loadBudgets(db: Db) {
  * import and every correction. Hints keep their read/dismissed state; ones that no longer apply disappear.
  */
 export async function refreshInsights(db: Db, now = new Date()): Promise<void> {
-  const [bookings, budgetRows] = await Promise.all([loadBookings(db), loadBudgets(db)]);
+  const [bookings, budgetRows, cancellations] = await Promise.all([
+    loadBookings(db),
+    loadBudgets(db),
+    db.select().from(subscriptionCancellations),
+  ]);
   if (bookings.length === 0) return;
   const ref = referenceMonth(bookings, now);
-  const drafts = computeInsights({ bookings, budgets: budgetRows, ...ref });
+  const drafts = computeInsights({
+    bookings,
+    budgets: budgetRows,
+    ...ref,
+    cancellations,
+    today: now.toISOString().slice(0, 10),
+  });
 
   for (const d of drafts) {
     await db
@@ -64,16 +75,22 @@ export async function refreshInsights(db: Db, now = new Date()): Promise<void> {
           body: d.body,
           savingsCentsPerYear: d.savingsCentsPerYear,
           kind: d.kind,
+          subject: d.subject ?? null,
+          // Hints keyed without a month ("abo:netflix") move along with the reference month, so they are
+          // cleaned up like the rest once they stop applying.
+          month: d.month,
           updatedAt: new Date(),
         },
       });
   }
+  // Hints are about now: open ones from earlier months are stale (the monthly view keeps the history).
+  // Dismissed ones stay, so a hint the user waved away does not come back.
   const keep = drafts.map((d) => d.key);
   await db
     .delete(insights)
     .where(
       and(
-        eq(insights.month, ref.month),
+        lte(insights.month, ref.month),
         isNull(insights.dismissedAt),
         keep.length > 0 ? notInArray(insights.key, keep) : undefined,
       ),
@@ -143,6 +160,27 @@ export async function recurringPayments(db: Db, now = new Date()) {
     now.toISOString().slice(0, 10),
   );
   return detectRecurring(bookings, reference);
+}
+
+/** Recurring payments plus what the user cancelled and whether the bookings agree, from one read. */
+export async function subscriptionOverview(db: Db, now = new Date()) {
+  const [bookings, cancellations] = await Promise.all([
+    loadBookings(db),
+    db.select().from(subscriptionCancellations).orderBy(desc(subscriptionCancellations.cancelledOn)),
+  ]);
+  const today = now.toISOString().slice(0, 10);
+  const reference = bookings.reduce((max, b) => (b.bookingDate > max ? b.bookingDate : max), today);
+  const recurring = detectRecurring(bookings, reference);
+  const statuses = cancellations.map((c) => ({ ...c, status: cancellationStatus(c, bookings, recurring, today) }));
+  const stillCharging = new Set(statuses.filter((c) => c.status.state === "failed").map((c) => c.merchantKey));
+  const cancelled = new Set(cancellations.map((c) => c.merchantKey));
+  return {
+    recurring: recurring.map((r) => {
+      const key = merchantKey(r.merchant);
+      return { ...r, key, cancelled: cancelled.has(key) && !stillCharging.has(key) };
+    }),
+    cancellations: statuses,
+  };
 }
 
 const STALE_MS = 6 * 60 * 60 * 1000;

@@ -43,6 +43,13 @@
       "when": 1791540625071,
       "tag": "0005_cloudy_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791545138446,
+      "tag": "0006_outstanding_namor",
+      "breakpoints": true
     }
   ]
 }

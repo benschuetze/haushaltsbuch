@@ -25,7 +25,7 @@ export type Recurring = {
 };
 
 const PER_YEAR: Record<Cadence, number> = { weekly: 52, monthly: 12, quarterly: 4, yearly: 1 };
-const DAYS: Record<Cadence, number> = { weekly: 7, monthly: 30, quarterly: 91, yearly: 365 };
+export const DAYS: Record<Cadence, number> = { weekly: 7, monthly: 30, quarterly: 91, yearly: 365 };
 const FIXED_CATEGORIES = new Set(["Wohnen", "Versicherungen", "Kind & Kita", "Mobilität"]);
 const NEVER_RECURRING = new Set(["Lebensmittel", "Umbuchung", "Einkommen"]);
 
