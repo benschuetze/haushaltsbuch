@@ -19,6 +19,7 @@ export const categorySource = pgEnum("category_source", ["rule", "ai", "manual"]
 export const ruleField = pgEnum("rule_field", ["counterparty", "purpose"]);
 export const ruleMatchType = pgEnum("rule_match_type", ["contains", "equals", "regex"]);
 export const formatSource = pgEnum("format_source", ["heuristic", "ai"]);
+export const connectionStatus = pgEnum("connection_status", ["active", "expired", "revoked", "error"]);
 export const insightKind = pgEnum("insight_kind", [
   "budget_exceeded",
   "budget_warning",
@@ -191,3 +192,55 @@ export const loginAttempts = pgTable(
   },
   (t) => [index("login_attempts_ip_hash_idx").on(t.ipHash), index("login_attempts_attempted_at_idx").on(t.attemptedAt)],
 );
+
+/**
+ * A consent at a bank via Enable Banking. The session id grants read access to the accounts, so it is stored
+ * only encrypted (AES-256-GCM, key in the environment).
+ */
+export const bankConnections = pgTable("bank_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  aspspName: text("aspsp_name").notNull(),
+  aspspCountry: text("aspsp_country").notNull(),
+  sessionIdEncrypted: text("session_id_encrypted").notNull(),
+  validUntil: timestamp("valid_until", { withTimezone: true }).notNull(),
+  status: connectionStatus("status").notNull().default("active"),
+  lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  createdAt: createdAt(),
+});
+
+/** Which bank account (Enable Banking uid) feeds which account in the app. */
+export const bankAccounts = pgTable(
+  "bank_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => bankConnections.id, { onDelete: "cascade" }),
+    accountUid: text("account_uid").notNull().unique(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id),
+    /** Only the last digits, for display. */
+    ibanTail: text("iban_tail"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("bank_accounts_connection_id_idx").on(t.connectionId),
+    index("bank_accounts_account_id_idx").on(t.accountId),
+  ],
+);
+
+/**
+ * OAuth-style state for the redirect to the bank and back. Single use, short lived, and bound to the browser
+ * through a cookie, so a callback cannot be replayed or started by someone else.
+ */
+export const bankAuthStates = pgTable("bank_auth_states", {
+  stateHash: text("state_hash").primaryKey(),
+  aspspName: text("aspsp_name").notNull(),
+  aspspCountry: text("aspsp_country").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+});
+
+export type BankConnection = typeof bankConnections.$inferSelect;
