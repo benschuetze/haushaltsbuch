@@ -20,6 +20,7 @@ Korrektur in der UI ──► manuell (nie wieder überschrieben) ──► opti
 ```
 
 - **Import ohne Einstellungen:** Kontoauszüge hochladen, auch mehrere auf einmal. Die App erkennt die Bank, ordnet das Konto über die eigene IBAN zu oder legt es an. Ein Format, das sie noch nicht kennt, lernt sie beim ersten Upload: erst kostenlos über die Spaltennamen, nur wenn das nicht reicht mit einem LLM-Aufruf, der ausschließlich Spaltennamen und maskierte Muster sieht (`99.99.9999`, `-999,99`). Gelernte Formate werden gespeichert, dieselbe Bank kostet nie einen zweiten Aufruf.
+- **Bankanbindung:** Konten über Enable Banking verbinden (Open Banking nach PSD2, 2.500+ Banken). Die Anmeldung läuft bei der Bank selbst, die App bekommt nur Lesezugriff für bis zu 180 Tage und ruft jeden Morgen automatisch ab; läuft der Zugang ab, meldet sich die Glocke.
 - **Bankprofile:** Ein Bankprofil übersetzt das CSV-Format einer Bank. Encoding (UTF-8, BOM, Windows-1252), deutsche Beträge und Datumsangaben werden ohne Float gelesen, alles ist in Cent. Jede Zeile ist danach neu, Duplikat oder mit Zeilennummer und Grund abgelehnt. Keine verschwindet still.
 - **Duplikate:** Ein Hash aus Konto, Datum, Betrag, Empfänger und Zweck. Zwei echte, gleiche Kartenzahlungen am selben Tag bleiben beide erhalten, weil Wiederholungen in einer Datei mitgezählt werden.
 - **Regeln:** Empfänger oder Verwendungszweck, „enthält“, „ist gleich“ oder Regex. Höhere Priorität gewinnt, bei Gleichstand die ältere Regel.

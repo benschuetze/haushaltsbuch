@@ -32,6 +32,13 @@ function sessionStorage(secret: string) {
   });
 }
 
+/** For other signed cookies (bank redirect state). Throws in production without a strong secret. */
+export function cookieSecret(): string {
+  const secret = sessionSecret();
+  if (!secret) throw new Response("Nicht eingerichtet: SESSION_SECRET fehlt.", { status: 503 });
+  return secret;
+}
+
 export function loginConfigured(): boolean {
   return Boolean(process.env.APP_PASSWORD) && sessionSecret() !== null;
 }
@@ -75,7 +82,8 @@ export function safeRedirect(to: string | null | undefined): string {
   return to;
 }
 
-const PUBLIC_PATHS = new Set(["/login", "/favicon.ico"]);
+// Reachable without login. The cron endpoint checks its own secret; the legal pages must be public.
+const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/bank/sync", "/datenschutz", "/nutzungsbedingungen"]);
 
 /**
  * One gate for every loader and action. Demo: read-only for everyone. Private instance: nothing without login.

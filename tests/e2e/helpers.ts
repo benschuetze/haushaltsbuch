@@ -9,6 +9,7 @@ import { DEFAULT_CATEGORIES, seed } from "../../app/lib/db/seed";
 export const DEMO_CSV = "beispieldaten/demo-umsaetze.csv";
 export const E2E_PASSWORD = "e2e-test-passwort";
 export const DEMO_URL = "http://127.0.0.1:5198";
+export const FAKE_BANK_URL = "http://127.0.0.1:5437";
 
 /**
  * Every spec starts from the same state: default categories and budgets, the demo account, nothing else.
@@ -18,7 +19,7 @@ export async function resetDb(): Promise<void> {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   try {
     await pool.query(
-      "truncate table rules, transactions, imports, insights, budgets, meta, bank_formats, login_attempts restart identity cascade",
+      "truncate table rules, transactions, imports, insights, budgets, meta, bank_formats, login_attempts, bank_accounts, bank_connections, bank_auth_states restart identity cascade",
     );
     await pool.query("delete from accounts where name <> 'Girokonto (Demo)'");
     await pool.query("delete from categories where not (name = any($1))", [DEFAULT_CATEGORIES.map((c) => c.name)]);
