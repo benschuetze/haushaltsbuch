@@ -2,6 +2,7 @@ import type { LanguageModel } from "ai";
 import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import type { Db } from "~/lib/db/client";
 import { categories, rules, transactions } from "~/lib/db/schema";
+import { linkPayPalTransfers } from "~/lib/import/transfers";
 import { categorizeWithLlm } from "./llm";
 import { firstMatchingRule } from "./rules";
 
@@ -155,6 +156,8 @@ export async function reapplyRules(db: Db): Promise<number> {
     }
   }
   await writeAssignments(db, assignments);
+  // A broad rule ("paypal" -> Shopping) must not turn PayPal transfers back into spending.
+  await linkPayPalTransfers(db);
   return assignments.length;
 }
 

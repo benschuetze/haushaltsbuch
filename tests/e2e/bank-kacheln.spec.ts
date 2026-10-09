@@ -42,13 +42,15 @@ test("PayPal: echte Umsätze per Datei, mit Export-Link, direkt im Pop-up import
     "https://www.paypal.com/reports/dlog",
   );
   await expect(dialog.getByRole("button", { name: "Importieren" })).toBeDisabled();
-  await dialog.getByLabel("CSV-Datei auswählen").setInputFiles("beispieldaten/banken/dkb.csv");
+  await dialog.getByLabel("CSV-Datei auswählen").setInputFiles("beispieldaten/banken/paypal.csv");
   await dialog.getByRole("button", { name: "Importieren" }).click();
 
   await expect(page).toHaveURL(/\/import$/);
-  await expect(page.getByRole("status", { name: "Ergebnis für dkb.csv" }).getByTestId("import-inserted")).toHaveText(
-    "9",
-  );
+  const result = page.getByRole("status", { name: "Ergebnis für paypal.csv" });
+  await expect(result.getByTestId("import-account")).toHaveText("Konto „PayPal“ neu angelegt · PayPal");
+  await expect(result.getByTestId("import-inserted")).toHaveText("10");
+  // Pending, cancelled and the two dollar rows are listed as skipped, not lost.
+  await expect(result.getByTestId("import-skipped")).toHaveText("4");
 });
 
 test("Escape schließt das Pop-up, eine andere Kachel öffnet ihr eigenes", async ({ page }) => {
