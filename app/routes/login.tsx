@@ -2,12 +2,18 @@ import { data, Form, useActionData, useSearchParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { logIn, passwordMatches } from "~/lib/auth.server";
+import { logIn, loginConfigured, passwordMatches } from "~/lib/auth.server";
 import type { Route } from "./+types/login";
 
 export const meta: Route.MetaFunction = () => [{ title: "Anmelden · Haushaltsbuch" }];
 
 export async function action({ request }: Route.ActionArgs) {
+  if (!loginConfigured()) {
+    return data(
+      { error: "Login ist auf dieser Instanz nicht eingerichtet: APP_PASSWORD und SESSION_SECRET fehlen." },
+      { status: 503 },
+    );
+  }
   const form = await request.formData();
   const password = String(form.get("password") ?? "");
   if (!passwordMatches(password)) {

@@ -5,21 +5,40 @@ export function isDemo(): boolean {
   return process.env.DEMO_MODE === "true";
 }
 
-const sessionStorage = createCookieSessionStorage<{ loggedIn: true }>({
-  cookie: {
-    name: "hb_session",
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    // E2E runs the production build over plain http; WebKit drops Secure cookies there, Chromium does not.
-    secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
-    maxAge: 60 * 60 * 24 * 30,
-    secrets: [process.env.SESSION_SECRET || "nur-fuer-lokale-entwicklung"],
-  },
-});
+const MIN_SECRET_LENGTH = 32;
+const DEV_SECRET = "nur-fuer-lokale-entwicklung";
+
+/** In production a missing or weak secret means no sessions at all; a known fallback would let anyone forge one. */
+function sessionSecret(): string | null {
+  const secret = process.env.SESSION_SECRET;
+  if (secret && secret.length >= MIN_SECRET_LENGTH) return secret;
+  return process.env.NODE_ENV === "production" ? null : DEV_SECRET;
+}
+
+// Built per call so env changes (tests, rotated secrets after a redeploy) take effect without module state.
+function sessionStorage(secret: string) {
+  return createCookieSessionStorage<{ loggedIn: true }>({
+    cookie: {
+      name: "hb_session",
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      // E2E runs the production build over plain http; WebKit drops Secure cookies there, Chromium does not.
+      secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
+      maxAge: 60 * 60 * 24 * 30,
+      secrets: [secret],
+    },
+  });
+}
+
+export function loginConfigured(): boolean {
+  return Boolean(process.env.APP_PASSWORD) && sessionSecret() !== null;
+}
 
 export async function isLoggedIn(request: Request): Promise<boolean> {
-  const session = await sessionStorage.getSession(request.headers.get("Cookie"));
+  const secret = sessionSecret();
+  if (!secret) return false;
+  const session = await sessionStorage(secret).getSession(request.headers.get("Cookie"));
   return session.get("loggedIn") === true;
 }
 
@@ -33,16 +52,20 @@ export function passwordMatches(input: string): boolean {
 }
 
 export async function logIn(redirectTo: string): Promise<Response> {
-  const session = await sessionStorage.getSession();
+  const secret = sessionSecret();
+  if (!secret) throw new Response("Login ist nicht eingerichtet.", { status: 503 });
+  const storage = sessionStorage(secret);
+  const session = await storage.getSession();
   session.set("loggedIn", true);
   return redirect(safeRedirect(redirectTo), {
-    headers: { "Set-Cookie": await sessionStorage.commitSession(session) },
+    headers: { "Set-Cookie": await storage.commitSession(session) },
   });
 }
 
 export async function logOut(request: Request): Promise<Response> {
-  const session = await sessionStorage.getSession(request.headers.get("Cookie"));
-  return redirect("/login", { headers: { "Set-Cookie": await sessionStorage.destroySession(session) } });
+  const storage = sessionStorage(sessionSecret() ?? DEV_SECRET);
+  const session = await storage.getSession(request.headers.get("Cookie"));
+  return redirect("/login", { headers: { "Set-Cookie": await storage.destroySession(session) } });
 }
 
 /** Only same-site paths; "//evil.example" would otherwise be followed as a protocol-relative URL. */
