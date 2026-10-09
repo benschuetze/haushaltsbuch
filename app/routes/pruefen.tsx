@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
-import { data, Form, Link, useNavigation, useSearchParams } from "react-router";
+import { Check, SkipForward } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { data, Form, Link, useNavigate, useNavigation, useSearchParams, useSubmit } from "react-router";
 import { z } from "zod";
 import { Amount } from "~/components/amount";
 import { Button } from "~/components/ui/button";
@@ -87,11 +88,86 @@ function SavedDialog({ decision }: { decision: ReviewDecision }) {
   );
 }
 
+const SWIPE = 110;
+
+/**
+ * The booking as a card: swipe right to take the suggestion, left to look at it later. Buttons do the same,
+ * so nothing depends on swiping.
+ */
+function SwipeCard({
+  onAccept,
+  onSkip,
+  disabled,
+  children,
+}: {
+  onAccept: (() => void) | null;
+  onSkip: () => void;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  const [dx, setDx] = useState(0);
+  const start = useRef<number | null>(null);
+  // The latest distance, independent of rendering: a fast flick can end before React re-renders.
+  const moved = useRef(0);
+  const end = () => {
+    if (start.current === null) return;
+    start.current = null;
+    if (moved.current > SWIPE && onAccept) onAccept();
+    else if (moved.current < -SWIPE) onSkip();
+    moved.current = 0;
+    setDx(0);
+  };
+  const direction = dx > 30 && onAccept ? "accept" : dx < -30 ? "skip" : null;
+  return (
+    <section
+      aria-label="Buchung"
+      data-testid="review-card"
+      onPointerDown={(e) => {
+        if (disabled || e.pointerType === "mouse") return;
+        start.current = e.clientX;
+      }}
+      onPointerMove={(e) => {
+        if (start.current === null) return;
+        moved.current = e.clientX - start.current;
+        setDx(moved.current);
+      }}
+      onPointerUp={end}
+      onPointerCancel={() => {
+        start.current = null;
+        moved.current = 0;
+        setDx(0);
+      }}
+      style={{ transform: `translateX(${dx}px) rotate(${dx / 25}deg)`, touchAction: "pan-y" }}
+      className={cn(
+        "relative select-none space-y-2 rounded-2xl border bg-card p-5 shadow-sm",
+        start.current === null && "transition-transform",
+        direction === "accept" && "border-emerald-500",
+        direction === "skip" && "border-muted-foreground/40",
+      )}
+    >
+      {direction ? (
+        <span
+          className={cn(
+            "absolute top-3 rounded-md px-2 py-0.5 text-xs font-semibold",
+            direction === "accept" ? "left-3 bg-emerald-600 text-white" : "right-3 bg-muted text-foreground",
+          )}
+          aria-hidden="true"
+        >
+          {direction === "accept" ? "Passt" : "Später"}
+        </span>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
 export default function Pruefen({ loaderData, actionData }: Route.ComponentProps) {
   const { tx, remaining, categories, demo } = loaderData;
   const [params] = useSearchParams();
   const busy = useNavigation().state !== "idle";
   const skip = params.get("skip");
+  const submit = useSubmit();
+  const navigate = useNavigate();
 
   if (!tx) {
     return (
@@ -120,7 +196,13 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         </p>
       </div>
 
-      <section aria-label="Buchung" className="space-y-2 rounded-lg border p-4">
+      <SwipeCard
+        disabled={demo || busy}
+        onAccept={
+          suggested ? () => submit({ transactionId: tx.id, categoryId: suggested.id }, { method: "post" }) : null
+        }
+        onSkip={() => navigate(`/pruefen?skip=${nextSkip}`)}
+      >
         <p className="text-sm text-muted-foreground">{formatDate(tx.bookingDate)}</p>
         <p className="text-lg font-semibold break-words" data-testid="review-counterparty">
           {tx.counterparty}
@@ -132,12 +214,33 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
             ? `Vorschlag der KI: ${suggested.name}${tx.aiConfidence !== null ? ` (${formatPercent(tx.aiConfidence)} sicher)` : ""}`
             : "Die KI hatte keinen Vorschlag."}
         </p>
-      </section>
+        <p className="text-xs text-muted-foreground">
+          {suggested ? "Nach rechts wischen: passt · nach links: später" : "Nach links wischen: später"}
+        </p>
+      </SwipeCard>
+
+      {suggested ? (
+        <Form method="post" className="flex gap-2">
+          <input type="hidden" name="transactionId" value={tx.id} />
+          <input type="hidden" name="categoryId" value={suggested.id} />
+          <Button type="submit" className="h-12 flex-1 text-base" disabled={demo || busy}>
+            <Check aria-hidden="true" />
+            Passt: {suggested.name}
+          </Button>
+          <Button asChild variant="outline" className="h-12">
+            <Link to={`/pruefen?skip=${nextSkip}`} aria-label="Später">
+              <SkipForward aria-hidden="true" />
+            </Link>
+          </Button>
+        </Form>
+      ) : null}
 
       <Form method="post" className="space-y-3">
         <input type="hidden" name="transactionId" value={tx.id} />
         <fieldset disabled={demo || busy}>
-          <legend className="mb-2 text-sm font-medium">Wohin gehört die Buchung?</legend>
+          <legend className="mb-2 text-sm font-medium">
+            {suggested ? "Oder doch woanders hin?" : "Wohin gehört die Buchung?"}
+          </legend>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {ordered.map((c) => (
               <button

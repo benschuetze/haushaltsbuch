@@ -17,7 +17,7 @@ test("Glocke zeigt einen Punkt, durch die unsicheren Buchungen klicken, Pop-up b
 
   await expect(page.getByTestId("review-remaining")).toHaveText("noch 3");
   await expect(page.getByTestId("review-counterparty")).toHaveText("dm-drogerie markt");
-  await page.getByRole("button", { name: "Gesundheit" }).click();
+  await page.getByRole("button", { name: "Gesundheit", exact: true }).click();
 
   const dialog = page.getByRole("dialog", { name: "Gespeichert" });
   await expect(dialog).toContainText("„dm-drogerie markt“ ist ab jetzt immer Gesundheit");
@@ -28,7 +28,7 @@ test("Glocke zeigt einen Punkt, durch die unsicheren Buchungen klicken, Pop-up b
   // The second dm booking was taken care of by the new rule; only the PayPal one is left.
   await expect(page.getByTestId("review-remaining")).toHaveText("noch 1");
   await expect(page.getByTestId("review-counterparty")).toHaveText("PayPal Europe");
-  await page.getByRole("button", { name: "Kleidung" }).click();
+  await page.getByRole("button", { name: "Kleidung", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Gespeichert" })).toContainText("keine feste Regel");
   await page.getByRole("button", { name: "Weiter" }).click();
   await expect(page.getByRole("heading", { name: "Alles geprüft" })).toBeVisible();
