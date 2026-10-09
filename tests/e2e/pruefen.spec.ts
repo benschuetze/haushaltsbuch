@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { importDemo, resetDb } from "./helpers";
+import { importDemo, resetDb, sql } from "./helpers";
 
 test.beforeEach(resetDb);
 
@@ -26,4 +26,17 @@ test("Filter „prüfen“ zeigt nur unsichere Buchungen, Bestätigen nimmt sie 
 
   await page.goto("/");
   await expect(page.getByTestId("review-count")).toHaveText("1");
+});
+
+test("Buchungen, die beim Import ohne Kategorie blieben, lassen sich nachträglich zuordnen", async ({ page }) => {
+  await importDemo(page);
+  // Same state as an import while the model was unreachable.
+  await sql(
+    "update transactions set category_id = null, category_source = null, ai_confidence = null, needs_review = true where counterparty in ('REWE Markt', 'Lidl')",
+  );
+  await page.goto("/transaktionen");
+  await expect(page.getByText("6 Buchungen haben noch keine Kategorie.")).toBeVisible();
+  await page.getByRole("button", { name: "Jetzt zuordnen" }).click();
+  await expect(page.getByRole("status")).toHaveText("6 Buchungen zugeordnet.");
+  await expect(page.getByText("noch keine Kategorie")).toHaveCount(0);
 });

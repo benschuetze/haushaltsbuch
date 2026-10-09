@@ -110,6 +110,28 @@ export async function categorizeTransactions(
   return stats;
 }
 
+/**
+ * Bookings that never got a category, e.g. because the model was unreachable during the import.
+ * Rules run first again, so only what they don't catch costs a model call.
+ */
+export async function categorizeOpen(db: Db, model: LanguageModel | null): Promise<CategorizeStats & { open: number }> {
+  const open = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(
+      and(
+        isNull(transactions.categoryId),
+        or(isNull(transactions.categorySource), ne(transactions.categorySource, "manual")),
+      ),
+    );
+  const stats = await categorizeTransactions(
+    db,
+    open.map((t) => t.id),
+    model,
+  );
+  return { ...stats, open: open.length };
+}
+
 /** After a rule is added or changed: re-run all rules over every non-manual transaction. Returns how many changed. */
 export async function reapplyRules(db: Db): Promise<number> {
   const [allRules, txs] = await Promise.all([
