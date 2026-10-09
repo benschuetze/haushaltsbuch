@@ -195,3 +195,14 @@ describe("Frag einfach: die Woche", () => {
     expect(due.tools).toEqual(["naechste_zahlungen"]);
   });
 });
+
+describe("Ton", () => {
+  it("frech: gleiche Fakten, mit Spruch davor; freundlich: ohne", async () => {
+    const on = new Date("2026-09-10T10:00:00Z");
+    const q = [{ role: "user" as const, content: "Kann ich mir 80 € fürs Feiern leisten?" }];
+    const nice = await askAssistant(db, createMockAssistantModel(), q, on, "freundlich");
+    const cheeky = await askAssistant(db, createMockAssistantModel(), q, on, "frech");
+    expect(cheeky.answer).toMatch(/^(Gönn dir\.|Autsch\.|Hm, mutig\.) /);
+    expect(cheeky.answer.endsWith(nice.answer)).toBe(true);
+  });
+});

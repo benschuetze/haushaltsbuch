@@ -1,5 +1,5 @@
 import { data } from "react-router";
-import { askAssistant, chatSchema } from "~/lib/assistant/agent.server";
+import { askAssistant, chatSchema, toneFrom } from "~/lib/assistant/agent.server";
 import { getAssistantModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import type { Route } from "./+types/assistent";
@@ -19,5 +19,5 @@ export async function action({ request }: Route.ActionArgs) {
   const model = await getAssistantModel();
   if (!model)
     return data({ answer: "Der Assistent ist nicht eingerichtet (kein KI-Schlüssel).", tools: [] }, { status: 503 });
-  return data(await askAssistant(getDb(), model, parsed.data));
+  return data(await askAssistant(getDb(), model, parsed.data, new Date(), toneFrom(form.get("ton"))));
 }

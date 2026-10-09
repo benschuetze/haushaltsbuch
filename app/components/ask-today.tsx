@@ -97,6 +97,19 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
   const fetcher = useFetcher<{ answer: string; tools: string[] }>();
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
+  // A per-device preference; nothing about it belongs in the database.
+  const [tone, setTone] = useState<"freundlich" | "frech">("freundlich");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("ton") === "frech") setTone("frech");
+    } catch {}
+  }, []);
+  function chooseTone(next: "freundlich" | "frech") {
+    setTone(next);
+    try {
+      localStorage.setItem("ton", next);
+    } catch {}
+  }
   const handled = useRef<unknown>(null);
   const nextId = useRef(0);
   const busy = fetcher.state !== "idle";
@@ -133,7 +146,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
     setTurns((t) => [...t.slice(-2), { id: nextId.current, question, answer: null }]);
     setDraft("");
     fetcher.submit(
-      { messages: JSON.stringify([...history, { role: "user", content: question }]) },
+      { messages: JSON.stringify([...history, { role: "user", content: question }]), ton: tone },
       { method: "post", action: "/assistent" },
     );
   }
@@ -242,6 +255,23 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
               )}
             </button>
           </form>
+          <fieldset className="flex items-center gap-1 text-xs" aria-label="Ton der Antworten">
+            <span className="text-muted-foreground">Ton:</span>
+            {(["freundlich", "frech"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={tone === t}
+                onClick={() => chooseTone(t)}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5",
+                  tone === t ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
+                )}
+              >
+                {t === "freundlich" ? "freundlich" : "frech 😏"}
+              </button>
+            ))}
+          </fieldset>
           {turns.length === 0 ? (
             <fieldset className="flex min-w-0 flex-wrap gap-2" aria-label="Vorschläge">
               {SUGGESTIONS.map((s) => (
