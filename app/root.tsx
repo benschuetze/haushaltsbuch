@@ -103,11 +103,12 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   if (isRouteErrorResponse(error)) {
     title = error.status === 404 ? "Seite nicht gefunden" : `Fehler ${error.status}`;
+    // A loader that throws with its own message knows better than the generic text.
     details =
-      error.status === 404
-        ? "Diese Seite gibt es nicht."
-        : typeof error.data === "string"
-          ? error.data
+      typeof error.data === "string" && error.data
+        ? error.data
+        : error.status === 404
+          ? "Diese Seite gibt es nicht."
           : error.statusText;
   } else if (import.meta.env.DEV && error instanceof Error) {
     details = error.message;
