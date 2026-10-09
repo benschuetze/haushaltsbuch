@@ -9,7 +9,7 @@ export const DEFAULT_CATEGORIES: Omit<NewCategory, "sortOrder">[] = [
   { name: "Mobilität", kind: "expense", color: "#7a5cd6" },
   { name: "Versicherungen", kind: "expense", color: "#5b6b7f" },
   { name: "Abos & Software", kind: "expense", color: "#d6457a" },
-  { name: "Musik & Equipment", kind: "expense", color: "#b8862a" },
+  { name: "Hobbys", kind: "expense", color: "#b8862a" },
   { name: "Gesundheit", kind: "expense", color: "#2aa5b8" },
   { name: "Freizeit", kind: "expense", color: "#6aa82a" },
   { name: "Kleidung", kind: "expense", color: "#a8552a" },
@@ -31,7 +31,7 @@ export const DEFAULT_BUDGETS: Record<string, number> = {
   Kleidung: 80,
   Mobilität: 180,
   Haushalt: 70,
-  "Musik & Equipment": 60,
+  Hobbys: 60,
   Gesundheit: 40,
 };
 

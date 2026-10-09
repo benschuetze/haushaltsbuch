@@ -59,7 +59,7 @@ describe("Kategorisierung in der Datenbank", () => {
         field: "purpose",
         matchType: "contains",
         pattern: "thomann",
-        categoryId: cat["Musik & Equipment"] as string,
+        categoryId: cat.Hobbys as string,
         priority: 5,
       },
     ]);
@@ -67,7 +67,7 @@ describe("Kategorisierung in der Datenbank", () => {
     const paypal = await txBy("PayPal Europe");
     const thomann = paypal.filter((t) => t.purpose.includes("Thomann"));
     const zalando = paypal.filter((t) => t.purpose.includes("Zalando"));
-    expect(thomann.every((t) => t.categoryId === cat["Musik & Equipment"])).toBe(true);
+    expect(thomann.every((t) => t.categoryId === cat.Hobbys)).toBe(true);
     expect(zalando.every((t) => t.categoryId === cat.Sonstiges)).toBe(true);
   });
 
