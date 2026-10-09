@@ -18,6 +18,7 @@ import { getAssistantModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { notificationSummary, openInsights, refreshInsightsIfStale } from "~/lib/insights";
 import { applySecurityHeaders, isCrossSiteWrite } from "~/lib/security.server";
+import { cancelLinkFor } from "~/lib/subscriptions/cancel-links";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/root";
 import { useNonce } from "./nonce";
@@ -55,10 +56,19 @@ export async function loader({ request }: Route.LoaderArgs) {
     notifications: {
       ...summary,
       bankIssues: bank,
-      insights: top.map((i) => ({ id: i.id, title: i.title, savingsCentsPerYear: i.savingsCentsPerYear })),
+      insights: top.map((i) => ({
+        id: i.id,
+        kind: i.kind,
+        title: i.title,
+        savingsCentsPerYear: i.savingsCentsPerYear,
+        // Only hints about one merchant that is still charging get a cancel button.
+        cancel: i.subject && CANCELLABLE.has(i.kind) ? { merchant: i.subject, ...cancelLinkFor(i.subject) } : null,
+      })),
     },
   });
 }
+
+const CANCELLABLE = new Set(["subscription_found", "price_increase", "cancellation_failed"]);
 
 const NAV = [
   { to: "/", label: "Übersicht", end: true },

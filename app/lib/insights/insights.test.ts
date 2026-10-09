@@ -131,7 +131,11 @@ describe("computeInsights", () => {
       title: "2× Video-Streaming",
       savingsCentsPerYear: 10788,
     });
-    expect(drafts.find((d) => d.kind === "subscriptions")?.title).toBe("2 laufende Abos: 275,76 € im Jahr");
+    // One hint per subscription, each with its own cancel button; /abos has the total.
+    expect(drafts.filter((d) => d.kind === "subscription_found").map((d) => d.title)).toEqual([
+      "Abo erkannt: Netflix",
+      "Abo erkannt: Disney Plus",
+    ]);
   });
 
   it("Preiserhöhung im betrachteten Monat mit Mehrkosten pro Jahr", () => {

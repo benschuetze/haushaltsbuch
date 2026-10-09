@@ -28,6 +28,9 @@ export const insightKind = pgEnum("insight_kind", [
   "duplicate_service",
   "spending_spike",
   "fees",
+  "subscription_found",
+  "cancellation_failed",
+  "cancellation_confirmed",
 ]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -163,6 +166,8 @@ export const insights = pgTable(
     body: text("body").notNull(),
     /** Estimated yearly saving if acted on; null when the hint is informational. */
     savingsCentsPerYear: integer("savings_cents_per_year"),
+    /** The merchant a hint is about, so the bell can offer "Kündigen" right next to it. */
+    subject: text("subject"),
     month: text("month").notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
     dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
@@ -240,6 +245,19 @@ export const bankAuthStates = pgTable("bank_auth_states", {
   aspspName: text("aspsp_name").notNull(),
   aspspCountry: text("aspsp_country").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+});
+
+/**
+ * "I cancelled this" as told by the user. Whether it really stopped is read from later bookings,
+ * never assumed: a charge after this date turns into a warning.
+ */
+export const subscriptionCancellations = pgTable("subscription_cancellations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** merchantKey() of the recurring payment, stable across "Netflix" / "NETFLIX.COM". */
+  merchantKey: text("merchant_key").notNull().unique(),
+  merchant: text("merchant").notNull(),
+  cancelledOn: date("cancelled_on", { mode: "string" }).notNull(),
   createdAt: createdAt(),
 });
 

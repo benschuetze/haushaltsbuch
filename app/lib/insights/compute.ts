@@ -1,5 +1,7 @@
+import { formatDate } from "~/lib/format";
 import { formatCents } from "~/lib/money";
-import { type Booking, detectRecurring, type Recurring, serviceGroupOf } from "./recurring";
+import { type Cancellation, cancellationStatus } from "~/lib/subscriptions/status";
+import { type Booking, detectRecurring, merchantKey, type Recurring, serviceGroupOf } from "./recurring";
 
 export type BudgetInput = { categoryId: string; categoryName: string; amountCents: number };
 
@@ -12,10 +14,15 @@ export type InsightDraft = {
     | "price_increase"
     | "duplicate_service"
     | "spending_spike"
-    | "fees";
+    | "fees"
+    | "subscription_found"
+    | "cancellation_failed"
+    | "cancellation_confirmed";
   title: string;
   body: string;
   savingsCentsPerYear: number | null;
+  /** Merchant the hint is about; lets the bell offer "Kündigen" in place. */
+  subject?: string | null;
   month: string;
 };
 
@@ -27,7 +34,13 @@ export type InsightInput = {
   /** Day of month counted as "today" for projections; null when the month is over. */
   dayOfMonth: number | null;
   daysInMonth: number;
+  /** What the user said they cancelled; checked against later bookings. */
+  cancellations?: Cancellation[];
+  /** yyyy-mm-dd; defaults to the latest booking date. */
+  today?: string;
 };
+
+const CADENCE = { weekly: "pro Woche", monthly: "im Monat", quarterly: "im Quartal", yearly: "im Jahr" } as const;
 
 const FEE = /entgelt|gebühr|gebuehr|kontoführung|auslandseinsatz|\bfee\b|überziehungszins|sollzins/i;
 const euro = (cents: number) => formatCents(Math.abs(cents)).replace(",00 €", " €");
@@ -81,25 +94,57 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
 
   const reference = input.bookings.reduce((max, b) => (b.bookingDate > max ? b.bookingDate : max), `${month}-01`);
   const all = recurring ?? detectRecurring(input.bookings, reference);
-  const subscriptions = all.filter((r) => r.active && r.kind === "subscription");
-  if (subscriptions.length > 0) {
-    const yearly = subscriptions.reduce((s, r) => s + r.yearlyCents, 0);
-    const list = subscriptions
-      .slice(0, 6)
-      .map((r) => `${r.merchant} (${euro(r.yearlyCents)}/Jahr)`)
-      .join(", ");
+  const today = input.today ?? reference;
+
+  // Cancelled ones leave the subscription hints; a cancellation that did not stop the charges comes back loud.
+  const stillCharging = new Set<string>();
+  const cancelled = new Set<string>();
+  for (const c of input.cancellations ?? []) {
+    cancelled.add(c.merchantKey);
+    const status = cancellationStatus(c, input.bookings, all, today);
+    if (status.state === "failed") {
+      stillCharging.add(c.merchantKey);
+      drafts.push({
+        key: `cancel-failed:${c.merchantKey}:${c.cancelledOn}`,
+        kind: "cancellation_failed",
+        title: `${c.merchant} bucht trotz Kündigung weiter ab`,
+        body: `Gekündigt am ${formatDate(c.cancelledOn)}, am ${formatDate(status.chargedOn)} wurden trotzdem ${euro(status.amountCents)} abgebucht. Kündigungsbestätigung prüfen oder nochmal kündigen.`,
+        savingsCentsPerYear: null,
+        subject: c.merchant,
+        month,
+      });
+    } else if (status.state === "confirmed") {
+      drafts.push({
+        key: `cancel-ok:${c.merchantKey}:${c.cancelledOn}`,
+        kind: "cancellation_confirmed",
+        title: `Kündigung von ${c.merchant} hat geklappt`,
+        body: `Seit der Kündigung keine Abbuchung mehr.${status.yearlyCents ? ` Das spart ${euro(status.yearlyCents)} im Jahr.` : ""}`,
+        savingsCentsPerYear: null,
+        month,
+      });
+    }
+  }
+  const isCancelled = (r: Recurring) => {
+    const key = merchantKey(r.merchant);
+    return cancelled.has(key) && !stillCharging.has(key);
+  };
+  const subscriptions = all.filter((r) => r.active && r.kind === "subscription" && !isCancelled(r));
+
+  for (const r of subscriptions) {
+    // Still charging after a cancellation: the red warning above already says it, with its own button.
+    if (stillCharging.has(merchantKey(r.merchant))) continue;
     drafts.push({
-      key: `subscriptions:${month}`,
-      kind: "subscriptions",
-      title: `${subscriptions.length} laufende Abos: ${euro(yearly)} im Jahr`,
-      body: `${list}${subscriptions.length > 6 ? " und weitere" : ""}. Alles noch in Gebrauch?`,
+      key: `abo:${merchantKey(r.merchant)}`,
+      kind: "subscription_found",
+      title: `Abo erkannt: ${r.merchant}`,
+      body: `${euro(r.lastAmountCents)} ${CADENCE[r.cadence]}, ${euro(r.yearlyCents)} im Jahr. Noch in Gebrauch?`,
       savingsCentsPerYear: null,
+      subject: r.merchant,
       month,
     });
   }
-
   for (const r of all) {
-    if (!r.active || r.previousAmountCents === null) continue;
+    if (!r.active || r.previousAmountCents === null || isCancelled(r)) continue;
     const before = Math.abs(r.previousAmountCents);
     const now = Math.abs(r.lastAmountCents);
     if (now <= before * 1.03 || monthOf(r.lastDate) < month) continue;
@@ -110,6 +155,7 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
       title: `${r.merchant} ist teurer geworden`,
       body: `Von ${euro(before)} auf ${euro(now)}, das sind ${euro(perYear)} mehr im Jahr. Kündigen oder günstigeren Tarif prüfen?`,
       savingsCentsPerYear: Math.round(perYear),
+      subject: r.merchant,
       month,
     });
   }
