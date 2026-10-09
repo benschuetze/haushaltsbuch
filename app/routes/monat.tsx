@@ -1,0 +1,112 @@
+import { data, Link } from "react-router";
+import { Amount } from "~/components/amount";
+import { CategoryBars } from "~/components/category-bars";
+import { Stat } from "~/components/stat";
+import { getDb } from "~/lib/db/client";
+import { countLabel, formatMonth } from "~/lib/format";
+import { MONTH_PATTERN, monthSummary, previousMonth } from "~/lib/queries";
+import type { Route } from "./+types/monat";
+
+export const meta: Route.MetaFunction = ({ params }) => [{ title: `${params.month} · Haushaltsbuch` }];
+
+function nextMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number) as [number, number];
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
+export async function loader({ params }: Route.LoaderArgs) {
+  if (!MONTH_PATTERN.test(params.month)) {
+    throw data("Monat im Format JJJJ-MM angeben, z. B. 2026-09.", { status: 404 });
+  }
+  const db = getDb();
+  const prev = previousMonth(params.month);
+  const [summary, before] = await Promise.all([monthSummary(db, params.month), monthSummary(db, prev)]);
+  return { month: params.month, prev, next: nextMonth(params.month), summary, before };
+}
+
+function Change({ now, before }: { now: number; before: number }) {
+  if (before === 0) return null;
+  const diff = now - before;
+  return (
+    <p className="mt-1 text-xs font-normal text-muted-foreground">
+      Vormonat <Amount cents={before} /> ({diff >= 0 ? "+" : ""}
+      <Amount cents={diff} className="text-inherit" />)
+    </p>
+  );
+}
+
+export default function Monat({ loaderData }: Route.ComponentProps) {
+  const { month, prev, next, summary, before } = loaderData;
+  const expenses = summary.byCategory
+    .filter((c) => c.kind !== "transfer" && c.cents < 0)
+    .sort((a, b) => a.cents - b.cents);
+  const income = summary.byCategory
+    .filter((c) => c.kind !== "transfer" && c.cents > 0)
+    .sort((a, b) => b.cents - a.cents);
+  const transfers = summary.byCategory.filter((c) => c.kind === "transfer");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{formatMonth(month)}</h1>
+        <nav aria-label="Monat wechseln" className="flex gap-2 text-sm">
+          <Link to={`/monat/${prev}`} className="rounded-md border px-3 py-1.5 hover:bg-accent">
+            ← {formatMonth(prev)}
+          </Link>
+          <Link to={`/monat/${next}`} className="rounded-md border px-3 py-1.5 hover:bg-accent">
+            {formatMonth(next)} →
+          </Link>
+        </nav>
+      </div>
+
+      {summary.transactionCount === 0 ? (
+        <p role="status" className="rounded-lg border p-4">
+          Für {formatMonth(month)} gibt es keine Buchungen.
+        </p>
+      ) : (
+        <>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Stat label="Einnahmen" testId="income">
+              <Amount cents={summary.incomeCents} />
+              <Change now={summary.incomeCents} before={before.incomeCents} />
+            </Stat>
+            <Stat label="Ausgaben" testId="expenses">
+              <Amount cents={summary.expenseCents} />
+              <Change now={summary.expenseCents} before={before.expenseCents} />
+            </Stat>
+            <Stat label="Saldo" testId="balance">
+              <Amount cents={summary.incomeCents + summary.expenseCents} />
+            </Stat>
+          </dl>
+          {summary.reviewCount > 0 ? (
+            <p className="text-sm">
+              {countLabel(summary.reviewCount, "Buchung ist", "Buchungen sind")} noch nicht geprüft.{" "}
+              <Link to={`/transaktionen?monat=${month}&pruefen=1`} className="underline underline-offset-4">
+                Jetzt prüfen
+              </Link>
+            </p>
+          ) : null}
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">Ausgaben nach Kategorie</h2>
+            <CategoryBars items={expenses} label="Ausgaben nach Kategorie" />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">Einnahmen</h2>
+            <CategoryBars items={income} label="Einnahmen nach Kategorie" />
+          </section>
+          {transfers.length > 0 ? (
+            <section className="space-y-1 text-sm text-muted-foreground">
+              <h2 className="font-semibold">Umbuchungen (nicht in Ausgaben enthalten)</h2>
+              <p>
+                <Amount cents={summary.transferCents} />
+              </p>
+            </section>
+          ) : null}
+          <Link to={`/transaktionen?monat=${month}`} className="inline-block text-sm underline underline-offset-4">
+            Alle Buchungen im {formatMonth(month)}
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
