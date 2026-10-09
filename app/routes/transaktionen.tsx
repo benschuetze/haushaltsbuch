@@ -10,6 +10,7 @@ import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { rules, transactions } from "~/lib/db/schema";
 import { countLabel, formatDate, formatMonth } from "~/lib/format";
+import { refreshInsights } from "~/lib/insights";
 import { listCategories, listTransactions, MONTH_PATTERN, monthsWithData } from "~/lib/queries";
 import type { Route } from "./+types/transaktionen";
 
@@ -50,7 +51,13 @@ type ActionData =
   | { kind: "categorized"; open: number; byRule: number; byAi: number; needsReview: number }
   | { kind: "error"; message: string };
 
-export async function action({ request }: Route.ActionArgs) {
+export async function action(args: Route.ActionArgs) {
+  const result = await handle(args);
+  await refreshInsights(getDb());
+  return result;
+}
+
+async function handle({ request }: Route.ActionArgs) {
   const parsed = actionSchema.safeParse(Object.fromEntries(await request.formData()));
   if (!parsed.success) return data<ActionData>({ kind: "error", message: "Ungültige Eingabe." }, { status: 400 });
   const input = parsed.data;

@@ -10,7 +10,10 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
+import { NotificationBell } from "~/components/notification-bell";
 import { guard, isDemo, isLoggedIn } from "~/lib/auth.server";
+import { getDb } from "~/lib/db/client";
+import { notificationSummary, openInsights, refreshInsightsIfStale } from "~/lib/insights";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -23,12 +26,27 @@ export const middleware: Route.MiddlewareFunction[] = [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return data({ demo: isDemo(), loggedIn: isDemo() || (await isLoggedIn(request)) });
+  const demo = isDemo();
+  const loggedIn = demo || (await isLoggedIn(request));
+  if (!loggedIn) return data({ demo, loggedIn, notifications: null });
+  const db = getDb();
+  await refreshInsightsIfStale(db);
+  const [summary, top] = await Promise.all([notificationSummary(db), openInsights(db, 5)]);
+  return data({
+    demo,
+    loggedIn,
+    notifications: {
+      ...summary,
+      insights: top.map((i) => ({ id: i.id, title: i.title, savingsCentsPerYear: i.savingsCentsPerYear })),
+    },
+  });
 }
 
 const NAV = [
   { to: "/", label: "Übersicht", end: true },
   { to: "/transaktionen", label: "Buchungen", end: false },
+  { to: "/budgets", label: "Budgets", end: false },
+  { to: "/abos", label: "Abos", end: false },
   { to: "/import", label: "Import", end: false },
   { to: "/regeln", label: "Regeln", end: false },
   { to: "/konten", label: "Konten", end: false },
@@ -52,12 +70,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </p>
         ) : null}
         {root?.loggedIn ? (
-          <header className="border-b bg-background">
+          <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pt-3">
+              <NavLink to="/" className="font-semibold">
+                Haushaltsbuch
+              </NavLink>
+              <div className="flex items-center gap-1">
+                {root.notifications ? <NotificationBell notifications={root.notifications} demo={root.demo} /> : null}
+                {root.demo ? null : (
+                  <Form method="post" action="/logout">
+                    <button
+                      type="submit"
+                      className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+                    >
+                      Abmelden
+                    </button>
+                  </Form>
+                )}
+              </div>
+            </div>
+            {/* Scrolls sideways on small screens instead of wrapping into several rows. */}
             <nav
               aria-label="Hauptnavigation"
-              className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-4 py-3"
+              className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 py-2 [scrollbar-width:none]"
             >
-              <span className="mr-3 font-semibold">Haushaltsbuch</span>
               {NAV.map((item) => (
                 <NavLink
                   key={item.to}
@@ -65,7 +101,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   end={item.end}
                   className={({ isActive }) =>
                     cn(
-                      "rounded-md px-3 py-1.5 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+                      "shrink-0 rounded-md px-3 py-1.5 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
                       isActive && "bg-accent font-medium",
                     )
                   }
@@ -73,16 +109,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </NavLink>
               ))}
-              {root.demo ? null : (
-                <Form method="post" action="/logout" className="ml-auto">
-                  <button
-                    type="submit"
-                    className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
-                  >
-                    Abmelden
-                  </button>
-                </Form>
-              )}
             </nav>
           </header>
         ) : null}

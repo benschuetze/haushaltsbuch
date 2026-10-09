@@ -1,9 +1,9 @@
 import type { LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { categorizeTransactions } from "~/lib/categorize/apply";
-import { refreshInsights } from "~/lib/insights";
 import type { Db } from "~/lib/db/client";
 import { type Account, accounts, imports, transactions } from "~/lib/db/schema";
+import { refreshInsights } from "~/lib/insights";
 import { resolveAccount } from "./accounts";
 import { withDedupeHashes } from "./dedupe";
 import { detectFormat, parseForProfile, profileLabel } from "./formats/detect";
