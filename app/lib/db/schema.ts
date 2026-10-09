@@ -180,3 +180,14 @@ export const meta = pgTable("meta", {
 export type Budget = typeof budgets.$inferSelect;
 export type Insight = typeof insights.$inferSelect;
 export type NewInsight = typeof insights.$inferInsert;
+
+/** Failed logins per hashed IP, for throttling password guessing. Rows older than a day are dropped. */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ipHash: text("ip_hash").notNull(),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("login_attempts_ip_hash_idx").on(t.ipHash), index("login_attempts_attempted_at_idx").on(t.attemptedAt)],
+);

@@ -3,6 +3,9 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { logIn, loginConfigured, passwordMatches } from "~/lib/auth.server";
+import { getDb } from "~/lib/db/client";
+import { clearFailedLogins, isLoginBlocked, recordFailedLogin } from "~/lib/login-throttle.server";
+import { clientIp, hashIp } from "~/lib/security.server";
 import type { Route } from "./+types/login";
 
 export const meta: Route.MetaFunction = () => [{ title: "Anmelden · Haushaltsbuch" }];
@@ -14,11 +17,19 @@ export async function action({ request }: Route.ActionArgs) {
       { status: 503 },
     );
   }
+  const db = getDb();
+  const ip = hashIp(clientIp(request));
+  // Checked before the password: while blocked, even the right password gets no answer about being right.
+  if (await isLoginBlocked(db, ip)) {
+    return data({ error: "Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen." }, { status: 429 });
+  }
   const form = await request.formData();
   const password = String(form.get("password") ?? "");
   if (!passwordMatches(password)) {
+    await recordFailedLogin(db, ip);
     return data({ error: "Passwort stimmt nicht." }, { status: 400 });
   }
+  await clearFailedLogins(db, ip);
   return logIn(String(form.get("next") ?? "/"));
 }
 
