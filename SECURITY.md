@@ -15,6 +15,7 @@ Das Haushaltsbuch verarbeitet Kontoumsätze. Diese Seite beschreibt, wie die App
 | Eingaben | Zod an allen Eingängen; Regex-Regeln mit verschachtelten Wiederholungen werden abgelehnt (ReDoS). | `rules.test.ts`, `security.test.ts` |
 | KI | Nur Empfänger, Zweck, Betrag, Datum; IBANs geschwärzt. Spaltenzuordnung nur mit maskierten Mustern. Fehler werden ohne Anfragetext geloggt. | `llm.test.ts`, `auto.test.ts`, `security.test.ts` |
 | Geheimnisse in der Datenbank | AES-256-GCM, Schlüssel nur in der Umgebung (`DATA_ENCRYPTION_KEY`); Manipulation fällt beim Entschlüsseln auf. | `security.test.ts` |
+| Bankanbindung | Über Enable Banking (lizenzierter Kontoinformationsdienst, FIN-FSA). Nur Lesezugriff, die App sieht nie das Bank-Passwort. Privater Schlüssel nur in der Umgebung, Anfragen mit 10-Minuten-JWT (RS256). Rücksprung nur mit einmaligem, 15 Minuten gültigem `state`, gebunden per Cookie an den Browser, in der Datenbank nur als Hash. Session-ID der Bank nur verschlüsselt gespeichert, beim Trennen bei der Bank widerrufen und gelöscht. Täglicher Abruf nur mit `CRON_SECRET`, Antwort enthält nur Zahlen. | `bank.test.ts`, `bank.spec.ts` (gegen eine Fake-Bank mit echter Signaturprüfung) und einmal von Hand gegen die Sandbox |
 | Abhängigkeiten | CI bricht bei bekannten hohen/kritischen Lücken in ausgelieferten Paketen ab; Dependabot wöchentlich. | `ci.yml` |
 | Daten | Datenbank und Funktionen in Frankfurt (`fra1`). Echte Kontodaten nie im Repo. | `vercel.json`, `.gitignore` |
 
