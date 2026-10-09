@@ -31,6 +31,7 @@ const NAV = [
   { to: "/transaktionen", label: "Buchungen", end: false },
   { to: "/import", label: "Import", end: false },
   { to: "/regeln", label: "Regeln", end: false },
+  { to: "/konten", label: "Konten", end: false },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

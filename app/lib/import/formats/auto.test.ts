@@ -97,7 +97,11 @@ describe("Spaltenzuordnung", () => {
   });
 
   it("weiß die KI die Bank nicht, heißt das Konto nach der Datei statt „Unbekannte Bank“", async () => {
-    const result = await importAuto(db, { filename: "kontoflow-export.csv", bytes: read("neu/kontoflow-export.csv"), model: createMockModel() });
+    const result = await importAuto(db, {
+      filename: "kontoflow-export.csv",
+      bytes: read("neu/kontoflow-export.csv"),
+      model: createMockModel(),
+    });
     expect(result.format).toEqual({ label: "Kontoflow", learned: "ai" });
     expect(result.account.name).toBe("Kontoflow");
   });

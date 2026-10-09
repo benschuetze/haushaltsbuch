@@ -6,6 +6,7 @@ export default [
   route("transaktionen", "routes/transaktionen.tsx"),
   route("monat/:month", "routes/monat.tsx"),
   route("regeln", "routes/regeln.tsx"),
+  route("konten", "routes/konten.tsx"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
   route("favicon.ico", "routes/favicon.ts"),
