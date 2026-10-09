@@ -14,6 +14,7 @@ const PAGES = [
   { path: "/monat/2026-09", heading: "September 2026", action: { role: "link" as const, name: /August 2026/ } },
   { path: "/import", heading: "Kontoauszug importieren", action: { role: "button" as const, name: "Importieren" } },
   { path: "/regeln", heading: "Regeln", action: { role: "button" as const, name: "Regel anlegen" } },
+  { path: "/konten", heading: "Konten", action: { role: "button" as const, name: "Umbenennen" } },
 ];
 
 test.beforeAll(resetDb);

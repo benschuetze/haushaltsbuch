@@ -62,7 +62,6 @@ export async function guessMappingWithLlm(
       system: SYSTEM,
       prompt: buildMappingPrompt(table),
       output: Output.object({ schema: answerSchema }),
-      temperature: 0,
       maxRetries: 1,
       maxOutputTokens: 500,
     });

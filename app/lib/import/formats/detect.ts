@@ -88,7 +88,10 @@ export async function detectFormat(
   if (input.model) {
     const fromLlm = await guessMappingWithLlm(input.model, table);
     if (fromLlm && mappingWorks(table, fromLlm.mapping)) {
-      const format = await learn(db, signature, { label: fromLlm.bank, mapping: fromLlm.mapping, source: "ai" });
+      // The model often cannot tell the bank from column names; the file name is then the better hint.
+      const fromFile = labelFromFilename(input.filename);
+      const label = /unbekannt/i.test(fromLlm.bank) && fromFile !== "Neue Bank" ? fromFile : fromLlm.bank;
+      const format = await learn(db, signature, { label, mapping: fromLlm.mapping, source: "ai" });
       return {
         profileKey: `format:${format.id}`,
         label: format.label,
