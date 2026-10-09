@@ -71,6 +71,8 @@ export async function categorizeWithLlm(
   model: LanguageModel,
   categories: LlmCategory[],
   items: LlmInput[],
+  onError: (error: unknown) => void = (error) =>
+    console.error("LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“", error),
 ): Promise<Map<string, LlmVerdict>> {
   const verdicts = new Map<string, LlmVerdict>();
   const byName = new Map(categories.map((c) => [c.name.toLocaleLowerCase("de"), c.id]));
@@ -86,10 +88,12 @@ export async function categorizeWithLlm(
         output: Output.object({ schema: responseSchema }),
         temperature: 0,
         maxRetries: 2,
+        // 25 short answers fit easily; the cap only stops a runaway response from eating credits.
+        maxOutputTokens: 3000,
       });
       results = output.results;
     } catch (error) {
-      console.error("LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“", error);
+      onError(error);
     }
 
     batch.forEach((item, i) => {

@@ -6,7 +6,7 @@ import { accounts, categories, rules, transactions } from "~/lib/db/schema";
 import { importCsv } from "~/lib/import/run";
 import { createTestDb } from "../../../tests/helpers/db";
 import { scriptedModel } from "../../../tests/helpers/models";
-import { categorizeTransactions, confirmTransaction, reapplyRules, setManualCategory } from "./apply";
+import { categorizeOpen, categorizeTransactions, confirmTransaction, reapplyRules, setManualCategory } from "./apply";
 
 const demoCsv = new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv"));
 let db: Db;
@@ -136,5 +136,25 @@ describe("Kategorisierung in der Datenbank", () => {
     await reapplyRules(db);
     const [after] = await db.select().from(transactions).where(eq(transactions.id, rewe.id));
     expect(after).toMatchObject({ categoryId: cat.Lebensmittel, categorySource: "manual", needsReview: false });
+  });
+});
+
+describe("offene Buchungen nachträglich zuordnen", () => {
+  it("ordnet Buchungen ohne Kategorie zu, lässt zugeordnete und manuelle in Ruhe", async () => {
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model: null });
+    const [spotify] = await txBy("Spotify AB");
+    if (!spotify) throw new Error("Spotify fehlt");
+    await setManualCategory(db, spotify.id, cat.Freizeit as string);
+
+    const { model, calls } = modelSaying("Lebensmittel", 0.9);
+    const stats = await categorizeOpen(db, model);
+    expect(stats).toMatchObject({ open: 43, byAi: 43, needsReview: 0 });
+    const [after] = await db.select().from(transactions).where(eq(transactions.id, spotify.id));
+    expect(after).toMatchObject({ categoryId: cat.Freizeit, categorySource: "manual" });
+
+    // A second run finds nothing open and calls nothing.
+    const again = await categorizeOpen(db, model);
+    expect(again.open).toBe(0);
+    expect(calls).toHaveLength(2);
   });
 });

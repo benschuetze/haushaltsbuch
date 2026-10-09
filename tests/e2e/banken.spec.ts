@@ -68,3 +68,14 @@ test("Konto von Hand gewählt, aber falsche Bank: Hinweis statt Import", async (
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByRole("alert")).toContainText("sieht nach ING aus");
 });
+
+test("zu große Auswahl wird vor dem Absenden abgefangen, statt an Vercels Grenze zu scheitern", async ({ page }) => {
+  await page.goto("/import");
+  const big = Buffer.alloc(3 * 1024 * 1024, "a");
+  await page.getByLabel("CSV-Dateien").setInputFiles([
+    { name: "a.csv", mimeType: "text/csv", buffer: big },
+    { name: "b.csv", mimeType: "text/csv", buffer: big },
+  ]);
+  await expect(page.getByRole("alert")).toHaveText("Zusammen größer als 4 MB. Bitte in mehreren Runden hochladen.");
+  await expect(page.getByRole("button", { name: "Importieren" })).toBeDisabled();
+});

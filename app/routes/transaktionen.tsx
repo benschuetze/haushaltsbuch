@@ -1,11 +1,12 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { data, Form, Link, useNavigation } from "react-router";
 import { z } from "zod";
 import { Amount } from "~/components/amount";
 import { SourceBadges } from "~/components/source-badge";
 import { Button } from "~/components/ui/button";
 import { isDemo } from "~/lib/auth.server";
-import { confirmTransaction, reapplyRules, setManualCategory } from "~/lib/categorize/apply";
+import { categorizeOpen, confirmTransaction, reapplyRules, setManualCategory } from "~/lib/categorize/apply";
+import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { rules, transactions } from "~/lib/db/schema";
 import { countLabel, formatDate, formatMonth } from "~/lib/format";
@@ -27,23 +28,26 @@ export async function loader({ request }: Route.LoaderArgs) {
   const params = Object.fromEntries(new URL(request.url).searchParams);
   const filter = filterSchema.parse(params);
   const db = getDb();
-  const [rows, categories, months] = await Promise.all([
+  const [rows, categories, months, uncategorized] = await Promise.all([
     listTransactions(db, { month: filter.monat, categoryId: filter.kategorie, review: filter.pruefen === "1" }),
     listCategories(db),
     monthsWithData(db),
+    db.$count(transactions, isNull(transactions.categoryId)),
   ]);
-  return { rows, categories, months, filter, demo: isDemo() };
+  return { rows, categories, months, filter, uncategorized, demo: isDemo() };
 }
 
 const actionSchema = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("setCategory"), transactionId: z.uuid(), categoryId: z.uuid() }),
   z.object({ intent: z.literal("confirm"), transactionId: z.uuid() }),
   z.object({ intent: z.literal("createRule"), transactionId: z.uuid(), categoryId: z.uuid() }),
+  z.object({ intent: z.literal("categorizeOpen") }),
 ]);
 
 type ActionData =
   | { kind: "suggestRule"; transactionId: string; counterparty: string; categoryId: string; categoryName: string }
   | { kind: "ruleCreated"; counterparty: string; categoryName: string; changed: number }
+  | { kind: "categorized"; open: number; byRule: number; byAi: number; needsReview: number }
   | { kind: "error"; message: string };
 
 export async function action({ request }: Route.ActionArgs) {
@@ -51,6 +55,11 @@ export async function action({ request }: Route.ActionArgs) {
   if (!parsed.success) return data<ActionData>({ kind: "error", message: "Ungültige Eingabe." }, { status: 400 });
   const input = parsed.data;
   const db = getDb();
+
+  if (input.intent === "categorizeOpen") {
+    const stats = await categorizeOpen(db, getModel());
+    return data<ActionData>({ kind: "categorized", ...stats });
+  }
 
   const [tx] = await db.select().from(transactions).where(eq(transactions.id, input.transactionId));
   if (!tx) return data<ActionData>({ kind: "error", message: "Buchung nicht gefunden." }, { status: 404 });
@@ -156,6 +165,28 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
           Regel angelegt: „{result.counterparty}“ → {result.categoryName}.{" "}
           {countLabel(result.changed, "Buchung", "Buchungen")} umkategorisiert.
         </p>
+      ) : null}
+      {result?.kind === "categorized" ? (
+        <p role="status" className="rounded-lg border bg-muted/50 p-4 text-sm">
+          {countLabel(result.byRule + result.byAi, "Buchung", "Buchungen")} zugeordnet
+          {result.byRule > 0 ? ` (${result.byRule} per Regel)` : ""}.
+          {result.needsReview > 0
+            ? ` ${countLabel(result.needsReview, "Buchung bleibt", "Buchungen bleiben")} zum Prüfen.`
+            : ""}
+        </p>
+      ) : null}
+      {loaderData.uncategorized > 0 && !demo && result?.kind !== "categorized" ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4 text-sm">
+          <p className="min-w-0 flex-1">
+            {countLabel(loaderData.uncategorized, "Buchung hat", "Buchungen haben")} noch keine Kategorie.
+          </p>
+          <Form method="post">
+            <input type="hidden" name="intent" value="categorizeOpen" />
+            <Button type="submit" size="sm" disabled={busy}>
+              {busy ? "Ordne zu …" : "Jetzt zuordnen"}
+            </Button>
+          </Form>
+        </div>
       ) : null}
       {result?.kind === "error" ? (
         <p role="alert" className="rounded-lg border border-destructive p-4 text-sm text-destructive">

@@ -74,7 +74,7 @@ export function safeRedirect(to: string | null | undefined): string {
   return to;
 }
 
-const PUBLIC_PATHS = new Set(["/login"]);
+const PUBLIC_PATHS = new Set(["/login", "/favicon.ico"]);
 
 /**
  * One gate for every loader and action. Demo: read-only for everyone. Private instance: nothing without login.
@@ -86,7 +86,7 @@ export async function guard(request: Request): Promise<void> {
 
   if (isDemo()) {
     if (writing) throw new Response("Die Demo ist schreibgeschützt.", { status: 403 });
-    if (PUBLIC_PATHS.has(path)) throw redirect("/");
+    if (path === "/login") throw redirect("/");
     return;
   }
   if (PUBLIC_PATHS.has(path)) return;

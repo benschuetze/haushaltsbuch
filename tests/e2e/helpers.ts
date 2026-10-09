@@ -19,6 +19,17 @@ export async function resetDb(): Promise<void> {
   }
 }
 
+/** Direct database access for states the UI cannot produce on purpose, e.g. an import while the model was down. */
+export async function sql(query: string): Promise<void> {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    await client.query(query);
+  } finally {
+    await client.end();
+  }
+}
+
 export async function importDemo(page: Page): Promise<void> {
   await page.goto("/import");
   await page.getByLabel("CSV-Dateien").setInputFiles(DEMO_CSV);

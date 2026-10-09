@@ -1,3 +1,4 @@
+import { type ChangeEvent, useState } from "react";
 import { data, Form, Link, useNavigation } from "react-router";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
@@ -13,8 +14,10 @@ import type { Route } from "./+types/import";
 
 export const meta: Route.MetaFunction = () => [{ title: "Import · Haushaltsbuch" }];
 
-const MAX_BYTES = 5 * 1024 * 1024;
+// Vercel rejects request bodies above 4.5 MB before the app sees them; stay clearly below.
+const MAX_TOTAL_BYTES = 4 * 1024 * 1024;
 const MAX_FILES = 12;
+const TOO_LARGE = "Zusammen größer als 4 MB. Bitte in mehreren Runden hochladen.";
 
 const inputSchema = z.object({
   // Empty means: let the app find the bank and the account.
@@ -24,9 +27,10 @@ const inputSchema = z.object({
     .transform((files) => files.filter((f) => f.size > 0))
     .pipe(
       z
-        .array(z.instanceof(File).refine((f) => f.size <= MAX_BYTES, "Eine Datei ist größer als 5 MB."))
+        .array(z.instanceof(File))
         .min(1, "Bitte mindestens eine CSV-Datei wählen.")
-        .max(MAX_FILES, `Höchstens ${MAX_FILES} Dateien auf einmal.`),
+        .max(MAX_FILES, `Höchstens ${MAX_FILES} Dateien auf einmal.`)
+        .refine((files) => files.reduce((sum, f) => sum + f.size, 0) <= MAX_TOTAL_BYTES, TOO_LARGE),
     ),
 });
 
@@ -83,6 +87,20 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Import({ loaderData, actionData }: Route.ComponentProps) {
   const { demo, accounts } = loaderData;
   const busy = useNavigation().state === "submitting";
+  const [selectionProblem, setSelectionProblem] = useState<string | null>(null);
+
+  // Checked before sending: a too large upload would otherwise end in Vercel's error page, not in a message here.
+  function checkSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = [...(event.currentTarget.files ?? [])];
+    const total = files.reduce((sum, f) => sum + f.size, 0);
+    setSelectionProblem(
+      files.length > MAX_FILES
+        ? `Höchstens ${MAX_FILES} Dateien auf einmal.`
+        : total > MAX_TOTAL_BYTES
+          ? TOO_LARGE
+          : null,
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -105,9 +123,16 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
               accept=".csv,text/csv"
               multiple
               required
+              onChange={checkSelection}
+              aria-describedby={selectionProblem ? "file-problem" : undefined}
               className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5"
             />
           </div>
+          {selectionProblem ? (
+            <p id="file-problem" role="alert" className="text-sm text-destructive">
+              {selectionProblem}
+            </p>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="accountId">Konto</Label>
             <select
@@ -124,7 +149,9 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
               ))}
             </select>
           </div>
-          <Button type="submit">{busy ? "Importiere …" : "Importieren"}</Button>
+          <Button type="submit" disabled={selectionProblem !== null}>
+            {busy ? "Importiere …" : "Importieren"}
+          </Button>
         </fieldset>
       </Form>
 
