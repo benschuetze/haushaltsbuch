@@ -29,7 +29,7 @@ export type AutoImportResult = ImportResult & {
 const INSERT_CHUNK = 500;
 
 /** Invariant the tests hold us to: total = inserted + duplicates + rejected + skipped. No row disappears without a reason. */
-async function store(
+export async function storeParsed(
   db: Db,
   account: Account,
   parsed: ParseResult,
@@ -101,7 +101,7 @@ export async function importCsv(
     }
     throw error;
   }
-  return store(db, account, parsed, input);
+  return storeParsed(db, account, parsed, input);
 }
 
 /** Import without choosing anything: the app finds the bank format and the account, creating either if needed. */
@@ -115,7 +115,7 @@ export async function importAuto(
     label: format.label,
     ownIban: format.result.ownIban,
   });
-  const result = await store(db, account, format.result, input);
+  const result = await storeParsed(db, account, format.result, input);
   return {
     ...result,
     account: { id: account.id, name: account.name, created },
