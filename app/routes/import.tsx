@@ -1,10 +1,12 @@
 import { data, Form, Link, useNavigation } from "react-router";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { isDemo } from "~/lib/auth.server";
 import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
+import { accounts } from "~/lib/db/schema";
 import { countLabel } from "~/lib/format";
 import { bankProfiles } from "~/lib/import/profiles";
 import { type ImportResult, importCsv } from "~/lib/import/run";
@@ -15,6 +17,11 @@ export const meta: Route.MetaFunction = () => [{ title: "Import · Haushaltsbuch
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
+const accountSchema = z.object({
+  name: z.string().trim().min(1, "Bitte einen Namen für das Konto angeben.").max(60, "Der Name ist zu lang."),
+  bankProfile: z.string().refine((id) => id in bankProfiles, "Bitte eine Bank wählen."),
+});
+
 const inputSchema = z.object({
   accountId: z.uuid("Bitte ein Konto wählen."),
   file: z
@@ -24,10 +31,11 @@ const inputSchema = z.object({
 });
 
 export async function loader() {
-  const accounts = await listAccounts(getDb());
+  const accountRows = await listAccounts(getDb());
   return {
     demo: isDemo(),
-    accounts: accounts.map((a) => ({
+    profiles: Object.values(bankProfiles).map((p) => ({ id: p.id, label: p.label })),
+    accounts: accountRows.map((a) => ({
       id: a.id,
       name: a.name,
       profile: bankProfiles[a.bankProfile]?.label ?? a.bankProfile,
@@ -35,10 +43,33 @@ export async function loader() {
   };
 }
 
-type ActionData = { ok: true; filename: string; result: ImportResult } | { ok: false; error: string };
+type ActionData =
+  | { ok: true; filename: string; result: ImportResult; accountId: string }
+  | { ok: true; createdAccount: { id: string; name: string } }
+  | { ok: false; error: string };
+
+async function createAccount(form: FormData) {
+  const parsed = accountSchema.safeParse({ name: form.get("name"), bankProfile: form.get("bankProfile") });
+  if (!parsed.success) {
+    return data<ActionData>(
+      { ok: false, error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." },
+      { status: 400 },
+    );
+  }
+  const [account] = await getDb()
+    .insert(accounts)
+    .values(parsed.data)
+    .onConflictDoNothing({ target: accounts.name })
+    .returning({ id: accounts.id, name: accounts.name });
+  if (!account) {
+    return data<ActionData>({ ok: false, error: `Ein Konto „${parsed.data.name}“ gibt es schon.` }, { status: 400 });
+  }
+  return data<ActionData>({ ok: true, createdAccount: account });
+}
 
 export async function action({ request }: Route.ActionArgs) {
   const form = await request.formData();
+  if (form.get("intent") === "createAccount") return createAccount(form);
   const parsed = inputSchema.safeParse({ accountId: form.get("accountId"), file: form.get("file") });
   if (!parsed.success) {
     return data<ActionData>(
@@ -54,7 +85,7 @@ export async function action({ request }: Route.ActionArgs) {
       bytes: new Uint8Array(await file.arrayBuffer()),
       model: getModel(),
     });
-    return data<ActionData>({ ok: true, filename: file.name, result });
+    return data<ActionData>({ ok: true, filename: file.name, result, accountId });
   } catch (error) {
     // Profile mismatches are expected user errors (wrong bank, wrong file) and carry a readable message.
     return data<ActionData>(
@@ -65,8 +96,14 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Import({ loaderData, actionData }: Route.ComponentProps) {
-  const { demo, accounts } = loaderData;
+  const { demo, accounts: accountList, profiles } = loaderData;
   const busy = useNavigation().state === "submitting";
+  const selectedAccount =
+    actionData && "createdAccount" in actionData
+      ? actionData.createdAccount.id
+      : actionData && "accountId" in actionData
+        ? actionData.accountId
+        : undefined;
 
   return (
     <div className="space-y-6">
@@ -80,11 +117,15 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
               id="accountId"
               name="accountId"
               required
+              // The action result can render once before the reloaded account list arrives; keying on the list
+              // too remounts the select when the new account is actually there.
+              key={`${selectedAccount}-${accountList.length}`}
+              defaultValue={selectedAccount}
               className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
             >
-              {accounts.map((a) => (
+              {accountList.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name}
+                  {a.name} ({a.profile})
                 </option>
               ))}
             </select>
@@ -100,9 +141,46 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
               className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5"
             />
           </div>
-          <Button type="submit">{busy ? "Importiere …" : "Importieren"}</Button>
+          <Button type="submit" name="intent" value="import">
+            {busy ? "Importiere …" : "Importieren"}
+          </Button>
         </fieldset>
       </Form>
+
+      <details className="max-w-md rounded-lg border p-4" open={accountList.length <= 1 || undefined}>
+        <summary className="cursor-pointer font-medium">Neues Konto anlegen</summary>
+        <Form method="post" className="mt-4 space-y-4">
+          <input type="hidden" name="intent" value="createAccount" />
+          <fieldset disabled={demo || busy} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="account-name">Name</Label>
+              <Input id="account-name" name="name" required maxLength={60} placeholder="z. B. Sparkasse Girokonto" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="account-bank">Bank</Label>
+              <select
+                id="account-bank"
+                name="bankProfile"
+                required
+                defaultValue=""
+                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              >
+                <option value="" disabled>
+                  Bank wählen
+                </option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button type="submit" variant="outline">
+              Konto anlegen
+            </Button>
+          </fieldset>
+        </Form>
+      </details>
 
       {actionData && !actionData.ok ? (
         <p role="alert" className="rounded-lg border border-destructive p-4 text-destructive">
@@ -110,7 +188,14 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
         </p>
       ) : null}
 
-      {actionData?.ok ? <ImportSummary filename={actionData.filename} result={actionData.result} /> : null}
+      {actionData?.ok && "createdAccount" in actionData ? (
+        <p role="status" className="rounded-lg border p-4 text-sm">
+          Konto „{actionData.createdAccount.name}“ angelegt und oben ausgewählt.
+        </p>
+      ) : null}
+      {actionData?.ok && "result" in actionData ? (
+        <ImportSummary filename={actionData.filename} result={actionData.result} />
+      ) : null}
     </div>
   );
 }
