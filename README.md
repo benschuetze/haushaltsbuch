@@ -60,7 +60,7 @@ Die wichtigste Zahl im Eval ist „falsch mit Konfidenz ≥ 0,7“. Diese Fehler
 ## Grenzen
 
 - Ein Benutzer, Login per Passwort. Für mehrere Haushalte fehlen Mandanten und echte Konten.
-- Bisher ein Bankprofil (Standardformat der Demo-Daten). Weitere Banken kommen über den Skill `bank-profile` dazu.
+- Bankprofile für Sparkasse (CSV-CAMT V2), ING, DKB und Volksbank/Raiffeisenbank, nachgebaut nach den Exportformaten mit erfundenen Daten in [`beispieldaten/banken/`](beispieldaten/banken). Weicht ein echter Export ab, wird das Profil über den Skill `bank-profile` angepasst.
 - Budgets und das Erkennen wiederkehrender Zahlungen sind geplant, aber noch nicht gebaut.
 - Das Modell sieht keine Historie: Eine Buchung, die es letzten Monat richtig hatte, kann es diesen Monat anders einordnen. Regeln machen das stabil.
 
