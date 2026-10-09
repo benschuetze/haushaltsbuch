@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { failingModel, promptText, scriptedModel } from "../../../tests/helpers/models";
-import { BATCH_SIZE, categorizeWithLlm, type LlmInput } from "./llm";
+import { BATCH_SIZE, categorizeWithLlm, type LlmInput, redactIbans } from "./llm";
 
 const categories = [
   { id: "cat-food", name: "Lebensmittel", kind: "expense" },
@@ -79,5 +79,15 @@ describe("categorizeWithLlm", () => {
     expect(sent).not.toContain("DE89");
     expect(sent).not.toContain("0532013000");
     expect(sent).not.toContain("geheime-uuid-123");
+  });
+});
+
+describe("redactIbans", () => {
+  it("schwärzt IBANs im Text, mit und ohne Leerzeichen", () => {
+    expect(redactIbans("Empfänger: REWE Kto/IBAN: DE00200411110000000005 BLZ")).toBe(
+      "Empfänger: REWE Kto/IBAN: [IBAN] BLZ",
+    );
+    expect(redactIbans("an DE89 3704 0044 0532 0130 00 danke")).toBe("an [IBAN] danke");
+    expect(redactIbans("Rechnung 2026-0815")).toBe("Rechnung 2026-0815");
   });
 });
