@@ -9,6 +9,7 @@ build/
 !beispieldaten/*.csv
 !beispieldaten/banken/*.csv
 !beispieldaten/banken/neu/*.csv
+!beispieldaten/demo-verlauf/*.csv
 !app/lib/import/profiles/__fixtures__/*.csv
 .DS_Store
 coverage/
