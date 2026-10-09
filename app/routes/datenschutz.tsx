@@ -49,6 +49,11 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
           zur automatischen Zuordnung. IBANs werden vorher entfernt. Kontonummern und Zugangsdaten werden nie
           übermittelt.
         </li>
+        <li>Fragen an den Assistenten gehen ebenfalls an Anthropic; die Antwort nutzt Zahlen aus deinen Buchungen.</li>
+        <li>
+          Spracheingabe (Mikrofon-Knopf, freiwillig): Die Erkennung übernimmt dein Browser bzw. dessen Hersteller (z. B.
+          Apple bei Safari, Google bei Chrome). Das Haushaltsbuch erhält nur den erkannten Text, keine Audioaufnahme.
+        </li>
       </ul>
       <h2 className="text-lg font-semibold">Zweck und Rechtsgrundlage</h2>
       <p>
