@@ -1,0 +1,130 @@
+import { readFileSync } from "node:fs";
+import { MockLanguageModelV4 } from "ai/test";
+import { eq } from "drizzle-orm";
+import { beforeEach, describe, expect, it } from "vitest";
+import { createMockModel } from "~/lib/categorize/mock-model";
+import type { Db } from "~/lib/db/client";
+import { accounts, categories, imports, transactions } from "~/lib/db/schema";
+import { importCsv } from "~/lib/import/run";
+import { createTestDb } from "../../../tests/helpers/db";
+import { failingModel } from "../../../tests/helpers/models";
+import { askAssistant, chatSchema, DAILY_LIMIT } from "./agent.server";
+import { createMockAssistantModel } from "./mock-model";
+
+let db: Db;
+
+beforeEach(async () => {
+  ({ db } = await createTestDb());
+  const [account] = await db.select().from(accounts);
+  if (!account) throw new Error("Demo-Konto fehlt");
+  await importCsv(db, {
+    accountId: account.id,
+    filename: "demo.csv",
+    bytes: new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv")),
+    model: createMockModel(),
+  });
+  // A gym filed under leisure, three months in a row: the classic forgotten subscription.
+  const [leisure] = await db.select().from(categories).where(eq(categories.name, "Freizeit"));
+  const [imp] = await db.select().from(imports);
+  for (const d of ["2026-07-03", "2026-08-03", "2026-09-03"]) {
+    await db.insert(transactions).values({
+      accountId: account.id,
+      importId: imp?.id ?? "",
+      bookingDate: d,
+      amountCents: -2990,
+      counterparty: "Fitnessstudio Kraftwerk",
+      purpose: "Mitgliedsbeitrag DE89370400440532013000",
+      raw: {},
+      dedupeHash: `gym-${d}`,
+      categoryId: leisure?.id,
+      categorySource: "rule",
+    });
+  }
+});
+
+const ask = (question: string, model = createMockAssistantModel()) =>
+  askAssistant(db, model, [{ role: "user", content: question }]);
+
+describe("Assistent", () => {
+  it("findet versteckte Abos, auch wenn sie nicht als Abo einsortiert sind", async () => {
+    const reply = await ask("Check mal, ob ich versteckte Abo-Kosten habe");
+    expect(reply.tools).toEqual(["abos_und_fixkosten"]);
+    expect(reply.answer).toContain("Fitnessstudio Kraftwerk");
+    expect(reply.answer).toContain("Nicht als Abo einsortiert");
+  });
+
+  it("Monatsfragen: erst die Monate, dann die Übersicht des neuesten", async () => {
+    const reply = await ask("Wie waren meine Ausgaben?");
+    expect(reply.tools).toEqual(["monate", "monatsuebersicht"]);
+    expect(reply.answer).toContain("Im 2026-09: Einnahmen 4.121,40 €");
+  });
+
+  it("Werkzeug-Ergebnisse gehen ohne IBAN an das Modell", async () => {
+    const prompts: string[] = [];
+    let step = 0;
+    const model = new MockLanguageModelV4({
+      doGenerate: async ({ prompt }) => {
+        prompts.push(JSON.stringify(prompt));
+        step++;
+        const usage = {
+          inputTokens: { total: 0, noCache: 0, cacheRead: undefined, cacheWrite: undefined },
+          outputTokens: { total: 0, text: 0, reasoning: undefined },
+        };
+        return step === 1
+          ? {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "c1",
+                  toolName: "buchungen_suchen",
+                  input: JSON.stringify({ suchbegriff: "Fitness" }),
+                },
+              ],
+              finishReason: { unified: "tool-calls", raw: undefined },
+              usage,
+              warnings: [],
+            }
+          : {
+              content: [{ type: "text", text: "ok" }],
+              finishReason: { unified: "stop", raw: undefined },
+              usage,
+              warnings: [],
+            };
+      },
+    });
+    await ask("Zeig mir das Fitnessstudio", model);
+    expect(prompts[1]).toContain("Fitnessstudio Kraftwerk");
+    expect(prompts[1]).toContain("[IBAN]");
+    expect(prompts[1]).not.toContain("DE89370400440532013000");
+  });
+
+  it("Tageslimit: danach freundliche Absage ohne Modellaufruf", async () => {
+    const now = new Date("2026-10-09T10:00:00Z");
+    let calls = 0;
+    const counting = createMockAssistantModel();
+    const original = counting.doGenerate.bind(counting);
+    counting.doGenerate = async (o) => {
+      calls++;
+      return original(o);
+    };
+    for (let i = 0; i < DAILY_LIMIT; i++) await askAssistant(db, counting, [{ role: "user", content: "Budget?" }], now);
+    const before = calls;
+    const reply = await askAssistant(db, counting, [{ role: "user", content: "Budget?" }], now);
+    expect(reply.answer).toMatch(/Limit/);
+    expect(calls).toBe(before);
+  });
+
+  it("API-Fehler: verständliche Antwort statt Absturz", async () => {
+    const reply = await ask("Budget?", failingModel());
+    expect(reply.answer).toBe("Gerade kann ich nicht antworten. Bitte später noch einmal versuchen.");
+  });
+
+  it("Verlauf wird geprüft: Länge, Größe, letzte Nachricht ist eine Frage", () => {
+    expect(chatSchema.safeParse([{ role: "assistant", content: "hi" }]).success).toBe(false);
+    expect(chatSchema.safeParse([{ role: "user", content: "x".repeat(1001) }]).success).toBe(false);
+    expect(chatSchema.safeParse(Array.from({ length: 11 }, () => ({ role: "user", content: "a" }))).success).toBe(
+      false,
+    );
+    expect(chatSchema.safeParse([{ role: "user", content: "Wie viel für Essen?" }]).success).toBe(true);
+  });
+});

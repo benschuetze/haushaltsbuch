@@ -106,3 +106,12 @@ describe("Favicon", () => {
     expect(await outcome(new Request("http://x/favicon.ico"))).toBe("ok");
   });
 });
+
+describe("Assistent in der Demo", () => {
+  it("darf gefragt werden, alles andere Schreibende bleibt gesperrt", async () => {
+    vi.stubEnv("DEMO_MODE", "true");
+    expect(await outcome(new Request("http://x/assistent", { method: "POST" }))).toBe("ok");
+    expect(await outcome(new Request("http://x/assistent.data", { method: "POST" }))).toBe("ok");
+    expect(await outcome(new Request("http://x/regeln", { method: "POST" }))).toBe(403);
+  });
+});

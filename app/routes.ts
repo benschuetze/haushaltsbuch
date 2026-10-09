@@ -14,6 +14,7 @@ export default [
   route("banken", "routes/banken.tsx"),
   route("bank/callback", "routes/bank.callback.ts"),
   route("bank/sync", "routes/bank.sync.ts"),
+  route("assistent", "routes/assistent.ts"),
   route("datenschutz", "routes/datenschutz.tsx"),
   route("nutzungsbedingungen", "routes/nutzungsbedingungen.tsx"),
   route("login", "routes/login.tsx"),
