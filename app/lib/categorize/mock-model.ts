@@ -30,7 +30,8 @@ const COLUMN_HINTS: [RegExp, string][] = [
 function answerColumnMapping(text: string): string {
   const columns = [...text.matchAll(/^(\d+): (.+)$/gm)].map((m) => ({ index: Number(m[1]), name: m[2] ?? "" }));
   const answer: Record<string, number | string | null> = {
-    bank: "Kontoflow",
+    // Like the real model, which rarely knows a bank from abbreviated column names.
+    bank: "Unbekannte Bank",
     date: null,
     amount: null,
     debit: null,
