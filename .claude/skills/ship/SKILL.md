@@ -13,4 +13,7 @@ description: Use when a feature or fix is done and should be committed, pushed a
 6. Push. CI abwarten mit `gh run watch`. Rot heißt: Ursache finden und fixen, nicht neu starten in der Hoffnung, dass es durchläuft.
 7. Preview-URL von Vercel öffnen und die geänderte Stelle ansehen.
 8. Auf `main`: Produktions-Deployment abwarten, Produktions-URL aufrufen, geänderte Stelle prüfen.
+   - Build-Log: Steht dort „KI-Selbsttest bestanden“? Der Test schickt bei jedem Produktions-Build je eine Mini-Anfrage für Kategorisierung und Spaltenzuordnung an die echte API. Mocks beweisen nur unseren Umgang mit Antworten, nicht dass Key, Workspace, Modell-ID und Ausgabeformat stimmen.
+   - Vercel-Logs (Level error/warning) seit dem Deploy lesen. Ein 200 heißt nicht, dass nichts schiefging: Die App fängt LLM-Fehler ab und schreibt sie nur ins Log.
+   - Grenzen der Plattform mitdenken: 4,5 MB pro Request, Laufzeit pro Funktion, Region der Funktionen = Region der Datenbank (fra1).
 9. Dem Nutzer in einer Zeile sagen, was live ist und wo. Erst wenn es tatsächlich live gesehen wurde.
