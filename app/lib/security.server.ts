@@ -24,7 +24,8 @@ export function applySecurityHeaders(headers: Headers): void {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "no-referrer");
-  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
+  // The microphone only for this site itself: questions can be spoken (browser speech recognition).
+  headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=(), usb=()");
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   // Private finances have no business in a search index; the demo is linked directly, not found via search.
   headers.set("X-Robots-Tag", "noindex, nofollow");

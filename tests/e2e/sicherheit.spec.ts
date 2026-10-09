@@ -14,6 +14,8 @@ test("Seiten kommen mit strenger CSP und Schutz-Headern, ohne dass etwas blockie
   expect(h["x-content-type-options"]).toBe("nosniff");
   expect(h["strict-transport-security"]).toContain("max-age=");
   expect(h["referrer-policy"]).toBe("no-referrer");
+  // Microphone only for the app itself (spoken questions); camera, location and payment stay off.
+  expect(h["permissions-policy"]).toBe("camera=(), microphone=(self), geolocation=(), payment=(), usb=()");
   // The app still works: hydrated, navigable, no CSP violation in the console.
   await page.getByRole("link", { name: "Budgets" }).click();
   await expect(page.getByRole("heading", { name: "Budgets", level: 1 })).toBeVisible();

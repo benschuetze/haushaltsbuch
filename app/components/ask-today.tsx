@@ -1,6 +1,6 @@
-import { ArrowUp, Loader2, Sparkles } from "lucide-react";
+import { ArrowUp, Loader2, Mic, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useSearchParams } from "react-router";
 import { formatCents } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
@@ -29,6 +29,64 @@ function longDate(iso: string): string {
   );
 }
 
+type Recognition = {
+  lang: string;
+  interimResults: boolean;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+/**
+ * Speak instead of type. Uses the browser's own speech recognition (Safari, Chrome); where there is none,
+ * the button does not appear. The spoken question is sent as soon as speaking ends.
+ */
+function useSpeech(onFinal: (text: string) => void, onPartial: (text: string) => void) {
+  const [supported, setSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const ref = useRef<Recognition | null>(null);
+  useEffect(() => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => Recognition;
+      webkitSpeechRecognition?: new () => Recognition;
+    };
+    setSupported(Boolean(w.SpeechRecognition ?? w.webkitSpeechRecognition));
+  }, []);
+  function toggle() {
+    if (listening) {
+      ref.current?.stop();
+      return;
+    }
+    const w = window as unknown as {
+      SpeechRecognition?: new () => Recognition;
+      webkitSpeechRecognition?: new () => Recognition;
+    };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const r = new Ctor();
+    r.lang = "de-DE";
+    r.interimResults = true;
+    let text = "";
+    r.onresult = (e) => {
+      text = Array.from(e.results)
+        .map((res) => res[0]?.transcript ?? "")
+        .join("");
+      onPartial(text);
+    };
+    r.onend = () => {
+      setListening(false);
+      if (text.trim()) onFinal(text);
+    };
+    r.onerror = () => setListening(false);
+    ref.current = r;
+    setListening(true);
+    r.start();
+  }
+  return { supported, listening, toggle };
+}
+
 type Turn = { id: number; question: string; answer: string | null };
 
 /**
@@ -42,6 +100,16 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
   const handled = useRef<unknown>(null);
   const nextId = useRef(0);
   const busy = fetcher.state !== "idle";
+  const inputRef = useRef<HTMLInputElement>(null);
+  const speech = useSpeech(
+    (text) => ask(text),
+    (text) => setDraft(text),
+  );
+  // The home-screen shortcut "Frag einfach" opens with ?fragen=1: straight into the question box.
+  const [params] = useSearchParams();
+  useEffect(() => {
+    if (params.get("fragen") === "1") inputRef.current?.focus();
+  }, [params]);
   const overdrawn = today.freeCents < 0;
 
   useEffect(() => {
@@ -136,13 +204,31 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
               aria-hidden="true"
             />
             <input
+              ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Frag einfach: Kann ich mir … leisten?"
               aria-label="Frage an dein Haushaltsbuch"
               maxLength={500}
-              className="h-12 w-full rounded-xl border border-input bg-background pr-12 pl-9 text-base shadow-xs focus-visible:outline-2 focus-visible:outline-ring"
+              className={cn(
+                "h-12 w-full rounded-xl border border-input bg-background pl-9 text-base shadow-xs focus-visible:outline-2 focus-visible:outline-ring",
+                speech.supported ? "pr-24" : "pr-12",
+              )}
             />
+            {speech.supported ? (
+              <button
+                type="button"
+                onClick={speech.toggle}
+                aria-label={speech.listening ? "Zuhören beenden" : "Frage sprechen"}
+                aria-pressed={speech.listening}
+                className={cn(
+                  "absolute top-1/2 right-12 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg",
+                  speech.listening ? "animate-pulse bg-red-600 text-white" : "hover:bg-accent",
+                )}
+              >
+                <Mic className="size-4" aria-hidden="true" />
+              </button>
+            ) : null}
             <button
               type="submit"
               disabled={busy || !draft.trim()}
