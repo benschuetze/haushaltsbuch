@@ -54,7 +54,11 @@ export async function refreshInsights(db: Db, now = new Date()): Promise<void> {
     loadBudgets(db),
     db.select().from(subscriptionCancellations),
   ]);
-  if (bookings.length === 0) return;
+  if (bookings.length === 0) {
+    // Everything was removed (e.g. mock accounts): nothing left to hint about.
+    await db.delete(insights).where(isNull(insights.dismissedAt));
+    return;
+  }
   const ref = referenceMonth(bookings, now);
   const drafts = computeInsights({
     bookings,
