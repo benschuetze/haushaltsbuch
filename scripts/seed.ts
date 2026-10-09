@@ -6,6 +6,7 @@ import { getDb } from "~/lib/db/client";
 import { accounts, transactions } from "~/lib/db/schema";
 import { DEMO_ACCOUNT, seed } from "~/lib/db/seed";
 import { importCsv } from "~/lib/import/run";
+import { refreshInsights } from "~/lib/insights";
 
 const db = getDb();
 await seed(db);
@@ -27,4 +28,7 @@ if (process.env.DEMO_MODE === "true") {
     console.log("Demo-Daten schon vorhanden");
   }
 }
+// Runs on every deploy: hints computed by an older version of the logic must not linger for hours.
+await refreshInsights(db);
+console.log("Hinweise neu berechnet");
 process.exit(0);

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { categorizeTransactions } from "~/lib/categorize/apply";
 import type { Db } from "~/lib/db/client";
 import { type Account, accounts, imports, transactions } from "~/lib/db/schema";
+import { refreshInsights } from "~/lib/insights";
 import { resolveAccount } from "./accounts";
 import { withDedupeHashes } from "./dedupe";
 import { detectFormat, parseForProfile, profileLabel } from "./formats/detect";
@@ -68,6 +69,7 @@ async function store(
   }
 
   const stats = await categorizeTransactions(db, insertedIds, input.model);
+  if (insertedIds.length > 0) await refreshInsights(db);
   return {
     total,
     inserted: insertedIds.length,

@@ -9,6 +9,7 @@ import { ruleInputSchema } from "~/lib/categorize/rules";
 import { getDb } from "~/lib/db/client";
 import { rules } from "~/lib/db/schema";
 import { countLabel } from "~/lib/format";
+import { refreshInsights } from "~/lib/insights";
 import { listCategories, listRules } from "~/lib/queries";
 import type { Route } from "./+types/regeln";
 
@@ -22,7 +23,13 @@ export async function loader() {
 
 type ActionData = { ok: true; message: string } | { ok: false; message: string; ruleId?: string };
 
-export async function action({ request }: Route.ActionArgs) {
+export async function action(args: Route.ActionArgs) {
+  const result = await handle(args);
+  await refreshInsights(getDb());
+  return result;
+}
+
+async function handle({ request }: Route.ActionArgs) {
   const form = Object.fromEntries(await request.formData());
   const db = getDb();
   const intent = form.intent;

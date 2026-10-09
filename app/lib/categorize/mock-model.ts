@@ -9,7 +9,7 @@ const KEYWORDS: [RegExp, string, number][] = [
   [/kita|kindergarten/i, "Kind & Kita", 0.9],
   [/versicherung/i, "Versicherungen", 0.9],
   [/spotify|anthropic|netflix|telekom/i, "Abos & Software", 0.85],
-  [/thomann|bandcamp/i, "Musik & Equipment", 0.85],
+  [/thomann|bandcamp/i, "Hobbys", 0.85],
   [/aral|shell|bahn|tankstelle/i, "Mobilität", 0.88],
   [/apotheke/i, "Gesundheit", 0.85],
   [/zoo|kino/i, "Freizeit", 0.8],

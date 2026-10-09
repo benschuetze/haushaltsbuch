@@ -9,12 +9,16 @@ import {
 } from "./helpers";
 
 const PAGES = [
-  { path: "/", heading: "Übersicht", action: { role: "link" as const, name: "Ganzen Monat ansehen" } },
+  { path: "/", heading: "Übersicht", action: { role: "link" as const, name: "Ganzer Monat" } },
   { path: "/transaktionen", heading: "Buchungen", action: { role: "button" as const, name: "Filtern" } },
   { path: "/monat/2026-09", heading: "September 2026", action: { role: "link" as const, name: /August 2026/ } },
   { path: "/import", heading: "Kontoauszug importieren", action: { role: "button" as const, name: "Importieren" } },
   { path: "/regeln", heading: "Regeln", action: { role: "button" as const, name: "Regel anlegen" } },
   { path: "/konten", heading: "Konten", action: { role: "button" as const, name: "Umbenennen" } },
+  { path: "/budgets", heading: "Budgets", action: { role: "button" as const, name: "Kategorie anlegen" } },
+  { path: "/abos", heading: "Abos und feste Kosten", action: { role: "link" as const, name: "Abos" } },
+  { path: "/hinweise", heading: "Hinweise", action: { role: "link" as const, name: "Übersicht" } },
+  { path: "/pruefen", heading: "Prüfen", action: { role: "link" as const, name: "Überspringen" } },
 ];
 
 test.beforeAll(resetDb);

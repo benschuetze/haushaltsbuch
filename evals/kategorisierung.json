@@ -70,7 +70,7 @@
       "counterparty": "PayPal Europe",
       "purpose": "PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann",
       "amount_cents": -8900,
-      "expected": "Musik & Equipment"
+      "expected": "Hobbys"
     },
     {
       "id": "e11",
@@ -161,7 +161,7 @@
       "counterparty": "Bandcamp Inc",
       "purpose": "Kartenzahlung bandcamp.com",
       "amount_cents": -900,
-      "expected": "Musik & Equipment"
+      "expected": "Hobbys"
     },
     {
       "id": "e24",

@@ -24,8 +24,9 @@ test("Filter „prüfen“ zeigt nur unsichere Buchungen, Bestätigen nimmt sie 
   await expect(rows).toHaveCount(2);
   await expect(rows.filter({ hasText: "Zalando" })).toHaveCount(0);
 
+  // Counts everything still open, like the bell: the dm bookings from August and September.
   await page.goto("/");
-  await expect(page.getByTestId("review-count")).toHaveText("1");
+  await expect(page.getByTestId("review-count")).toHaveText("2");
 });
 
 test("Buchungen, die beim Import ohne Kategorie blieben, lassen sich nachträglich zuordnen", async ({ page }) => {

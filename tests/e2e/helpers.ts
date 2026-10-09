@@ -1,21 +1,30 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
+import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import type { Db } from "../../app/lib/db/client";
+import * as schema from "../../app/lib/db/schema";
+import { DEFAULT_CATEGORIES, seed } from "../../app/lib/db/seed";
 
 export const DEMO_CSV = "beispieldaten/demo-umsaetze.csv";
 export const E2E_PASSWORD = "e2e-test-passwort";
 export const DEMO_URL = "http://127.0.0.1:5198";
 
-/** Every spec starts from the same state: seeded categories and account, no bookings, no rules. */
+/**
+ * Every spec starts from the same state: default categories and budgets, the demo account, nothing else.
+ * Budgets and categories are reset too, otherwise the desktop run leaves changes behind for the mobile run.
+ */
 export async function resetDb(): Promise<void> {
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
+  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   try {
-    await client.query("truncate table rules, transactions, imports restart identity cascade");
-    await client.query("delete from accounts where name <> 'Girokonto (Demo)'");
-    await client.query("truncate table bank_formats");
+    await pool.query(
+      "truncate table rules, transactions, imports, insights, budgets, meta, bank_formats restart identity cascade",
+    );
+    await pool.query("delete from accounts where name <> 'Girokonto (Demo)'");
+    await pool.query("delete from categories where not (name = any($1))", [DEFAULT_CATEGORIES.map((c) => c.name)]);
+    await seed(drizzle(pool, { schema }) as unknown as Db);
   } finally {
-    await client.end();
+    await pool.end();
   }
 }
 
