@@ -148,3 +148,15 @@ test("ohne Suche und Filter: nach Art gruppiert, jede Kachel mit echtem Logo", a
   }
   expect(broken).toEqual([]);
 });
+
+test("Demo-Verbindung spricht vom Institut, nicht von „der Bank“, und verspricht keinen Live-Abruf", async ({
+  page,
+}) => {
+  await page.goto(`${DEMO_URL}/banken`);
+  await page.getByRole("button", { name: "PayPal hinzufügen" }).click();
+  await page.getByRole("button", { name: "Verbindung testen (Demo)" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("list", { name: "Verbindungsschritte" })).toContainText("Anmeldung bei PayPal");
+  await expect(dialog.getByRole("status")).toContainText("Danach erscheinen die Umsätze von PayPal");
+  await expect(dialog).not.toContainText("jeden Morgen");
+});

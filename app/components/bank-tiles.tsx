@@ -16,7 +16,14 @@ export type TileView = LogoTile & {
   mockConnected: boolean;
 };
 
-const DEMO_STEPS = ["Sichere Verbindung aufbauen", "Anmeldung bei der Bank", "Konten finden", "Umsätze abrufen"];
+/** Steps of the simulated connection; `name` is the institution, so PayPal does not read "Bank". */
+const demoSteps = (name: string) => [
+  "Sichere Verbindung aufbauen",
+  `Anmeldung bei ${name}`,
+  "Konten finden",
+  "Umsätze abrufen",
+];
+const STEP_COUNT = 4;
 
 /**
  * Search filters while typing, chips narrow to one kind of institution; without either the tiles are
@@ -322,7 +329,7 @@ function FileImport({ tile, demo, busy }: { tile: TileView; demo: boolean; busy:
 function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
   const fetcher = useFetcher<{ ok: boolean; message: string }>();
   const [step, setStep] = useState<number | null>(null);
-  const done = step !== null && step >= DEMO_STEPS.length;
+  const done = step !== null && step >= STEP_COUNT;
 
   useEffect(() => {
     if (step === null || done) return;
@@ -361,7 +368,7 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
   }
   return (
     <ol className="space-y-2" aria-label="Verbindungsschritte">
-      {DEMO_STEPS.map((label, i) => (
+      {demoSteps(tile.name).map((label, i) => (
         <li key={label} className="flex items-center gap-2 text-sm">
           {i < step ? (
             <Check className="size-4 text-emerald-600" aria-hidden="true" />
@@ -375,8 +382,8 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
       ))}
       {done && demo ? (
         <li role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950">
-          So einfach geht's: In deiner eigenen App landen die Umsätze von {tile.name} jetzt automatisch jeden Morgen im
-          Haushaltsbuch. (Demo, nichts wurde verbunden.)
+          So sieht das Verbinden aus. Danach erscheinen die Umsätze von {tile.name} in Übersicht, Abos und Hinweisen.
+          (Demo, nichts wurde verbunden.)
         </li>
       ) : done && fetcher.data ? (
         <li
