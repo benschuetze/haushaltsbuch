@@ -1,5 +1,8 @@
+// Test values are generated at runtime so no credential-looking literal ends up in the repo.
+import { randomUUID } from "node:crypto";
+import { createCookieSessionStorage } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { guard, passwordMatches, safeRedirect } from "./auth.server";
+import { guard, isLoggedIn, loginConfigured, passwordMatches, safeRedirect } from "./auth.server";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -43,9 +46,10 @@ describe("guard", () => {
 
 describe("passwordMatches", () => {
   it("vergleicht mit APP_PASSWORD und lehnt ohne gesetztes Passwort alles ab", () => {
-    vi.stubEnv("APP_PASSWORD", "richtig");
-    expect(passwordMatches("richtig")).toBe(true);
-    expect(passwordMatches("falsch")).toBe(false);
+    const configured = randomUUID();
+    vi.stubEnv("APP_PASSWORD", configured);
+    expect(passwordMatches(configured)).toBe(true);
+    expect(passwordMatches(randomUUID())).toBe(false);
     vi.stubEnv("APP_PASSWORD", "");
     expect(passwordMatches("")).toBe(false);
   });
@@ -60,5 +64,36 @@ describe("safeRedirect", () => {
     [null, "/"],
   ])("%s → %s", (input, out) => {
     expect(safeRedirect(input)).toBe(out);
+  });
+});
+
+describe("Session-Secret", () => {
+  async function forgedCookie(secret: string): Promise<string> {
+    const storage = createCookieSessionStorage({ cookie: { name: "hb_session", secrets: [secret] } });
+    const session = await storage.getSession();
+    session.set("loggedIn", true);
+    return (await storage.commitSession(session)).split(";")[0] as string;
+  }
+
+  it("ohne SESSION_SECRET in Produktion lässt sich kein Login-Cookie fälschen", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SESSION_SECRET", "");
+    const cookie = await forgedCookie("nur-fuer-lokale-entwicklung");
+    expect(await isLoggedIn(new Request("http://x/", { headers: { Cookie: cookie } }))).toBe(false);
+  });
+
+  it("ein zu kurzes SESSION_SECRET zählt in Produktion als fehlend", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_PASSWORD", randomUUID());
+    vi.stubEnv("SESSION_SECRET", randomUUID().slice(0, 8));
+    expect(loginConfigured()).toBe(false);
+  });
+
+  it("mit gesetztem Secret gilt ein damit signiertes Cookie als angemeldet", async () => {
+    const secret = randomUUID() + randomUUID();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SESSION_SECRET", secret);
+    const cookie = await forgedCookie(secret);
+    expect(await isLoggedIn(new Request("http://x/", { headers: { Cookie: cookie } }))).toBe(true);
   });
 });
