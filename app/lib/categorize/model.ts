@@ -19,3 +19,12 @@ export function getModel(options: { fetch?: typeof fetch } = {}): LanguageModel 
   });
   return provider(process.env.AI_MODEL || DEFAULT_MODEL);
 }
+
+/** The assistant needs tool calling; the keyword mock for categorisation cannot do that, so it has its own. */
+export async function getAssistantModel(): Promise<LanguageModel | null> {
+  if (process.env.AI_MOCK === "1") {
+    const { createMockAssistantModel } = await import("~/lib/assistant/mock-model");
+    return createMockAssistantModel();
+  }
+  return getModel();
+}

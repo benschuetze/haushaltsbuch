@@ -94,7 +94,8 @@ export async function guard(request: Request): Promise<void> {
   const writing = request.method !== "GET" && request.method !== "HEAD";
 
   if (isDemo()) {
-    if (writing) throw new Response("Die Demo ist schreibgeschützt.", { status: 403 });
+    // The assistant only reads (and answers with the mock model in the demo), so it may be asked there.
+    if (writing && path !== "/assistent") throw new Response("Die Demo ist schreibgeschützt.", { status: 403 });
     if (path === "/login") throw redirect("/");
     return;
   }

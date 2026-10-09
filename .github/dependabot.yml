@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # Types follow the Node version Vercel runs, not the newest Node release.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       # One PR for routine bumps; security fixes still come as their own PRs.
       minor-und-patch:

@@ -1,4 +1,5 @@
-import type { LanguageModel } from "ai";
+import { generateText, isStepCount, type LanguageModel, tool } from "ai";
+import { z } from "zod";
 import { DEFAULT_CATEGORIES } from "~/lib/db/seed";
 import { readTable } from "~/lib/import/formats/generic";
 import { guessMappingWithLlm } from "~/lib/import/formats/llm-mapping";
@@ -19,7 +20,7 @@ const SAMPLE_EXPORT =
  * Exercises both real LLM paths the way production uses them. Returns the problems found, empty when fine.
  * Mocks prove our handling of answers; only this proves key, workspace, model id and output format work.
  */
-export async function aiSmokeTest(model: LanguageModel): Promise<string[]> {
+export async function aiSmokeTest(model: LanguageModel, assistantModel: LanguageModel = model): Promise<string[]> {
   const problems: string[] = [];
   const errors: unknown[] = [];
   const categories = DEFAULT_CATEGORIES.map((c) => ({ id: c.name, name: c.name, kind: c.kind }));
@@ -34,6 +35,30 @@ export async function aiSmokeTest(model: LanguageModel): Promise<string[]> {
   const mapping = table ? await guessMappingWithLlm(model, table, (e) => errors.push(e)) : null;
   if (errors.length > before) problems.push(`Spaltenzuordnung: ${describe(errors[before])}`);
   else if (!mapping) problems.push("Spaltenzuordnung: keine gültige Zuordnung");
+
+  // The assistant relies on tool calling, a different API path; a harmless tool, no data involved.
+  try {
+    const r = await generateText({
+      model: assistantModel,
+      system: "Antworte knapp auf Deutsch.",
+      prompt: "Rufe das Werkzeug pruefzahl auf und nenne die Zahl, die es liefert.",
+      tools: {
+        pruefzahl: tool({
+          description: "Liefert eine Prüfzahl.",
+          inputSchema: z.object({}),
+          execute: async () => ({ zahl: 4711 }),
+        }),
+      },
+      stopWhen: isStepCount(3),
+      maxOutputTokens: 200,
+      maxRetries: 1,
+    });
+    const called = r.steps.some((s) => s.toolCalls.some((c) => c.toolName === "pruefzahl"));
+    if (!called) problems.push("Assistent: Werkzeug wurde nicht aufgerufen");
+    else if (!r.text.includes("4711")) problems.push("Assistent: Antwort nutzt das Werkzeug-Ergebnis nicht");
+  } catch (error) {
+    problems.push(`Assistent: ${describe(error)}`);
+  }
 
   return problems;
 }
