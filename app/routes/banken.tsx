@@ -1,8 +1,11 @@
 import { eq } from "drizzle-orm";
 import { data, Form, redirect, useNavigation, useSearchParams } from "react-router";
 import { z } from "zod";
+import { BankTiles } from "~/components/bank-tiles";
 import { Button } from "~/components/ui/button";
 import { isDemo } from "~/lib/auth.server";
+import { BANK_TILES, tileState } from "~/lib/bank/catalog";
+import { BankApiError } from "~/lib/bank/enable-banking.server";
 import { bankClient, listConnections } from "~/lib/bank/index.server";
 import { bankStateCookie } from "~/lib/bank/state-cookie.server";
 import { createAuthState, disconnect, syncConnection } from "~/lib/bank/sync.server";
@@ -34,12 +37,25 @@ export async function loader({ request }: Route.LoaderArgs) {
       banks = (await client.listAspsps(country)).map((a) => a.name).sort((a, b) => a.localeCompare(b, "de"));
     } catch (error) {
       console.error(`Bankenliste nicht abrufbar: ${safeError(error)}`);
-      listError = "Die Bankenliste ist gerade nicht erreichbar. Bitte später erneut versuchen.";
+      // A freshly registered production app answers 403 until its owner links own accounts in the portal.
+      listError =
+        error instanceof BankApiError && error.status === 403
+          ? "Die Live-Anbindung ist bei Enable Banking noch nicht freigeschaltet. Bis dahin geht alles per Datei."
+          : "Die Bankenliste ist gerade nicht erreichbar. Bitte später erneut versuchen.";
     }
   }
+  const demo = isDemo();
+  // The demo has no bank access; it lists the tiles' own names so the connection can be played through.
+  const available = demo ? BANK_TILES.filter((t) => t.match).map((t) => t.name) : banks;
+  // RegExps do not survive serialisation to the browser, and the browser does not need them.
+  const tiles = BANK_TILES.map(({ match: _match, ...view }, i) => ({
+    ...view,
+    state: tileState(BANK_TILES[i] as (typeof BANK_TILES)[number], available),
+  }));
   return {
     configured: client !== null,
-    demo: isDemo(),
+    demo,
+    tiles,
     country,
     countries: COUNTRIES,
     banks,
@@ -123,7 +139,7 @@ const NOTICES: Record<string, string> = {
 };
 
 export default function Banken({ loaderData, actionData }: Route.ComponentProps) {
-  const { configured, demo, country, countries, banks, listError, connections } = loaderData;
+  const { configured, demo, tiles, country, countries, banks, listError, connections } = loaderData;
   const [params] = useSearchParams();
   const busy = useNavigation().state !== "idle";
   // Messages from the return URL belong to that moment; a newer action result replaces them.
@@ -197,22 +213,25 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
         </ul>
       ) : null}
 
-      <section aria-labelledby="connect" className="space-y-3 rounded-lg border p-4">
-        <h2 id="connect" className="font-semibold">
-          Bank verbinden
-        </h2>
-        {!configured ? (
-          <p className="text-sm">
-            {demo
-              ? "In der Demo gibt es keine Bankanbindung."
-              : "Die Bankanbindung ist noch nicht eingerichtet (ENABLE_BANKING_APP_ID und Schlüssel fehlen)."}
+      <section aria-labelledby="connect" className="space-y-3">
+        <div className="space-y-1">
+          <h2 id="connect" className="text-lg font-semibold">
+            Bank hinzufügen
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {listError ??
+              (configured || demo
+                ? "„Live“ verbindet direkt mit der Bank. Alles andere kommt per Datei, die App erkennt das Format selbst."
+                : "Die Live-Anbindung ist noch nicht eingerichtet, bis dahin geht alles per Datei.")}
           </p>
-        ) : listError ? (
-          <p role="alert" className="text-sm text-destructive">
-            {listError}
-          </p>
-        ) : (
-          <>
+        </div>
+        <BankTiles tiles={tiles} country={country} demo={demo} />
+      </section>
+
+      {configured && !listError ? (
+        <details className="rounded-lg border p-4">
+          <summary className="cursor-pointer font-medium">Andere Bank suchen</summary>
+          <div className="mt-3 space-y-3">
             <Form method="get" className="flex flex-wrap items-end gap-2">
               <div className="space-y-1">
                 <label htmlFor="land" className="block text-sm">
@@ -261,9 +280,9 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
                 Weiter zur Bank
               </Button>
             </Form>
-          </>
-        )}
-      </section>
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

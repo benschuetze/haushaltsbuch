@@ -1,5 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { DEMO_URL, FAKE_BANK_URL, resetDb } from "./helpers";
+
+/** Banks without a tile are found through the search below the tiles. */
+async function connectTestbank(page: Page) {
+  await page.getByText("Andere Bank suchen").click();
+  await page.getByLabel(/^Bank \(/).fill("Testbank");
+  await page.getByRole("button", { name: "Weiter zur Bank" }).click();
+}
 
 test.beforeEach(async () => {
   await resetDb();
@@ -10,8 +17,7 @@ test("Bank verbinden: zur Bank und zurück, Konto entsteht, Umsätze sind da, er
   page,
 }) => {
   await page.goto("/banken");
-  await page.getByLabel(/^Bank \(/).fill("Testbank");
-  await page.getByRole("button", { name: "Weiter zur Bank" }).click();
+  await connectTestbank(page);
 
   await expect(page).toHaveURL(/\/banken\?verbunden=4/);
   await expect(page.getByRole("status")).toHaveText("Verbunden. 4 neue Buchungen abgerufen.");
@@ -37,8 +43,7 @@ test("Rücksprung ohne passenden state wird abgewiesen, nichts wird angelegt", a
 
 test("Zugang abgelaufen: Glocke meldet es, Verbindung steht auf abgelaufen", async ({ page }) => {
   await page.goto("/banken");
-  await page.getByLabel(/^Bank \(/).fill("Testbank");
-  await page.getByRole("button", { name: "Weiter zur Bank" }).click();
+  await connectTestbank(page);
   await expect(page).toHaveURL(/verbunden=/);
 
   await fetch(`${FAKE_BANK_URL}/__expire`);
@@ -51,8 +56,7 @@ test("Zugang abgelaufen: Glocke meldet es, Verbindung steht auf abgelaufen", asy
 
 test("Trennen: Zugang weg, Buchungen bleiben", async ({ page }) => {
   await page.goto("/banken");
-  await page.getByLabel(/^Bank \(/).fill("Testbank");
-  await page.getByRole("button", { name: "Weiter zur Bank" }).click();
+  await connectTestbank(page);
   await page.getByRole("button", { name: "Trennen" }).click();
   await expect(page.getByRole("status")).toHaveText("Verbindung zu Testbank getrennt. Bisherige Buchungen bleiben.");
   await expect(page.getByTestId("connection-status")).toHaveText("getrennt");
@@ -65,8 +69,7 @@ test("täglicher Abruf: ohne Geheimnis 401, mit Geheimnis nur Zahlen, keine Buch
   request,
 }) => {
   await page.goto("/banken");
-  await page.getByLabel(/^Bank \(/).fill("Testbank");
-  await page.getByRole("button", { name: "Weiter zur Bank" }).click();
+  await connectTestbank(page);
   await expect(page).toHaveURL(/verbunden=/);
 
   expect((await request.get("/bank/sync")).status()).toBe(401);
@@ -90,8 +93,9 @@ test("Datenschutz und Nutzungsbedingungen sind ohne Anmeldung erreichbar", async
 
 test.describe("Demo", () => {
   test.use({ storageState: { cookies: [], origins: [] }, baseURL: DEMO_URL });
-  test("ohne Bankanbindung, Seite erklärt es", async ({ page }) => {
+  test("ohne echte Bankanbindung: Kacheln da, keine Suche nach echten Banken", async ({ page }) => {
     await page.goto("/banken");
-    await expect(page.getByText("In der Demo gibt es keine Bankanbindung.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "PayPal hinzufügen" })).toBeVisible();
+    await expect(page.getByText("Andere Bank suchen")).toHaveCount(0);
   });
 });

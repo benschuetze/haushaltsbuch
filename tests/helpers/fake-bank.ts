@@ -4,7 +4,7 @@ import { createVerify, generateKeyPairSync } from "node:crypto";
 export function createFakeBank(options: { appId: string; publicKey: string }) {
   const sessions = new Map<string, { revoked: boolean }>();
   let codes = 0;
-  const state = { expireSessions: false, calls: [] as string[] };
+  const state = { expireSessions: false, inactive: false, calls: [] as string[] };
 
   const transactions = {
     first: [
@@ -33,9 +33,16 @@ export function createFakeBank(options: { appId: string; publicKey: string }) {
     const url = new URL(req.url);
     state.calls.push(`${req.method} ${url.pathname}`);
     if (!authorized(req)) return json({ error: "UNAUTHORIZED", message: "JWT invalid" }, 401);
+    // A registered but not yet activated production app, as Enable Banking answers it.
+    if (state.inactive) return json({ error: "FORBIDDEN", message: "Application is not active" }, 403);
     if (req.method === "GET" && url.pathname === "/aspsps") {
       return json({
-        aspsps: [{ name: "Testbank", country: "DE", psu_types: ["personal"], maximum_consent_validity: 15552000 }],
+        aspsps: ["Testbank", "DKB", "Sparkasse Musterstadt", "Sparkasse Beispielhausen"].map((name) => ({
+          name,
+          country: "DE",
+          psu_types: ["personal"],
+          maximum_consent_validity: 15552000,
+        })),
       });
     }
     if (req.method === "POST" && url.pathname === "/auth") {
