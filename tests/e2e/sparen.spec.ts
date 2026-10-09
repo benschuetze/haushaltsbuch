@@ -80,3 +80,16 @@ test("Abos werden aus regelmäßigen Zahlungen erkannt, auch ohne Abo-Kategorie"
   await expect(gym).toContainText("monatlich · Freizeit");
   await expect(gym).toContainText("358,80 € im Jahr");
 });
+
+test("das Glocken-Menü liegt vollständig im Bildschirm, auch auf dem Handy", async ({ page }) => {
+  await importDemo(page);
+  await page.goto("/");
+  await bell(page).locator("summary").click();
+  const panel = bell(page).locator("summary + div");
+  await expect(panel).toBeVisible();
+  const box = await panel.boundingBox();
+  const width = page.viewportSize()?.width ?? 0;
+  expect(box, "Menü hat keine Fläche").not.toBeNull();
+  expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+  expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+});

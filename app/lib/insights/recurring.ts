@@ -93,6 +93,16 @@ export function detectRecurring(bookings: Booking[], referenceDate: string): Rec
     if (!cadence) continue;
     // Two bookings in the same week are not a weekly rhythm unless there are more of them.
     if (cadence === "weekly" && items.length < 4) continue;
+    // Two equal purchases a month apart are often chance (zoo, bakery). Two payments are enough only for
+    // known services or what is already filed as a subscription.
+    const last0 = items.at(-1) as Booking;
+    if (
+      items.length < 3 &&
+      last0.categoryName !== "Abos & Software" &&
+      !serviceGroupOf(merchantOf(last0), last0.purpose)
+    ) {
+      continue;
+    }
 
     const amounts = items.map((b) => Math.abs(b.amountCents)).sort((a, b) => a - b);
     const median = amounts[Math.floor(amounts.length / 2)] ?? 0;

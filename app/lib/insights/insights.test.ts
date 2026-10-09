@@ -32,6 +32,26 @@ describe("detectRecurring", () => {
     });
   });
 
+  it("zwei gleiche Einkäufe im Monatsabstand sind Zufall, kein Abo", () => {
+    const rows = [
+      ...monthly("Bäckerei Kern", [-840, -840], "Lebensmittel"),
+      ...monthly("Zoo Beispielstadt", [-2400, -2400], "Freizeit"),
+    ];
+    expect(detectRecurring(rows, "2026-05-10")).toEqual([]);
+  });
+
+  it("bekannte Dienste und die Abo-Kategorie reichen schon mit zwei Zahlungen", () => {
+    const rows = [
+      ...monthly("Netflix", [-1399, -1399], "Freizeit"),
+      ...monthly("Kleiner Dienst", [-499, -499], "Abos & Software"),
+    ];
+    expect(
+      detectRecurring(rows, "2026-05-10")
+        .map((r) => r.merchant)
+        .sort(),
+    ).toEqual(["Kleiner Dienst", "Netflix"]);
+  });
+
   it("Lebensmittel und Umbuchungen sind nie Abos, auch wenn sie regelmäßig sind", () => {
     const rows = [
       ...monthly("REWE Markt", [-5000, -5000, -5000], "Lebensmittel"),

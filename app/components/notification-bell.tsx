@@ -44,7 +44,8 @@ export function NotificationBell({ notifications, demo }: { notifications: Notif
           />
         ) : null}
       </summary>
-      <div className="absolute right-0 z-20 mt-2 w-[min(22rem,calc(100vw-2rem))] space-y-3 rounded-lg border bg-background p-3 shadow-lg">
+      {/* Phones: full width below the header (the bell is not at the screen edge). Wider screens: under the bell. */}
+      <div className="fixed inset-x-4 top-14 z-20 space-y-3 rounded-lg border bg-background p-3 shadow-lg sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem]">
         {notifications.reviewCount > 0 && !demo ? (
           <Link
             to="/pruefen"

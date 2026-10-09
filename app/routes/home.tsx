@@ -6,7 +6,7 @@ import { Stat } from "~/components/stat";
 import { Button } from "~/components/ui/button";
 import { getDb } from "~/lib/db/client";
 import { formatMonth } from "~/lib/format";
-import { budgetStatus, openInsights, recurringPayments } from "~/lib/insights";
+import { budgetStatus, notificationSummary, openInsights, recurringPayments } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { currentMonth, monthSummary, monthsWithData } from "~/lib/queries";
 import type { Route } from "./+types/home";
@@ -20,17 +20,21 @@ export async function loader() {
   // Bank exports lag behind; if this month has nothing yet, the latest month with data is the useful one.
   const month = months.includes(now) ? now : months[0];
   if (!month) return { month: null } as const;
-  const [summary, budgets, insights, recurring] = await Promise.all([
+  const [summary, budgets, insights, recurring, notifications] = await Promise.all([
     monthSummary(db, month),
     budgetStatus(db),
     openInsights(db, 20),
     recurringPayments(db),
+    notificationSummary(db),
   ]);
   const subscriptions = recurring.filter((r) => r.active && r.kind === "subscription");
   return {
     month,
     isCurrent: month === now,
     summary,
+    // Same number the bell shows: everything waiting, not only this month.
+    reviewCount: notifications.reviewCount,
+    insightCount: insights.length,
     budgets: budgets.items
       .map((b) => ({ ...b, ratio: b.spentCents / b.budgetCents }))
       .sort((a, b) => b.ratio - a.ratio)
@@ -79,7 +83,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       </div>
     );
   }
-  const { month, isCurrent, summary, budgets, insights, savingsCents, subscriptions } = loaderData;
+  const { month, isCurrent, summary, reviewCount, insightCount, budgets, insights, savingsCents, subscriptions } =
+    loaderData;
   const topExpenses = summary.byCategory
     .filter((c) => c.kind !== "transfer" && c.kind !== "income" && c.cents < 0)
     .sort((a, b) => a.cents - b.cents)
@@ -105,9 +110,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <Amount cents={summary.incomeCents + summary.expenseCents} />
         </Stat>
         <Stat label="Zu prüfen" testId="review-count">
-          {summary.reviewCount > 0 ? (
+          {reviewCount > 0 ? (
             <Link to="/pruefen" className="underline underline-offset-4">
-              {summary.reviewCount}
+              {reviewCount}
             </Link>
           ) : (
             "0"
@@ -116,9 +121,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       </dl>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Sparpotenzial" link={{ to: "/hinweise", label: "Alle Hinweise" }}>
+        <Card
+          title={savingsCents > 0 ? "Sparpotenzial" : "Hinweise"}
+          link={{ to: "/hinweise", label: "Alle Hinweise" }}
+        >
           <p className="text-2xl font-semibold text-emerald-700" data-testid="savings">
-            {savingsCents > 0 ? `bis zu ${formatCents(savingsCents)} im Jahr` : "Gerade nichts offen"}
+            {savingsCents > 0
+              ? `bis zu ${formatCents(savingsCents)} im Jahr`
+              : insightCount > 0
+                ? `${insightCount === 1 ? "1 Hinweis" : `${insightCount} Hinweise`} offen`
+                : "Alles im grünen Bereich"}
           </p>
           {insights.length > 0 ? (
             <ul className="space-y-2">
