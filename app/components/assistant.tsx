@@ -7,8 +7,27 @@ type Message = { role: "user" | "assistant"; content: string };
 const SUGGESTIONS = ["Habe ich versteckte Abo-Kosten?", "Wie stehen meine Budgets?", "Wofür gebe ich am meisten aus?"];
 const MAX_HISTORY = 10;
 
-export function Assistant() {
-  const [open, setOpen] = useState(false);
+/**
+ * The chat. Its open state can be held by the layout, so the phone's tab bar ("Fragen") and the floating
+ * button on wider screens open the same conversation.
+ */
+export function Assistant({
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+} = {}) {
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = controlledOpen ?? ownOpen;
+  // Stable for the keydown listener, which is only re-attached when the chat opens or closes.
+  const closeRef = useRef(() => {});
+  const setOpen = (next: boolean | ((o: boolean) => boolean)) => {
+    const value = typeof next === "function" ? next(open) : next;
+    setOwnOpen(value);
+    onOpenChange?.(value);
+  };
+  closeRef.current = () => setOpen(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const fetcher = useFetcher<{ answer: string; tools: string[] }>();
@@ -34,7 +53,7 @@ export function Assistant() {
     inputRef.current?.focus();
     // On the document, not the dialog: after sending, the disabled button drops focus to <body>.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closeRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -55,7 +74,7 @@ export function Assistant() {
         <div
           role="dialog"
           aria-label="Assistent"
-          className="fixed inset-x-4 bottom-20 z-30 flex h-[min(34rem,calc(100dvh-8rem))] flex-col rounded-xl border bg-background shadow-2xl sm:inset-x-auto sm:right-4 sm:w-[24rem]"
+          className="fixed inset-x-4 bottom-24 z-30 flex h-[min(34rem,calc(100dvh-8rem))] flex-col rounded-xl border bg-background shadow-2xl sm:inset-x-auto sm:right-4 sm:w-[24rem]"
         >
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h2 className="font-semibold">Assistent</h2>
@@ -151,7 +170,7 @@ export function Assistant() {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Assistent schließen" : "Assistent öffnen"}
         aria-expanded={open}
-        className="fixed right-4 bottom-4 z-30 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="fixed right-4 bottom-4 z-30 hidden size-14 sm:flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {open ? <X className="size-6" aria-hidden="true" /> : <MessageCircle className="size-6" aria-hidden="true" />}
       </button>

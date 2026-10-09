@@ -78,10 +78,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { month, cards, newer: months[index - 1] ?? null, older: previous };
 }
 
+/** E-ink cards: ink on paper, inverted for good news, red ink only when it went wrong. */
 const TONE = {
-  good: "from-emerald-600 to-emerald-800 text-white",
-  bad: "from-rose-600 to-rose-800 text-white",
-  neutral: "from-slate-800 to-slate-950 text-white",
+  good: "bg-foreground text-background",
+  bad: "bg-red-700 text-white",
+  neutral: "bg-card text-foreground border-2 border-foreground",
 } as const;
 
 /** Full-width cards in a horizontal scroll with snap points: swiping is the browser's own, no library. */
@@ -157,13 +158,13 @@ export default function Rueckblick({ loaderData }: Route.ComponentProps) {
             key={c.id}
             aria-label={c.kicker}
             className={cn(
-              "flex min-h-[60vh] w-full shrink-0 snap-start flex-col justify-center gap-3 rounded-3xl bg-gradient-to-br p-8",
+              "flex min-h-[60vh] w-full shrink-0 snap-start flex-col justify-center gap-3 rounded p-8",
               TONE[c.tone],
             )}
             data-testid="story-card"
           >
-            <p className="text-sm tracking-wide uppercase opacity-80">{c.kicker}</p>
-            <p className="text-4xl leading-tight font-bold break-words">{c.title}</p>
+            <p className="pixel opacity-80">{c.kicker}</p>
+            <p className="font-serif text-5xl leading-none font-bold break-words">{c.title}</p>
             <p className="text-base opacity-90">{c.note}</p>
           </article>
         ))}

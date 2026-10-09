@@ -9,7 +9,7 @@ test("Startseite: die Zahl für heute steht ohne Frage da, „Wie gerechnet?“ 
   await expect(page.getByTestId("today-amount")).toHaveText(/^\d{1,3}(\.\d{3})*,\d{2} €$/);
   await expect(page.getByTestId("today-context")).toBeVisible();
   await page.getByText("Wie gerechnet?").click();
-  await expect(page.getByText("Ausgegeben:")).toBeVisible();
+  await expect(page.getByText("Ausgegeben", { exact: true })).toBeVisible();
 });
 
 test("Vorschlag antippen: Antwort erscheint direkt darunter, mit Urteil", async ({ page }) => {

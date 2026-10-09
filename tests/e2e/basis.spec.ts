@@ -16,7 +16,7 @@ const PAGES = [
   { path: "/regeln", heading: "Regeln", action: { role: "button" as const, name: "Lieferando ist Restaurant" } },
   { path: "/konten", heading: "Konten", action: { role: "button" as const, name: "Umbenennen" } },
   { path: "/budgets", heading: "Budgets", action: { role: "button" as const, name: "Kategorie anlegen" } },
-  { path: "/abos", heading: "Abos und feste Kosten", action: { role: "link" as const, name: "Abos" } },
+  { path: "/abos", heading: "Abos und feste Kosten", action: { role: "button" as const, name: /kündigen$/ } },
   { path: "/hinweise", heading: "Hinweise", action: { role: "link" as const, name: "Übersicht" } },
   { path: "/pruefen", heading: "Prüfen", action: { role: "link" as const, name: "Überspringen" } },
   { path: "/banken", heading: "Banken", action: { role: "button" as const, name: "PayPal hinzufügen" } },

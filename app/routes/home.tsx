@@ -70,7 +70,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3 rounded-lg border p-4">
+    <section className="space-y-3 rounded border-2 border-foreground bg-card p-4">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-semibold">{title}</h2>
         {link ? (
@@ -94,10 +94,10 @@ function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }
   return (
     <section
       aria-labelledby="week-title"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
+      className="flex flex-wrap items-center justify-between gap-3 rounded border-2 border-foreground bg-card p-4"
     >
       <div className="space-y-0.5">
-        <h2 id="week-title" className="text-sm font-medium text-muted-foreground">
+        <h2 id="week-title" className="pixel text-muted-foreground">
           Diese Woche
         </h2>
         <p className="text-2xl font-semibold tabular-nums" data-testid="week-spent">
@@ -112,8 +112,8 @@ function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }
         </p>
       </div>
       {week.streakWeeks > 0 ? (
-        <p className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-950" data-testid="week-streak">
-          🔥 {week.streakWeeks === 1 ? "1 Woche" : `${week.streakWeeks} Wochen`} in Folge unter Schnitt
+        <p className="pixel border-2 border-foreground bg-marker px-2 py-1 text-foreground" data-testid="week-streak">
+          Serie: {week.streakWeeks === 1 ? "1 Woche" : `${week.streakWeeks} Wochen`} unter Schnitt
         </p>
       ) : null}
     </section>

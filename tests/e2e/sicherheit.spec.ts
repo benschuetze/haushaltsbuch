@@ -17,8 +17,9 @@ test("Seiten kommen mit strenger CSP und Schutz-Headern, ohne dass etwas blockie
   // Microphone only for the app itself (spoken questions); camera, location and payment stay off.
   expect(h["permissions-policy"]).toBe("camera=(), microphone=(self), geolocation=(), payment=(), usb=()");
   // The app still works: hydrated, navigable, no CSP violation in the console.
-  await page.getByRole("link", { name: "Budgets" }).click();
-  await expect(page.getByRole("heading", { name: "Budgets", level: 1 })).toBeVisible();
+  // "Buchungen" is in the top navigation on wide screens and in the tab bar on phones.
+  await page.getByRole("link", { name: "Buchungen", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Buchungen", level: 1 })).toBeVisible();
   expect(errors.filter((e) => /Content Security Policy|Refused to/.test(e))).toEqual([]);
 });
 
