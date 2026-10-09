@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
 import { formatCents } from "../../app/lib/money";
+import { expect, test } from "./fixtures";
 import { importDemo, resetDb } from "./helpers";
 
 const expected: { months: Record<string, { income_cents: number; expense_cents: number; transfer_cents: number }> } =

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { DEMO_URL, importDemo, resetDb, sql } from "./helpers";
 
 test.beforeEach(resetDb);

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   data,
   Form,
@@ -85,6 +86,10 @@ const NAV = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const root = useRouteLoaderData<typeof loader>("root");
   const nonce = useNonce();
+  // Marks the moment React has taken over the server-rendered page; E2E tests wait for it before typing.
+  useEffect(() => {
+    document.documentElement.dataset.hydrated = "true";
+  }, []);
   return (
     <html lang="de">
       <head>
