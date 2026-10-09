@@ -1,5 +1,6 @@
 import { generateText, type LanguageModel, Output } from "ai";
 import { z } from "zod";
+import { safeError } from "~/lib/security.server";
 
 export const REVIEW_THRESHOLD = 0.7;
 export const BATCH_SIZE = 25;
@@ -72,7 +73,7 @@ export async function categorizeWithLlm(
   categories: LlmCategory[],
   items: LlmInput[],
   onError: (error: unknown) => void = (error) =>
-    console.error("LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“", error),
+    console.error(`LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“: ${safeError(error)}`),
 ): Promise<Map<string, LlmVerdict>> {
   const verdicts = new Map<string, LlmVerdict>();
   const byName = new Map(categories.map((c) => [c.name.toLocaleLowerCase("de"), c.id]));

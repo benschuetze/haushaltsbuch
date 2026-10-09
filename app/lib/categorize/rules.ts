@@ -14,7 +14,16 @@ export const ruleInputSchema = z
   .refine((r) => r.matchType !== "regex" || isValidRegex(r.pattern), {
     message: "Ungültiger regulärer Ausdruck",
     path: ["pattern"],
+  })
+  .refine((r) => r.matchType !== "regex" || !hasNestedQuantifier(r.pattern), {
+    message: "Dieser Ausdruck kann sehr langsam werden (verschachtelte Wiederholung). Bitte einfacher formulieren.",
+    path: ["pattern"],
   });
+
+/** "(a+)+" and similar can take exponential time on unlucky input (ReDoS); such rules are refused. */
+export function hasNestedQuantifier(pattern: string): boolean {
+  return /\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)\s*[+*{]/.test(pattern);
+}
 
 function isValidRegex(pattern: string): boolean {
   try {
@@ -35,7 +44,8 @@ export function ruleMatches(rule: Matchable, tx: { counterparty: string; purpose
       return value.includes(pattern);
     case "regex":
       // Stored regexes are validated on save; a broken one from an older version must not take the import down.
-      return isValidRegex(rule.pattern) && new RegExp(rule.pattern, "i").test(value);
+      // Bounded input as a second guard against slow patterns that predate the check above.
+      return isValidRegex(rule.pattern) && new RegExp(rule.pattern, "i").test(value.slice(0, 300));
   }
 }
 

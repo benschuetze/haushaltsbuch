@@ -25,7 +25,8 @@ function sessionStorage(secret: string) {
       path: "/",
       // E2E runs the production build over plain http; WebKit drops Secure cookies there, Chromium does not.
       secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
-      maxAge: 60 * 60 * 24 * 30,
+      // A week: long enough not to annoy, short enough that a forgotten session on a shared device expires.
+      maxAge: 60 * 60 * 24 * 7,
       secrets: [secret],
     },
   });

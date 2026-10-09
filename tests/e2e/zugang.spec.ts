@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { DEMO_URL } from "./helpers";
+import { DEMO_URL, resetDb } from "./helpers";
+
+// Failed logins from other specs would otherwise trip the throttle here.
+test.beforeEach(resetDb);
 
 test.describe("ohne Login", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -13,8 +16,10 @@ test.describe("ohne Login", () => {
   });
 
   test("Schreiben ohne Login wird abgelehnt", async ({ request }) => {
+    // Same-origin, so the CSRF check passes and the missing login is what stops it.
     const response = await request.post("/transaktionen", {
       form: { intent: "confirm", transactionId: crypto.randomUUID() },
+      headers: { Origin: "http://127.0.0.1:5199" },
     });
     expect(response.status()).toBe(401);
   });

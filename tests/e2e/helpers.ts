@@ -18,7 +18,7 @@ export async function resetDb(): Promise<void> {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   try {
     await pool.query(
-      "truncate table rules, transactions, imports, insights, budgets, meta, bank_formats restart identity cascade",
+      "truncate table rules, transactions, imports, insights, budgets, meta, bank_formats, login_attempts restart identity cascade",
     );
     await pool.query("delete from accounts where name <> 'Girokonto (Demo)'");
     await pool.query("delete from categories where not (name = any($1))", [DEFAULT_CATEGORIES.map((c) => c.name)]);
