@@ -13,7 +13,7 @@ type Expected = {
 };
 
 const expected: Record<string, Expected> = JSON.parse(readFileSync("beispieldaten/banken/erwartet.json", "utf8"));
-const files = Object.entries(expected).filter(([name]) => name.endsWith(".csv"));
+const files = Object.entries(expected).filter(([name, e]) => name.endsWith(".csv") && e.profile !== "auto");
 const read = (name: string) => new Uint8Array(readFileSync(`beispieldaten/banken/${name}`));
 
 describe.each(files)("%s", (name, e) => {

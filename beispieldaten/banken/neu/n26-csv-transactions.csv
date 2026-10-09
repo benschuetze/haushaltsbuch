@@ -1,0 +1,7 @@
+"Booking Date","Value Date","Partner Name","Partner Iban","Type","Payment Reference","Account Name","Amount (EUR)","Original Amount","Original Currency","Exchange Rate"
+"2026-10-04","2026-10-04","Lieferando","","Presentment","Bestellung 7788","Hauptkonto","-26.50","","",""
+"2026-10-01","2026-10-01","Alex Beispiel","","Income","Taschengeld Oktober","Hauptkonto","200.00","","",""
+"2026-09-19","2026-09-19","Steam Games","","Presentment","Steam Purchase","Hauptkonto","-19.99","","",""
+"2026-09-11","2026-09-11","Uber BV","","Presentment","Uber Fahrt","Hauptkonto","-18.73","","",""
+"2026-09-05","2026-09-05","Max Mustermann","","Income","Pizza Freitag","Hauptkonto","15.00","","",""
+"2026-09-02","2026-09-02","Edeka Center","","Presentment","Kartenzahlung","Hauptkonto","-22.45","","",""

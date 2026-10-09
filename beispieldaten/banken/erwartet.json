@@ -75,5 +75,93 @@
         "expense_cents": -7000
       }
     }
+  },
+  "neu/n26-csv-transactions.csv": {
+    "profile": "auto",
+    "learned": "heuristic",
+    "own_iban": false,
+    "footer_lines": 0,
+    "rows_total": 6,
+    "booked": 6,
+    "pending": 0,
+    "sum_cents": 12733,
+    "months": {
+      "2026-09": {
+        "rows": 4,
+        "income_cents": 1500,
+        "expense_cents": -6117
+      },
+      "2026-10": {
+        "rows": 2,
+        "income_cents": 20000,
+        "expense_cents": -2650
+      }
+    }
+  },
+  "neu/Kontoumsaetze_100_1234567_00_20261008.csv": {
+    "profile": "auto",
+    "learned": "heuristic",
+    "own_iban": true,
+    "footer_lines": 1,
+    "rows_total": 6,
+    "booked": 6,
+    "pending": 0,
+    "sum_cents": 264657,
+    "months": {
+      "2026-09": {
+        "rows": 4,
+        "income_cents": 142000,
+        "expense_cents": -10383
+      },
+      "2026-10": {
+        "rows": 2,
+        "income_cents": 142000,
+        "expense_cents": -8960
+      }
+    }
+  },
+  "neu/umsaetze_1234567890_20261008-2114.csv": {
+    "profile": "auto",
+    "learned": "heuristic",
+    "own_iban": false,
+    "footer_lines": 1,
+    "rows_total": 6,
+    "booked": 6,
+    "pending": 0,
+    "sum_cents": 555900,
+    "months": {
+      "2026-09": {
+        "rows": 4,
+        "income_cents": 285000,
+        "expense_cents": -10602
+      },
+      "2026-10": {
+        "rows": 2,
+        "income_cents": 285000,
+        "expense_cents": -3498
+      }
+    }
+  },
+  "neu/kontoflow-export.csv": {
+    "profile": "auto",
+    "learned": "ai",
+    "own_iban": false,
+    "footer_lines": 0,
+    "rows_total": 3,
+    "booked": 3,
+    "pending": 0,
+    "sum_cents": 1910,
+    "months": {
+      "2026-09": {
+        "rows": 2,
+        "income_cents": 8000,
+        "expense_cents": -2990
+      },
+      "2026-10": {
+        "rows": 1,
+        "income_cents": 0,
+        "expense_cents": -3100
+      }
+    }
   }
 }

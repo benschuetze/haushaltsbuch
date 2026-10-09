@@ -1,0 +1,13 @@
+;
+"Umsätze Girokonto";"Zeitraum: 01.09.2026 - 08.10.2026";
+"Neuer Kontostand";"4.321,00 EUR";
+
+"Buchungstag";"Wertstellung (Valuta)";"Vorgang";"Buchungstext";"Umsatz in EUR";
+"05.10.2026";"05.10.2026";"Visa-Umsatz";"Empfänger: Thalia Bücher Kto/IBAN: DE00200411110000000005 BLZ/BIC: COBADEHD001 Buchungstext: Kartenzahlung Ref. 3K1Q9P/2";"-34,98";
+"01.10.2026";"01.10.2026";"Übertrag / Überweisung";"Auftraggeber: Arbeitgeber Beispiel AG Buchungstext: Gehalt 10/2026 Ref. 7Z2C21SJ3G1V8J1M/1";"2.850,00";
+"27.09.2026";"27.09.2026";"Visa-Umsatz";"Empfänger: Kino Lichtspiele Kto/IBAN: DE00200411110000000005 BLZ/BIC: COBADEHD001 Buchungstext: Kartenzahlung Ref. 3K1Q9P/2";"-26,00";
+"14.09.2026";"14.09.2026";"Lastschrift / Belastung";"Empfänger: Hansemerkur Kto/IBAN: DE00200411110000000005 BLZ/BIC: COBADEHD001 Buchungstext: Zahnzusatz Beitrag Ref. 3K1Q9P/2";"-23,90";
+"06.09.2026";"06.09.2026";"Visa-Umsatz";"Empfänger: REWE Markt GmbH Kto/IBAN: DE00200411110000000005 BLZ/BIC: COBADEHD001 Buchungstext: Kartenzahlung Ref. 3K1Q9P/2";"-56,12";
+"01.09.2026";"01.09.2026";"Übertrag / Überweisung";"Auftraggeber: Arbeitgeber Beispiel AG Buchungstext: Gehalt 09/2026 Ref. 7Z2C21SJ3G1V8J1M/1";"2.850,00";
+
+"Alter Kontostand";"1.234,56 EUR";

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatCents, parseGermanAmount, parseGermanDate } from "./money";
+import {
+  detectDecimalStyle,
+  formatCents,
+  parseDate,
+  parseEnglishAmount,
+  parseGermanAmount,
+  parseGermanDate,
+} from "./money";
 
 describe("parseGermanAmount", () => {
   it.each([
@@ -56,5 +63,44 @@ describe("parseGermanDate", () => {
 
   it.each(["31.09.2026", "29.02.2027", "2026-08-01", "", "00.01.2026"])("lehnt %j ab", (input) => {
     expect(() => parseGermanDate(input)).toThrow(/Ungültiges Datum/);
+  });
+});
+
+describe("parseEnglishAmount", () => {
+  it.each([
+    ["-12.34", -1234],
+    ["1,234.56", 123456],
+    ["3612.40", 361240],
+    ["-0.5", -50],
+    ["250", 25000],
+  ])("%s → %i Cent", (input, cents) => {
+    expect(parseEnglishAmount(input)).toBe(cents);
+  });
+  it.each(["12,34", "1.234,56", "abc"])("lehnt %j ab", (input) => {
+    expect(() => parseEnglishAmount(input)).toThrow(/Ungültiger Betrag/);
+  });
+});
+
+describe("detectDecimalStyle", () => {
+  it("erkennt deutsches und englisches Format an den Beispielwerten", () => {
+    expect(detectDecimalStyle(["-63,12", "3.612,40", ""])).toBe("de");
+    expect(detectDecimalStyle(["-63.12", "3612.40", "1,234.00"])).toBe("en");
+  });
+  it("ohne eindeutige Werte keine Entscheidung", () => {
+    expect(detectDecimalStyle(["12", "", "1.234"])).toBeNull();
+  });
+});
+
+describe("parseDate", () => {
+  it.each([
+    ["2026-09-01", "2026-09-01"],
+    ["01.09.2026", "2026-09-01"],
+    ["01.09.26", "2026-09-01"],
+    ["01/09/2026", "2026-09-01"],
+  ])("%s → %s", (input, iso) => {
+    expect(parseDate(input)).toBe(iso);
+  });
+  it.each(["2026-02-30", "09-01-2026", "heute"])("lehnt %j ab", (input) => {
+    expect(() => parseDate(input)).toThrow(/Ungültiges Datum/);
   });
 });

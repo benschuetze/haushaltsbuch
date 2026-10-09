@@ -2,10 +2,12 @@ import type { LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { categorizeTransactions } from "~/lib/categorize/apply";
 import type { Db } from "~/lib/db/client";
-import { accounts, imports, transactions } from "~/lib/db/schema";
+import { type Account, accounts, imports, transactions } from "~/lib/db/schema";
+import { resolveAccount } from "./accounts";
 import { withDedupeHashes } from "./dedupe";
-import { detectBankProfile, getBankProfile } from "./profiles";
-import type { RejectedRow } from "./types";
+import { detectFormat, parseForProfile, profileLabel } from "./formats/detect";
+import { detectBankProfile } from "./profiles";
+import type { ParseResult, RejectedRow } from "./types";
 
 export type ImportResult = {
   total: number;
@@ -18,29 +20,20 @@ export type ImportResult = {
   needsReview: number;
 };
 
+export type AutoImportResult = ImportResult & {
+  account: { id: string; name: string; created: boolean };
+  format: { label: string; learned: "heuristic" | "ai" | null };
+};
+
 const INSERT_CHUNK = 500;
 
 /** Invariant the tests hold us to: total = inserted + duplicates + rejected + skipped. No row disappears without a reason. */
-export async function importCsv(
+async function store(
   db: Db,
-  input: { accountId: string; filename: string; bytes: Uint8Array; model: LanguageModel | null },
+  account: Account,
+  parsed: ParseResult,
+  input: { filename: string; model: LanguageModel | null },
 ): Promise<ImportResult> {
-  const [account] = await db.select().from(accounts).where(eq(accounts.id, input.accountId));
-  if (!account) throw new Error("Konto nicht gefunden");
-
-  const profile = getBankProfile(account.bankProfile);
-  let parsed: ReturnType<typeof profile.parse>;
-  try {
-    parsed = profile.parse(input.bytes);
-  } catch (error) {
-    const other = detectBankProfile(input.bytes);
-    if (other && other.id !== profile.id) {
-      throw new Error(
-        `Die Datei sieht nach ${other.label} aus, das Konto „${account.name}“ ist aber auf ${profile.label} eingestellt. Wähle das passende Konto oder lege eines mit Bankprofil ${other.label} an.`,
-      );
-    }
-    throw error;
-  }
   const { rows, rejected, skipped } = parsed;
   const hashed = withDedupeHashes(account.id, rows);
   const total = rows.length + rejected.length + skipped.length;
@@ -82,5 +75,48 @@ export async function importCsv(
     rejected,
     skipped,
     ...stats,
+  };
+}
+
+/** Import into an account the user picked. */
+export async function importCsv(
+  db: Db,
+  input: { accountId: string; filename: string; bytes: Uint8Array; model: LanguageModel | null },
+): Promise<ImportResult> {
+  const [account] = await db.select().from(accounts).where(eq(accounts.id, input.accountId));
+  if (!account) throw new Error("Konto nicht gefunden");
+
+  let parsed: ParseResult;
+  try {
+    parsed = await parseForProfile(db, account.bankProfile, input.bytes);
+  } catch (error) {
+    const other = detectBankProfile(input.bytes);
+    if (other && other.id !== account.bankProfile) {
+      const label = await profileLabel(db, account.bankProfile);
+      throw new Error(
+        `Die Datei sieht nach ${other.label} aus, das Konto „${account.name}“ ist aber auf ${label} eingestellt. Lade sie ohne Kontoauswahl hoch, dann ordnet die App sie selbst zu.`,
+      );
+    }
+    throw error;
+  }
+  return store(db, account, parsed, input);
+}
+
+/** Import without choosing anything: the app finds the bank format and the account, creating either if needed. */
+export async function importAuto(
+  db: Db,
+  input: { filename: string; bytes: Uint8Array; model: LanguageModel | null },
+): Promise<AutoImportResult> {
+  const format = await detectFormat(db, input);
+  const { account, created } = await resolveAccount(db, {
+    profileKey: format.profileKey,
+    label: format.label,
+    ownIban: format.result.ownIban,
+  });
+  const result = await store(db, account, format.result, input);
+  return {
+    ...result,
+    account: { id: account.id, name: account.name, created },
+    format: { label: format.label, learned: format.learned },
   };
 }

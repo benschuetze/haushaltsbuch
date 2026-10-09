@@ -19,6 +19,8 @@ export type ParseResult = {
   rejected: RejectedRow[];
   /** Valid but not booked yet (pending card payments). Not an error, just not now. */
   skipped: RejectedRow[];
+  /** Own account IBAN if the export states it; used to match the upload to an account. Never sent to the LLM. */
+  ownIban?: string;
 };
 
 export type BankProfile = {
