@@ -25,4 +25,4 @@ if (problems.length > 0) {
   console.error(`KI-Selbsttest fehlgeschlagen:\n- ${problems.join("\n- ")}`);
   process.exit(1);
 }
-console.log("KI-Selbsttest bestanden: Kategorisierung und Spaltenzuordnung antworten.");
+console.log("KI-Selbsttest bestanden: Kategorisierung, Spaltenzuordnung und Assistent antworten.");
