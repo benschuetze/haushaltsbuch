@@ -1,0 +1,202 @@
+{
+  "description": "Erfundene Buchungen mit erwarteter Kategorie. Amazon und Bargeld sind bewusst mehrdeutig: erwartet wird Sonstiges oder needs_review.",
+  "ambiguous": ["Amazon EU S.a.r.l.", "Bargeldauszahlung", "Max Mustermann"],
+  "cases": [
+    {
+      "id": "e01",
+      "counterparty": "REWE Markt",
+      "purpose": "Kartenzahlung girocard",
+      "amount_cents": -4510,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e02",
+      "counterparty": "ALDI SUED",
+      "purpose": "Kartenzahlung girocard",
+      "amount_cents": -2230,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e03",
+      "counterparty": "dm-drogerie markt",
+      "purpose": "Kartenzahlung girocard",
+      "amount_cents": -1599,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e04",
+      "counterparty": "Hausverwaltung Sonnenhof",
+      "purpose": "Miete 10/2026 Whg 3",
+      "amount_cents": -89000,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e05",
+      "counterparty": "Stadtwerke Beispielstadt",
+      "purpose": "Abschlag Strom Gas",
+      "amount_cents": -11800,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e06",
+      "counterparty": "Kita Regenbogen e.V.",
+      "purpose": "Elternbeitrag Verpflegung",
+      "amount_cents": -7450,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e07",
+      "counterparty": "Musterversicherung AG",
+      "purpose": "Haftpflicht Hausrat Beitrag",
+      "amount_cents": -2190,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e08",
+      "counterparty": "Spotify AB",
+      "purpose": "Spotify Premium",
+      "amount_cents": -1099,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e09",
+      "counterparty": "Netflix International",
+      "purpose": "Netflix Monatsabo",
+      "amount_cents": -1399,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e10",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann",
+      "amount_cents": -8900,
+      "expected": "Musik & Equipment"
+    },
+    {
+      "id": "e11",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.4471.PP . Zalando SE",
+      "amount_cents": -5495,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e12",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.4471.PP . Ihr Einkauf bei Kaufland",
+      "amount_cents": -3120,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e13",
+      "counterparty": "Arbeitgeber Muster GmbH",
+      "purpose": "Gehalt 10/2026",
+      "amount_cents": 361240,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e14",
+      "counterparty": "Familienkasse",
+      "purpose": "Kindergeld",
+      "amount_cents": 25900,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e15",
+      "counterparty": "Club Hafen",
+      "purpose": "Gage DJ-Set",
+      "amount_cents": 25000,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e16",
+      "counterparty": "Eigenes Tagesgeld",
+      "purpose": "Sparrate",
+      "amount_cents": -30000,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e17",
+      "counterparty": "Max Mustermann",
+      "purpose": "Danke fuers Auslegen Pizza",
+      "amount_cents": 1500,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e18",
+      "counterparty": "Aral Station",
+      "purpose": "Kartenzahlung Tankstelle",
+      "amount_cents": -6140,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e19",
+      "counterparty": "Deutsche Bahn",
+      "purpose": "DB Fernverkehr Ticket",
+      "amount_cents": -2990,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e20",
+      "counterparty": "Apotheke am Markt",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -850,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e21",
+      "counterparty": "Zoo Beispielstadt",
+      "purpose": "Kartenzahlung Eintritt",
+      "amount_cents": -2400,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e22",
+      "counterparty": "Amazon EU S.a.r.l.",
+      "purpose": "Bestellung 302-1234567",
+      "amount_cents": -2749,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e23",
+      "counterparty": "Bandcamp Inc",
+      "purpose": "Kartenzahlung bandcamp.com",
+      "amount_cents": -900,
+      "expected": "Musik & Equipment"
+    },
+    {
+      "id": "e24",
+      "counterparty": "IKEA Deutschland",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -6400,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e25",
+      "counterparty": "Kinderarztpraxis Dr. Beispiel",
+      "purpose": "Rechnung IGeL",
+      "amount_cents": -3500,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e26",
+      "counterparty": "Spielwaren Huber",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1999,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e27",
+      "counterparty": "Bargeldauszahlung",
+      "purpose": "GA Sparkasse Automat",
+      "amount_cents": -10000,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e28",
+      "counterparty": "Finanzamt Beispielstadt",
+      "purpose": "Erstattung ESt 2025",
+      "amount_cents": 41200,
+      "expected": "Einkommen"
+    }
+  ]
+}

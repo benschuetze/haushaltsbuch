@@ -1,0 +1,19 @@
+node_modules/
+build/
+.react-router/
+.vercel/
+.env
+.env.*
+!.env.example
+*.csv
+!beispieldaten/*.csv
+!app/lib/import/profiles/__fixtures__/*.csv
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+
+# Persönliche Notizen
+BEWERBUNG.md
+.pglite/
+playwright/.auth/

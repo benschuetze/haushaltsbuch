@@ -1,0 +1,20 @@
+{
+  "_hinweis": "Von Hand aus demo-umsaetze.csv nachgerechnet, nicht mit dem App-Parser. Tests vergleichen gegen diese Werte. Umbuchungen sind hier in den Ausgaben enthalten; die App rechnet sie aus der Monatsübersicht heraus (siehe transfer_cents).",
+  "file": "demo-umsaetze.csv",
+  "rows_total": 44,
+  "sum_cents": 406905,
+  "months": {
+    "2026-08": {
+      "rows": 21,
+      "income_cents": 387140,
+      "expense_cents": -201545,
+      "transfer_cents": -30000
+    },
+    "2026-09": {
+      "rows": 23,
+      "income_cents": 412140,
+      "expense_cents": -190830,
+      "transfer_cents": -30000
+    }
+  }
+}

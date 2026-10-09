@@ -1,0 +1,45 @@
+Buchungstag;Wertstellung;Empfänger/Auftraggeber;Verwendungszweck;Betrag;Währung
+01.08.2026;01.08.2026;Arbeitgeber Muster GmbH;Gehalt 08/2026;3.612,40;EUR
+01.08.2026;01.08.2026;Hausverwaltung Sonnenhof;Miete 08/2026 Whg 3;-890,00;EUR
+02.08.2026;02.08.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+03.08.2026;03.08.2026;Familienkasse;Kindergeld;259,00;EUR
+04.08.2026;04.08.2026;REWE Markt;Kartenzahlung girocard;-63,12;EUR
+05.08.2026;05.08.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.08.2026;05.08.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+07.08.2026;07.08.2026;Spotify AB;Spotify Premium;-10,99;EUR
+08.08.2026;08.08.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+09.08.2026;09.08.2026;ALDI SUED;Kartenzahlung girocard;-41,87;EUR
+10.08.2026;10.08.2026;Telekom Deutschland;Mobilfunk Rechnung;-34,95;EUR
+11.08.2026;11.08.2026;Aral Station;Kartenzahlung Tankstelle;-58,20;EUR
+13.08.2026;13.08.2026;dm-drogerie markt;Kartenzahlung girocard;-18,45;EUR
+15.08.2026;15.08.2026;Eigenes Tagesgeld;Sparrate;-300,00;EUR
+16.08.2026;16.08.2026;PayPal Europe;PP.4471.PP . Zalando SE;-54,95;EUR
+18.08.2026;18.08.2026;REWE Markt;Kartenzahlung girocard;-77,30;EUR
+20.08.2026;20.08.2026;PayPal Europe;PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann;-149,00;EUR
+22.08.2026;22.08.2026;Lidl;Kartenzahlung girocard;-35,60;EUR
+24.08.2026;24.08.2026;Apotheke am Markt;Kartenzahlung;-12,80;EUR
+26.08.2026;26.08.2026;Zoo Beispielstadt;Kartenzahlung Eintritt;-24,00;EUR
+27.08.2026;27.08.2026;Baeckerei Kern;Kartenzahlung girocard;-8,40;EUR
+01.09.2026;01.09.2026;Arbeitgeber Muster GmbH;Gehalt 09/2026;3.612,40;EUR
+01.09.2026;01.09.2026;Hausverwaltung Sonnenhof;Miete 09/2026 Whg 3;-890,00;EUR
+02.09.2026;02.09.2026;Stadtwerke Beispielstadt;Abschlag Strom Gas Kd-Nr 448812;-118,00;EUR
+03.09.2026;03.09.2026;Familienkasse;Kindergeld;259,00;EUR
+04.09.2026;04.09.2026;REWE Markt;Kartenzahlung girocard;-63,12;EUR
+05.09.2026;05.09.2026;Kita Regenbogen e.V.;Elternbeitrag Verpflegung;-74,50;EUR
+05.09.2026;05.09.2026;Musterversicherung AG;Haftpflicht Hausrat Beitrag;-21,90;EUR
+07.09.2026;07.09.2026;Spotify AB;Spotify Premium;-10,99;EUR
+08.09.2026;08.09.2026;Anthropic PBC;Claude Pro Subscription;-21,42;EUR
+09.09.2026;09.09.2026;ALDI SUED;Kartenzahlung girocard;-41,87;EUR
+10.09.2026;10.09.2026;Telekom Deutschland;Mobilfunk Rechnung;-34,95;EUR
+11.09.2026;11.09.2026;Aral Station;Kartenzahlung Tankstelle;-58,20;EUR
+12.09.2026;12.09.2026;Deutsche Bahn;DB Fernverkehr Ticket;-42,90;EUR
+13.09.2026;13.09.2026;dm-drogerie markt;Kartenzahlung girocard;-18,45;EUR
+15.09.2026;15.09.2026;Eigenes Tagesgeld;Sparrate;-300,00;EUR
+18.09.2026;18.09.2026;REWE Markt;Kartenzahlung girocard;-77,30;EUR
+19.09.2026;19.09.2026;Bandcamp Inc;Kartenzahlung bandcamp.com;-14,00;EUR
+20.09.2026;20.09.2026;PayPal Europe;PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann;-39,90;EUR
+21.09.2026;21.09.2026;Club Hafen;Gage DJ-Set 19.09.;250,00;EUR
+22.09.2026;22.09.2026;Lidl;Kartenzahlung girocard;-35,60;EUR
+24.09.2026;24.09.2026;Apotheke am Markt;Kartenzahlung;-12,80;EUR
+26.09.2026;26.09.2026;Zoo Beispielstadt;Kartenzahlung Eintritt;-24,00;EUR
+27.09.2026;27.09.2026;Baeckerei Kern;Kartenzahlung girocard;-8,40;EUR
