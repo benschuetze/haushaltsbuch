@@ -22,6 +22,8 @@ export type Recurring = {
   active: boolean;
   /** Fixed costs (rent, insurance) versus subscriptions one could cancel. */
   kind: "subscription" | "fixed";
+  /** Same amount every time (within 5 %): a debit that can be planned with, unlike fuel or shopping. */
+  stable: boolean;
 };
 
 const PER_YEAR: Record<Cadence, number> = { weekly: 52, monthly: 12, quarterly: 4, yearly: 1 };
@@ -125,6 +127,7 @@ export function detectRecurring(bookings: Booking[], referenceDate: string): Rec
       yearlyCents: Math.abs(last.amountCents) * PER_YEAR[cadence],
       active: daysBetween(last.bookingDate, referenceDate) <= DAYS[cadence] * 1.5,
       kind,
+      stable: amounts.every((a) => Math.abs(a - median) <= median * 0.05),
     });
   }
   return result.sort((a, b) => b.yearlyCents - a.yearlyCents);

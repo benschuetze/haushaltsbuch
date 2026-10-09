@@ -54,6 +54,18 @@ describe("Wie viel ist heute drin?", () => {
     expect(a.perDayCents).toBe(7260);
   });
 
+  it("PayPal-Abbuchung und schwankende Beträge (Tanken) werden nicht als fällig vorhergesagt", () => {
+    const extra = [
+      ...HOUSEHOLD,
+      b("2026-08-11", "Aral Station", -5820, "expense", "Mobilität"),
+      b("2026-09-11", "Aral Station", -6390, "expense", "Mobilität"),
+      b("2026-08-13", "PayPal Europe", -1399, "transfer", "Umbuchung"),
+      b("2026-09-13", "PayPal Europe", -1399, "transfer", "Umbuchung"),
+    ];
+    const names = availableToSpend(extra, "2026-10-09").upcoming.map((u) => u.name);
+    expect(names).toEqual(["Netflix", "Eigenes Tagesgeld"]);
+  });
+
   it("ohne erkennbares Gehalt: Kalendermonat", () => {
     const noSalary = HOUSEHOLD.filter((x) => x.categoryKind !== "income");
     const r = availableToSpend(noSalary, "2026-10-09");

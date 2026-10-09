@@ -1,4 +1,4 @@
-import { type Booking, detectRecurring, merchantKey, merchantOf } from "~/lib/insights/recurring";
+import { type Booking, detectRecurring, isAggregator, merchantKey, merchantOf } from "~/lib/insights/recurring";
 
 /**
  * "How much can I spend today?" The app does not know the account balance (CSV exports rarely carry it), so it
@@ -82,11 +82,15 @@ function findSalary(
   return best;
 }
 
+// Card and PayPal settlements are transfers too, but the purchases behind them are already counted.
+const SETTLEMENT = /american express|amex|kreditkarte|kartenabrechnung/i;
+
 /** Outgoing transfers to own savings every month are planned money, not free money. */
 function monthlyTransfers(bookings: AvailableBooking[], today: string) {
   const groups = new Map<string, AvailableBooking[]>();
   for (const b of bookings) {
     if (b.amountCents >= 0 || b.categoryKind !== "transfer" || b.bookingDate > today) continue;
+    if (isAggregator(b.counterparty) || SETTLEMENT.test(`${b.counterparty} ${b.purpose}`)) continue;
     const key = merchantKey(merchantOf(b));
     groups.set(key, [...(groups.get(key) ?? []), b]);
   }
@@ -130,10 +134,11 @@ export function availableToSpend(bookings: AvailableBooking[], today: string): A
     .reduce((s, b) => s - b.amountCents, 0);
 
   const upcoming: Due[] = [];
+  // Only what can be planned with: a stable amount. Fuel or a regular shop vary and stay in "spent".
   const recurring = detectRecurring(
     bookings.filter((b) => b.bookingDate <= today),
     today,
-  ).filter((r) => r.active);
+  ).filter((r) => r.active && r.stable);
   for (const r of recurring) {
     let due = STEP[r.cadence](r.lastDate);
     while (due <= periodEnd) {

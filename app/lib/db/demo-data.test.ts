@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createMockModel } from "~/lib/categorize/mock-model";
 import { imports } from "~/lib/db/schema";
-import { openInsights, refreshInsights, subscriptionOverview } from "~/lib/insights";
+import { openInsights, refreshInsights, spendingToday, subscriptionOverview } from "~/lib/insights";
 import { createTestDb } from "../../../tests/helpers/db";
 import { importDemoData } from "./demo-data";
 
@@ -24,6 +24,15 @@ describe("öffentliche Demo", () => {
     expect(recurring.filter((r) => /netflix|paypal/i.test(r.merchant)).map((r) => r.merchant)).toEqual([
       "Netflix International B.V.",
     ]);
+  });
+
+  it("„noch fällig“: jede Zahlung einmal (PayPal und Girokonto), Tanken ist keine feste Abbuchung", async () => {
+    const { db } = await createTestDb();
+    await importDemoData(db, createMockModel());
+    const { upcoming } = await spendingToday(db, october);
+    const names = upcoming.map((u) => u.name);
+    expect(names.filter((n) => /netflix/i.test(n))).toHaveLength(1);
+    expect(names.some((n) => /aral/i.test(n))).toBe(false);
   });
 
   it("ein zweiter Lauf (nächster Deploy) legt nichts doppelt an, auch keine Import-Einträge", async () => {
