@@ -121,6 +121,7 @@ function ImportSummary({ filename, result }: { filename: string; result: ImportR
     ["Neu", result.inserted, "inserted"],
     ["Duplikate (schon vorhanden)", result.duplicates, "duplicates"],
     ["Abgelehnt", result.rejected.length, "rejected"],
+    ["Vorgemerkt, noch nicht gebucht", result.skipped.length, "skipped"],
     ["Per Regel kategorisiert", result.byRule, "by-rule"],
     ["Per KI kategorisiert", result.byAi, "by-ai"],
     ["Zu prüfen", result.needsReview, "needs-review"],
@@ -149,6 +150,12 @@ function ImportSummary({ filename, result }: { filename: string; result: ImportR
             ))}
           </ul>
         </div>
+      ) : null}
+      {result.skipped.length > 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Vorgemerkte Umsätze übernimmt die App erst, wenn die Bank sie gebucht hat. Sie kommen beim nächsten Export
+          automatisch mit.
+        </p>
       ) : null}
       {result.needsReview > 0 ? (
         <Link to="/transaktionen?pruefen=1" className="inline-block text-sm underline underline-offset-4">

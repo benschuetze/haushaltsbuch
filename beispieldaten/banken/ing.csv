@@ -1,0 +1,23 @@
+Umsatzanzeige;Datei erstellt am: 08.10.2026 21:14
+
+IBAN;DE00 5001 0517 0000 0000 00
+Kontoname;Extra-Konto
+Bank;ING
+Kunde;Alex Beispiel
+Zeitraum;01.09.2026 - 08.10.2026
+Saldo;5.123,45;EUR
+
+Sortierung;Datum absteigend
+
+In der CSV-Datei finden Sie alle bereits gebuchten Umsätze. Die vorgemerkten Umsätze werden nicht aufgenommen, auch wenn sie in Ihrem Internetbanking angezeigt werden.
+
+Buchung;Wertstellungsdatum;Auftraggeber/Empfänger;Buchungstext;Verwendungszweck;Saldo;Währung;Betrag;Währung
+06.10.2026;06.10.2026;Anthropic PBC;Lastschrift;Claude Pro Subscription;5.123,45;EUR;-21,42;EUR
+04.10.2026;04.10.2026;Deutsche Bahn Fernverkehr AG;Lastschrift;DB Ticket Auftrag 123456789 Frankfurt-Köln;5.144,87;EUR;-42,90;EUR
+02.10.2026;02.10.2026;Bandcamp Inc;Lastschrift;Kartenzahlung bandcamp.com;5.187,77;EUR;-14,00;EUR
+30.09.2026;30.09.2026;ING;Gutschrift;Zinsen 09/2026;5.201,77;EUR;1,23;EUR
+24.09.2026;24.09.2026;Spotify AB;Lastschrift;Spotify Premium P1A2B3C4D5;5.200,54;EUR;-10,99;EUR
+21.09.2026;21.09.2026;Club Hafen;Gutschrift;Gage DJ-Set 19.09.;5.211,53;EUR;250,00;EUR
+19.09.2026;19.09.2026;PayPal Europe S.a.r.l. et Cie S.C.A;Lastschrift;1040012345678 PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann;4.961,53;EUR;-149,00;EUR
+16.09.2026;16.09.2026;Amazon EU S.a.r.l.;Lastschrift;302-1234567-7654321 Amazon.de;5.110,53;EUR;-38,99;EUR
+15.09.2026;15.09.2026;Alex Beispiel;Gutschrift;Sparrate Tagesgeld;5.149,52;EUR;300,00;EUR

@@ -4,7 +4,7 @@ import { categorizeTransactions } from "~/lib/categorize/apply";
 import type { Db } from "~/lib/db/client";
 import { accounts, imports, transactions } from "~/lib/db/schema";
 import { withDedupeHashes } from "./dedupe";
-import { getBankProfile } from "./profiles";
+import { detectBankProfile, getBankProfile } from "./profiles";
 import type { RejectedRow } from "./types";
 
 export type ImportResult = {
@@ -12,6 +12,7 @@ export type ImportResult = {
   inserted: number;
   duplicates: number;
   rejected: RejectedRow[];
+  skipped: RejectedRow[];
   byRule: number;
   byAi: number;
   needsReview: number;
@@ -19,7 +20,7 @@ export type ImportResult = {
 
 const INSERT_CHUNK = 500;
 
-/** Invariant the tests hold us to: total = inserted + duplicates + rejected. No row disappears without a reason. */
+/** Invariant the tests hold us to: total = inserted + duplicates + rejected + skipped. No row disappears without a reason. */
 export async function importCsv(
   db: Db,
   input: { accountId: string; filename: string; bytes: Uint8Array; model: LanguageModel | null },
@@ -27,9 +28,22 @@ export async function importCsv(
   const [account] = await db.select().from(accounts).where(eq(accounts.id, input.accountId));
   if (!account) throw new Error("Konto nicht gefunden");
 
-  const { rows, rejected } = getBankProfile(account.bankProfile).parse(input.bytes);
+  const profile = getBankProfile(account.bankProfile);
+  let parsed: ReturnType<typeof profile.parse>;
+  try {
+    parsed = profile.parse(input.bytes);
+  } catch (error) {
+    const other = detectBankProfile(input.bytes);
+    if (other && other.id !== profile.id) {
+      throw new Error(
+        `Die Datei sieht nach ${other.label} aus, das Konto „${account.name}“ ist aber auf ${profile.label} eingestellt. Wähle das passende Konto oder lege eines mit Bankprofil ${other.label} an.`,
+      );
+    }
+    throw error;
+  }
+  const { rows, rejected, skipped } = parsed;
   const hashed = withDedupeHashes(account.id, rows);
-  const total = rows.length + rejected.length;
+  const total = rows.length + rejected.length + skipped.length;
 
   const [imp] = await db
     .insert(imports)
@@ -66,6 +80,7 @@ export async function importCsv(
     inserted: insertedIds.length,
     duplicates: hashed.length - insertedIds.length,
     rejected,
+    skipped,
     ...stats,
   };
 }

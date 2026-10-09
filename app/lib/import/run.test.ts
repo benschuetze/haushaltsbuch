@@ -61,3 +61,28 @@ describe("CSV-Import", () => {
     expect(result).toMatchObject({ inserted: 44, needsReview: 44 });
   });
 });
+
+describe("falsches Bankprofil", () => {
+  it("nennt die passende Bank, statt nur „Kopfzeile passt nicht“ zu sagen", async () => {
+    const bytes = new Uint8Array(readFileSync("beispieldaten/banken/ing.csv"));
+    await expect(importCsv(db, { accountId, filename: "ing.csv", bytes, model: null })).rejects.toThrow(
+      /sieht nach ING aus.*Girokonto \(Demo\)/,
+    );
+    expect(await db.$count(transactions)).toBe(0);
+  });
+});
+
+describe("vorgemerkte Umsätze", () => {
+  it("zählen in der Bilanz mit, werden aber nicht gespeichert", async () => {
+    const [sparkasse] = await db
+      .insert(accounts)
+      .values({ name: "Sparkasse Giro", bankProfile: "sparkasse" })
+      .returning();
+    if (!sparkasse) throw new Error("Konto fehlt");
+    const bytes = new Uint8Array(readFileSync("beispieldaten/banken/sparkasse.csv"));
+    const result = await importCsv(db, { accountId: sparkasse.id, filename: "sparkasse.csv", bytes, model: null });
+    expect(result).toMatchObject({ total: 20, inserted: 19, duplicates: 0, rejected: [] });
+    expect(result.skipped).toHaveLength(1);
+    expect(result.inserted + result.duplicates + result.rejected.length + result.skipped.length).toBe(result.total);
+  });
+});
