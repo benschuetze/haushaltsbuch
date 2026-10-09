@@ -5,6 +5,9 @@ import { formatCents } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
 export type TodayView = {
+  today: string;
+  periodStart: string;
+  periodEnd: string;
   perDayCents: number;
   freeCents: number;
   daysLeft: number;
@@ -26,6 +29,56 @@ function longDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
   return new Intl.DateTimeFormat("de-DE", { day: "numeric", month: "long", timeZone: "UTC" }).format(
     Date.UTC(y, m - 1, d),
+  );
+}
+
+/** One ledger line: label, dotted leader, amount. */
+function Line({ label, cents }: { label: string; cents: number }) {
+  return (
+    <li className="flex items-baseline gap-2">
+      <span className="min-w-0 truncate">{label}</span>
+      <span className="leader" />
+      <span className="shrink-0">{cents < 0 ? `−${formatCents(-cents)}` : formatCents(cents)}</span>
+    </li>
+  );
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Time against money: how much of the pay period is over, and how much of the spendable money is gone.
+ * When money runs ahead of time, it shows before any number has to be read.
+ */
+function PaceBars({ today }: { today: TodayView }) {
+  const total = Math.max(1, (Date.parse(today.periodEnd) - Date.parse(today.periodStart)) / DAY_MS + 1);
+  const passed = Math.min(total, (Date.parse(today.today) - Date.parse(today.periodStart)) / DAY_MS + 1);
+  const time = Math.round((passed / total) * 100);
+  const spendable = today.spentCents + Math.max(0, today.freeCents);
+  const money = spendable > 0 ? Math.min(100, Math.round((today.spentCents / spendable) * 100)) : 100;
+  const ahead = money > time + 10;
+  const bar = (label: string, value: number, fill: string, testId: string) => (
+    <div className="flex items-center gap-2">
+      <span className="pixel w-10 text-muted-foreground">{label}</span>
+      <div
+        role="progressbar"
+        aria-label={`${label}: ${value} Prozent`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={value}
+        className="h-3 flex-1 border-2 border-foreground"
+        data-testid={testId}
+      >
+        <div className={cn("h-full", fill)} style={{ width: `${value}%` }} />
+      </div>
+      <span className="w-10 text-right font-mono text-xs">{value} %</span>
+    </div>
+  );
+  return (
+    <div className="space-y-1.5 pt-1">
+      {bar("Zeit", time, "dither text-foreground", "pace-time")}
+      {bar("Geld", money, ahead ? "bg-red-700" : "bg-foreground", "pace-money")}
+      {ahead ? <p className="text-xs font-medium text-red-700">Das Geld geht schneller weg als die Zeit.</p> : null}
+    </div>
   );
 }
 
@@ -152,52 +205,41 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
   }
 
   return (
-    <section
-      aria-labelledby="today-title"
-      className="space-y-5 rounded-2xl border bg-gradient-to-br from-emerald-50 to-background p-5 shadow-sm dark:from-emerald-950/30"
-    >
-      <div className="space-y-1">
-        <h2 id="today-title" className="text-sm font-medium text-muted-foreground">
+    <section aria-labelledby="today-title" className="space-y-5 rounded border-2 border-foreground bg-card p-5">
+      <div className="space-y-2">
+        <h2 id="today-title" className="pixel text-muted-foreground">
           Heute drin
         </h2>
         <p
-          className={cn(
-            "text-5xl font-bold tracking-tight tabular-nums",
-            overdrawn ? "text-red-700" : "text-emerald-800",
-          )}
+          className={cn("font-mono text-5xl font-bold tracking-tight", overdrawn ? "text-red-700" : "text-foreground")}
           data-testid="today-amount"
         >
-          {formatCents(today.perDayCents)}
+          <span className={overdrawn ? "" : "marker"}>{formatCents(today.perDayCents)}</span>
         </p>
         <p className="text-sm" data-testid="today-context">
           {overdrawn
             ? `Bis ${today.nextIncome ? `zum Gehalt am ${longDate(today.nextIncome.date)}` : "Monatsende"} fehlen ${formatCents(-today.freeCents)}.`
             : `${formatCents(today.freeCents)} frei bis ${today.nextIncome ? `zum Gehalt am ${longDate(today.nextIncome.date)}` : "Monatsende"} · noch ${today.daysLeft === 1 ? "1 Tag" : `${today.daysLeft} Tage`}`}
         </p>
+        <PaceBars today={today} />
         {today.missingIncome ? (
-          <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-950" data-testid="missing-income">
+          <p className="border-2 border-dashed border-foreground px-3 py-2 text-sm" data-testid="missing-income">
             Das Gehalt vom {longDate(today.missingIncome.date)} ist noch nicht in den Buchungen. Die Zahl rechnet ohne;
             nach dem nächsten Import oder Bankabruf stimmt sie wieder.
           </p>
         ) : null}
-        <details className="text-sm text-muted-foreground">
-          <summary className="cursor-pointer">Wie gerechnet?</summary>
-          <ul className="mt-2 space-y-1">
-            <li>
-              Seit dem letzten Gehalt eingenommen:{" "}
-              <span className="tabular-nums">{formatCents(today.incomeCents)}</span>
-            </li>
-            <li>
-              Ausgegeben: <span className="tabular-nums">−{formatCents(today.spentCents)}</span>
-            </li>
+        <details className="text-sm">
+          <summary className="cursor-pointer text-muted-foreground">Wie gerechnet?</summary>
+          <ul className="mt-2 space-y-1 font-mono text-xs">
+            <Line label="Eingenommen seit Gehalt" cents={today.incomeCents} />
+            <Line label="Ausgegeben" cents={-today.spentCents} />
             {today.upcoming.map((u) => (
-              <li key={`${u.name}-${u.date}`}>
-                Noch fällig am {longDate(u.date)}: {u.name}{" "}
-                <span className="tabular-nums">−{formatCents(u.amountCents)}</span>
-              </li>
+              <Line key={`${u.name}-${u.date}`} label={`${u.name} (${longDate(u.date)})`} cents={-u.amountCents} />
             ))}
-            <li>
-              Ergibt {formatCents(today.freeCents)}, verteilt auf {today.daysLeft} Tage.
+            <li className="flex items-baseline gap-2 border-t-2 border-foreground pt-1 font-bold">
+              <span>Frei, verteilt auf {today.daysLeft} Tage</span>
+              <span className="leader" />
+              <span>Ergibt {formatCents(today.freeCents)}</span>
             </li>
           </ul>
         </details>
@@ -279,7 +321,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
                   key={s}
                   type="button"
                   onClick={() => ask(s)}
-                  className="rounded-full border bg-background px-3 py-1.5 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                  className="rounded border-2 border-foreground bg-background px-3 py-1.5 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   {s}
                 </button>

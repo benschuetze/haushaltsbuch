@@ -1,12 +1,50 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Fonts are bundled with the app: no request to a font CDN. */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/eb-garamond/latin-500.css";
+@import "@fontsource/eb-garamond/latin-700.css";
+@import "@fontsource/jetbrains-mono/latin-500.css";
+@import "@fontsource/jetbrains-mono/latin-700.css";
+@import "@fontsource/silkscreen/latin-400.css";
 
 @custom-variant dark (&:is(.dark *));
 
-/* System font: no request to a font CDN, nothing about the visitor leaves the app. */
+/*
+ * "E-Ink-Haushaltsbuch": paper and ink, four grey levels like an e-paper display, ruled lines like a ledger,
+ * pixel labels, and one signal yellow used only as a highlighter on the number that matters.
+ */
+
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "EB Garamond", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --font-pixel: "Silkscreen", ui-monospace, monospace;
+
+  /* The palette the code already uses, mapped onto e-ink: green is ink, amber is the highlighter. */
+  --color-emerald-50: #f4f1e8;
+  --color-emerald-100: #e7e2d4;
+  --color-emerald-600: #1d1c19;
+  --color-emerald-700: #1d1c19;
+  --color-emerald-800: #141412;
+  --color-emerald-900: #141412;
+  --color-emerald-950: #141412;
+  --color-amber-50: #fbf6c9;
+  --color-amber-100: #f6ec7a;
+  --color-amber-300: #e3d200;
+  --color-amber-500: #c9b800;
+  --color-amber-950: #141412;
+  --color-rose-600: #8f1d17;
+  --color-rose-800: #5e120e;
+  --color-red-100: #f1d9d3;
+  --color-red-600: #a3221b;
+  --color-red-700: #8f1d17;
+  --color-red-900: #5e120e;
+  --color-slate-800: #2b2a26;
+  --color-slate-950: #141412;
+  --color-marker: #f2e600;
 }
 
 @theme inline {
@@ -51,72 +89,60 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.2rem;
+  --background: #f3efe5;
+  --foreground: #141412;
+  --card: #fbf9f3;
+  --card-foreground: #141412;
+  --popover: #fbf9f3;
+  --popover-foreground: #141412;
+  --primary: #141412;
+  --primary-foreground: #fbf9f3;
+  --secondary: #e7e2d4;
+  --secondary-foreground: #141412;
+  --muted: #e7e2d4;
+  --muted-foreground: #57544c;
+  --accent: #e7e2d4;
+  --accent-foreground: #141412;
+  --destructive: #a3221b;
+  --border: #2b2a26;
+  --input: #2b2a26;
+  --ring: #141412;
+  --chart-1: #141412;
+  --chart-2: #57544c;
+  --chart-3: #8c887d;
+  --chart-4: #b9b4a6;
+  --chart-5: #d8d3c4;
+  --sidebar: #fbf9f3;
+  --sidebar-foreground: #141412;
+  --sidebar-primary: #141412;
+  --sidebar-primary-foreground: #fbf9f3;
+  --sidebar-accent: #e7e2d4;
+  --sidebar-accent-foreground: #141412;
+  --sidebar-border: #2b2a26;
+  --sidebar-ring: #141412;
 }
 
+/* Night mode: the same display, inverted. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #191815;
+  --foreground: #ece8dd;
+  --card: #201f1b;
+  --card-foreground: #ece8dd;
+  --popover: #201f1b;
+  --popover-foreground: #ece8dd;
+  --primary: #ece8dd;
+  --primary-foreground: #191815;
+  --secondary: #2c2a25;
+  --secondary-foreground: #ece8dd;
+  --muted: #2c2a25;
+  --muted-foreground: #b3aea1;
+  --accent: #2c2a25;
+  --accent-foreground: #ece8dd;
+  --destructive: #e5675c;
+  --border: #ece8dd;
+  --input: #ece8dd;
+  --ring: #ece8dd;
 }
 
 @layer base {
@@ -124,7 +150,68 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    /* Faint ruled lines, like a ledger page. */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      color-mix(in srgb, var(--foreground) 5%, transparent) 31px,
+      color-mix(in srgb, var(--foreground) 5%, transparent) 32px
+    );
+  }
+  h1,
+  h2 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+  h1 {
+    font-weight: 700;
+  }
+  /* Amounts line up like in a ledger. */
+  .tabular-nums {
+    font-family: var(--font-mono);
+  }
+  /* E-ink has no soft shadows. */
+  .shadow-sm,
+  .shadow-xs,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none;
+  }
+}
+
+@layer utilities {
+  /* Highlighter stroke behind the one number that matters. */
+  .marker {
+    background-image: linear-gradient(
+      transparent 55%,
+      var(--color-marker) 55%,
+      var(--color-marker) 92%,
+      transparent 92%
+    );
+    padding-inline: 0.1em;
+  }
+  /* Small caps labels in pixel type. */
+  .pixel {
+    font-family: var(--font-pixel);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.7rem;
+  }
+  /* Ordered dither, the way e-paper shows grey. */
+  .dither {
+    background-image: radial-gradient(currentColor 1px, transparent 1.2px);
+    background-size: 4px 4px;
+  }
+  /* Dotted leader between a label and its amount. */
+  .leader {
+    flex: 1;
+    min-width: 1rem;
+    border-bottom: 2px dotted color-mix(in srgb, var(--foreground) 45%, transparent);
+    transform: translateY(-0.3em);
   }
 }
 

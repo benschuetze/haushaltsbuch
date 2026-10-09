@@ -11,7 +11,7 @@ test("automatisch angelegtes Konto umbenennen, Name muss eindeutig sein", async 
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByTestId("import-account")).toContainText("Konto „Neue Bank ··0003“ neu angelegt");
 
-  await page.getByRole("link", { name: "Konten" }).click();
+  await page.goto("/konten");
   const account = page.getByTestId("account").filter({ hasText: "6 Buchungen" });
   await account.getByLabel("Name").fill("Deutsche Bank Giro");
   await account.getByRole("button", { name: "Umbenennen" }).click();

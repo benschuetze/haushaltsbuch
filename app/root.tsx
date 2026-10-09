@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   data,
   Form,
@@ -13,6 +13,7 @@ import {
 } from "react-router";
 import { Assistant } from "~/components/assistant";
 import { NotificationBell } from "~/components/notification-bell";
+import { TabBar } from "~/components/tab-bar";
 import { guard, isDemo, isLoggedIn } from "~/lib/auth.server";
 import { bankIssues } from "~/lib/bank/index.server";
 import { getAssistantModel } from "~/lib/categorize/model";
@@ -86,6 +87,7 @@ const NAV = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const root = useRouteLoaderData<typeof loader>("root");
   const nonce = useNonce();
+  const [chatOpen, setChatOpen] = useState(false);
   // Marks the moment React has taken over the server-rendered page; E2E tests wait for it before typing.
   useEffect(() => {
     document.documentElement.dataset.hydrated = "true";
@@ -99,7 +101,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Installable on the home screen; opens without browser bars like an app. */}
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <meta name="theme-color" content="#1f9d6b" />
+        <meta name="theme-color" content="#f3efe5" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Haushalt" />
         <Meta />
@@ -112,10 +114,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </p>
         ) : null}
         {root?.loggedIn ? (
-          <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pt-3">
-              <NavLink to="/" className="font-semibold">
-                Haushaltsbuch
+          <header className="sticky top-0 z-10 border-b-2 border-foreground bg-background">
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:pb-0">
+              <NavLink to="/" className="flex items-baseline gap-2">
+                <span className="font-serif text-xl font-bold italic">Haushaltsbuch</span>
+                <span className="pixel hidden text-muted-foreground sm:inline">Nr. 1 · Eigenes Konto</span>
               </NavLink>
               <div className="flex items-center gap-1">
                 {root.notifications ? <NotificationBell notifications={root.notifications} demo={root.demo} /> : null}
@@ -134,7 +137,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Scrolls sideways on small screens instead of wrapping into several rows. */}
             <nav
               aria-label="Hauptnavigation"
-              className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 py-2 [scrollbar-width:none]"
+              className="mx-auto hidden max-w-5xl gap-1 overflow-x-auto px-4 py-2 [scrollbar-width:none] sm:flex"
             >
               {NAV.map((item) => (
                 <NavLink
@@ -163,7 +166,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Nutzungsbedingungen
           </a>
         </footer>
-        {root?.assistant ? <Assistant /> : null}
+        {root?.assistant ? <Assistant open={chatOpen} onOpenChange={setChatOpen} /> : null}
+        {root?.loggedIn ? (
+          <TabBar chatOpen={chatOpen} onChat={() => setChatOpen((o) => !o)} assistant={Boolean(root.assistant)} />
+        ) : null}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>
