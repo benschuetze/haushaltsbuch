@@ -86,7 +86,6 @@ export async function categorizeWithLlm(
         system: SYSTEM_PROMPT,
         prompt: buildPrompt(categories, batch),
         output: Output.object({ schema: responseSchema }),
-        temperature: 0,
         maxRetries: 2,
         // 25 short answers fit easily; the cap only stops a runaway response from eating credits.
         maxOutputTokens: 3000,
