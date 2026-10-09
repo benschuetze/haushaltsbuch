@@ -8,4 +8,5 @@ export default [
   route("regeln", "routes/regeln.tsx"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
+  route("favicon.ico", "routes/favicon.ts"),
 ] satisfies RouteConfig;

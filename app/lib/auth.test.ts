@@ -97,3 +97,12 @@ describe("Session-Secret", () => {
     expect(await isLoggedIn(new Request("http://x/", { headers: { Cookie: cookie } }))).toBe(true);
   });
 });
+
+describe("Favicon", () => {
+  it("ist ohne Login erreichbar, privat wie in der Demo", async () => {
+    vi.stubEnv("DEMO_MODE", "false");
+    expect(await outcome(new Request("http://x/favicon.ico"))).toBe("ok");
+    vi.stubEnv("DEMO_MODE", "true");
+    expect(await outcome(new Request("http://x/favicon.ico"))).toBe("ok");
+  });
+});

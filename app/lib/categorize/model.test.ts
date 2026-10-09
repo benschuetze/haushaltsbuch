@@ -9,7 +9,9 @@ async function sentHeaders(): Promise<Headers> {
   let captured = new Headers();
   const fakeFetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
     captured = new Headers(init?.headers);
-    return new Response(JSON.stringify({ type: "error", error: { type: "stop", message: "nur Test" } }), { status: 400 });
+    return new Response(JSON.stringify({ type: "error", error: { type: "stop", message: "nur Test" } }), {
+      status: 400,
+    });
   });
   const model = getModel({ fetch: fakeFetch as unknown as typeof fetch });
   if (!model) throw new Error("kein Modell");
