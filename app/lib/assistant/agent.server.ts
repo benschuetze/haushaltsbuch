@@ -44,11 +44,25 @@ async function withinDailyLimit(db: Db, now: Date): Promise<boolean> {
 
 export type AssistantReply = { answer: string; tools: string[] };
 
+export type Tone = "freundlich" | "frech";
+
+/** The facts stay the same; only the voice changes. "Frech" teases about spending, never about the person. */
+const TONE: Record<Tone, string> = {
+  freundlich: "Ton: freundlich und ermutigend.",
+  frech:
+    "Ton: frech. Antworte mit trockenem Humor und einem kleinen Seitenhieb auf das Ausgabeverhalten (z. B. „Schon wieder Lieferando?“), wie ein guter Kumpel. Nie beleidigend, nie über die Person, die Zahlen bleiben exakt.",
+};
+
+export function toneFrom(value: unknown): Tone {
+  return value === "frech" ? "frech" : "freundlich";
+}
+
 export async function askAssistant(
   db: Db,
   model: LanguageModel,
   history: ChatMessage[],
   now = new Date(),
+  tone: Tone = "freundlich",
 ): Promise<AssistantReply> {
   if (!(await withinDailyLimit(db, now))) {
     return { answer: `Für heute ist das Limit von ${DAILY_LIMIT} Fragen erreicht. Morgen geht es weiter.`, tools: [] };
@@ -56,7 +70,7 @@ export async function askAssistant(
   try {
     const result = await generateText({
       model,
-      system: SYSTEM,
+      system: `${SYSTEM}\n- ${TONE[tone]}`,
       messages: history.map((m) => ({ role: m.role, content: m.content })),
       tools: createAssistantTools(db, now),
       stopWhen: isStepCount(6),

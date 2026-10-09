@@ -40,3 +40,13 @@ test("„Diese Woche“: Betrag seit Montag, mit Vergleich oder ehrlichem Hinwei
     /(weniger|mehr) als sonst bis \w+|fehlen noch ein paar Wochen/,
   );
 });
+
+test("Ton „frech“: Antwort mit Spruch, die Wahl bleibt nach dem Neuladen", async ({ page }) => {
+  await importDemo(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "frech 😏" }).click();
+  await page.getByRole("button", { name: "Kann ich mir 80 € fürs Feiern leisten?" }).click();
+  await expect(page.getByTestId("ask-answer")).toHaveText(/^(Gönn dir\.|Autsch\.|Hm, mutig\.) /);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "frech 😏" })).toHaveAttribute("aria-pressed", "true");
+});

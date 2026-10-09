@@ -132,10 +132,22 @@ function phrase(toolName: string, value: Row): string {
   return "Erledigt.";
 }
 
+/** The cheeky voice in the demo: one opener per situation, the facts follow unchanged. */
+function sass(toolName: string, value: Row): string {
+  if (toolName === "leisten") {
+    return value.urteil === "nein" ? "Autsch." : value.urteil === "locker" ? "Gönn dir." : "Hm, mutig.";
+  }
+  if (toolName === "heute_verfuegbar") return "Na, Shoppinglaune?";
+  if (toolName === "abos_und_fixkosten") return "Abo-Sammler, was?";
+  return "Na gut.";
+}
+
 export function createMockAssistantModel(): MockLanguageModelV4 {
   return new MockLanguageModelV4({
     doGenerate: async ({ prompt }) => {
       const messages = prompt as unknown as Message[];
+      const system = messages.find((m) => m.role === "system")?.content;
+      const cheeky = typeof system === "string" && system.includes("Ton: frech");
       const last = messages.at(-1);
       if (last?.role === "tool" && Array.isArray(last.content)) {
         const result = last.content.find((p) => p.type === "tool-result");
@@ -144,7 +156,8 @@ export function createMockAssistantModel(): MockLanguageModelV4 {
           const months = (value.monate as string[]) ?? [];
           return months[0] ? call("monatsuebersicht", { monat: months[0] }) : say("Es gibt noch keine Buchungen.");
         }
-        return say(phrase(result?.toolName ?? "", value));
+        const text = phrase(result?.toolName ?? "", value);
+        return say(cheeky ? `${sass(result?.toolName ?? "", value)} ${text}` : text);
       }
       const question = [...messages].reverse().find((m) => m.role === "user")?.content;
       const text = (
