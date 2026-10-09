@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import {
   collectConsoleErrors,
   expectNoHorizontalOverflow,
@@ -20,6 +20,12 @@ const PAGES = [
   { path: "/hinweise", heading: "Hinweise", action: { role: "link" as const, name: "Übersicht" } },
   { path: "/pruefen", heading: "Prüfen", action: { role: "link" as const, name: "Überspringen" } },
   { path: "/banken", heading: "Banken", action: { role: "button" as const, name: "PayPal hinzufügen" } },
+  { path: "/ziele", heading: "Sparziele", action: { role: "button" as const, name: "Anlegen" } },
+  {
+    path: "/rueckblick?monat=2026-09",
+    heading: "Dein September 2026",
+    action: { role: "button" as const, name: "Weiter" },
+  },
 ];
 
 test.beforeAll(resetDb);

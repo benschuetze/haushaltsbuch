@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { DEMO_URL, FAKE_BANK_URL, resetDb } from "./helpers";
 
 test.beforeEach(async () => {

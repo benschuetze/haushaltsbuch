@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "./fixtures";
 import { DEMO_URL, FAKE_BANK_URL, resetDb } from "./helpers";
 
 /** Banks without a tile are found through the search below the tiles. */

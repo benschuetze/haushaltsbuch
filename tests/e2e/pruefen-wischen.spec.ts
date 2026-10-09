@@ -1,4 +1,4 @@
-import { expect, type Locator, test } from "@playwright/test";
+import { expect, type Locator, test } from "./fixtures";
 import { importDemo, resetDb } from "./helpers";
 
 test.beforeEach(resetDb);
