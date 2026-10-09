@@ -7,6 +7,7 @@ import { isDemo } from "~/lib/auth.server";
 import { BANK_TILES, tileState } from "~/lib/bank/catalog";
 import { BankApiError } from "~/lib/bank/enable-banking.server";
 import { bankClient, listConnections } from "~/lib/bank/index.server";
+import { connectMock, listMockAccounts, removeMock } from "~/lib/bank/mock.server";
 import { bankStateCookie } from "~/lib/bank/state-cookie.server";
 import { createAuthState, disconnect, syncConnection } from "~/lib/bank/sync.server";
 import { getModel } from "~/lib/categorize/model";
@@ -40,22 +41,25 @@ export async function loader({ request }: Route.LoaderArgs) {
       // A freshly registered production app answers 403 until its owner links own accounts in the portal.
       listError =
         error instanceof BankApiError && error.status === 403
-          ? "Die Live-Anbindung ist bei Enable Banking noch nicht freigeschaltet. Bis dahin geht alles per Datei."
+          ? "Die Live-Anbindung ist bei Enable Banking noch nicht freigeschaltet. Bis dahin laufen alle Banken als Mock oder per Datei."
           : "Die Bankenliste ist gerade nicht erreichbar. Bitte später erneut versuchen.";
     }
   }
   const demo = isDemo();
-  // The demo has no bank access; it lists the tiles' own names so the connection can be played through.
-  const available = demo ? BANK_TILES.filter((t) => t.match).map((t) => t.name) : banks;
+  // The demo has no bank access: every tile is a mock there.
+  const available = demo ? [] : banks;
   // RegExps do not survive serialisation to the browser, and the browser does not need them.
+  const mockAccounts = await listMockAccounts(getDb());
   const tiles = BANK_TILES.map(({ match: _match, ...view }, i) => ({
     ...view,
     state: tileState(BANK_TILES[i] as (typeof BANK_TILES)[number], available),
+    mockConnected: mockAccounts.some((m) => m.accountKey === `mock:${view.id}`),
   }));
   return {
     configured: client !== null,
     demo,
     tiles,
+    mockAccounts: mockAccounts.map(({ id, name, bookings }) => ({ id, name, bookings })),
     country,
     countries: COUNTRIES,
     banks,
@@ -72,16 +76,38 @@ const actionSchema = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("connect"), bank: z.string().min(1).max(200), country: z.enum(["DE", "AT"]) }),
   z.object({ intent: z.literal("sync"), connectionId: z.uuid() }),
   z.object({ intent: z.literal("disconnect"), connectionId: z.uuid() }),
+  z.object({ intent: z.literal("mock"), tile: z.string().max(50) }),
+  z.object({ intent: z.literal("removeMock"), accountId: z.uuid() }),
 ]);
 
 export async function action({ request }: Route.ActionArgs) {
-  const client = bankClient();
-  if (!client)
-    return data({ ok: false as const, message: "Die Bankanbindung ist nicht eingerichtet." }, { status: 503 });
   const parsed = actionSchema.safeParse(Object.fromEntries(await request.formData()));
   if (!parsed.success) return data({ ok: false as const, message: "Ungültige Eingabe." }, { status: 400 });
   const db = getDb();
   const input = parsed.data;
+
+  // Mock connections need no bank access at all.
+  if (input.intent === "mock") {
+    const tile = BANK_TILES.find((t) => t.id === input.tile);
+    if (!tile) return data({ ok: false as const, message: "Unbekannte Bank." }, { status: 400 });
+    const result = await connectMock(db, tile);
+    return data({
+      ok: true as const,
+      message: result.existed
+        ? `${result.accountName} war schon verbunden.`
+        : `Verbunden (Mock): ${result.inserted} erfundene Buchungen in „${result.accountName}“.`,
+    });
+  }
+  if (input.intent === "removeMock") {
+    const name = await removeMock(db, input.accountId);
+    return name
+      ? data({ ok: true as const, message: `„${name}“ mit allen Mock-Buchungen entfernt.` })
+      : data({ ok: false as const, message: "Kein Mock-Konto." }, { status: 404 });
+  }
+
+  const client = bankClient();
+  if (!client)
+    return data({ ok: false as const, message: "Die Bankanbindung ist nicht eingerichtet." }, { status: 503 });
 
   if (input.intent === "connect") {
     // Only banks the provider actually lists can be started; nothing user-typed goes to the API unchecked.
@@ -139,7 +165,7 @@ const NOTICES: Record<string, string> = {
 };
 
 export default function Banken({ loaderData, actionData }: Route.ComponentProps) {
-  const { configured, demo, tiles, country, countries, banks, listError, connections } = loaderData;
+  const { configured, demo, tiles, mockAccounts, country, countries, banks, listError, connections } = loaderData;
   const [params] = useSearchParams();
   const busy = useNavigation().state !== "idle";
   // Messages from the return URL belong to that moment; a newer action result replaces them.
@@ -213,6 +239,38 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
         </ul>
       ) : null}
 
+      {mockAccounts.length > 0 ? (
+        <ul className="space-y-3" aria-label="Mock-Verbindungen">
+          {mockAccounts.map((m) => (
+            <li
+              key={m.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 p-4"
+              data-testid="mock-connection"
+            >
+              <div className="min-w-0 space-y-0.5">
+                <h2 className="font-semibold">{m.name}</h2>
+                <p className="text-sm text-amber-950">
+                  Mockdaten · {m.bookings === 1 ? "1 erfundene Buchung" : `${m.bookings} erfundene Buchungen`}
+                </p>
+              </div>
+              <Form method="post">
+                <input type="hidden" name="accountId" value={m.id} />
+                <Button
+                  type="submit"
+                  name="intent"
+                  value="removeMock"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || demo}
+                >
+                  Entfernen
+                </Button>
+              </Form>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       <section aria-labelledby="connect" className="space-y-3">
         <div className="space-y-1">
           <h2 id="connect" className="text-lg font-semibold">
@@ -220,9 +278,9 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
           </h2>
           <p className="text-sm text-muted-foreground">
             {listError ??
-              (configured || demo
-                ? "„Live“ verbindet direkt mit der Bank. Alles andere kommt per Datei, die App erkennt das Format selbst."
-                : "Die Live-Anbindung ist noch nicht eingerichtet, bis dahin geht alles per Datei.")}
+              (configured
+                ? "„Live“ verbindet echt mit der Bank. „Mock“ zeigt den Ablauf mit erfundenen Buchungen; echte Umsätze dieser Banken kommen per Datei."
+                : "„Mock“ zeigt den Ablauf mit erfundenen Buchungen; echte Umsätze kommen per Datei.")}
           </p>
         </div>
         <BankTiles tiles={tiles} country={country} demo={demo} />

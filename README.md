@@ -64,7 +64,9 @@ Die wichtigste Zahl im Eval ist „falsch mit Konfidenz ≥ 0,7“. Diese Fehler
 
 - Ein Benutzer, Login per Passwort. Für mehrere Haushalte fehlen Mandanten und echte Konten.
 - Eingebaute Bankprofile für Sparkasse (CSV-CAMT V2), ING, DKB und Volksbank/Raiffeisenbank, nachgebaut nach den Exportformaten. Andere Banken lernt die App beim ersten Upload; getestet mit nachgebauten Exporten von N26, Deutscher Bank (Soll/Haben), comdirect (Empfänger im Buchungstext) und einem Fantasieformat. Alle Beispieldaten sind erfunden: [`beispieldaten/banken/`](beispieldaten/banken).
-- Budgets und das Erkennen wiederkehrender Zahlungen sind geplant, aber noch nicht gebaut.
+- Live-Bankabruf nur über Enable Banking (im eingeschränkten Modus: die eigenen, im Portal verknüpften Konten). Alle anderen Kacheln unter „Banken“ sind ausdrücklich als **Mock** gekennzeichnet: Sie zeigen den Ablauf mit erfundenen Buchungen in einem Konto „… (Mock)“, das sich mit einem Klick wieder entfernen lässt. Echte Umsätze dieser Institute kommen per Datei-Import.
+- Die Logos unter `public/logos/` sind die App-Icons der Institute von ihren offiziellen Websites (als PNG neu kodiert) und Marken der jeweiligen Inhaber. Sie dienen nur dazu, das Institut zu erkennen.
+- Ob eine Abo-Kündigung geklappt hat, liest die App aus späteren Buchungen, nicht von der Seite des Anbieters: Die lässt sich weder einbetten noch auslesen.
 - Das Modell sieht keine Historie: Eine Buchung, die es letzten Monat richtig hatte, kann es diesen Monat anders einordnen. Regeln machen das stabil.
 
 ## Arbeitsweise mit Claude Code

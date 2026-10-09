@@ -1,59 +1,131 @@
-import { Check, FileUp, Loader2, Zap } from "lucide-react";
+import { Check, FileUp, FlaskConical, Loader2, Search, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Form, useNavigation } from "react-router";
+import { Form, Link, useFetcher, useNavigation } from "react-router";
 import { BankLogo, type LogoTile } from "~/components/bank-logo";
 import { Button } from "~/components/ui/button";
-import type { TileState } from "~/lib/bank/catalog";
+import { type BankGroup, GROUPS, matchesSearch, type TileState } from "~/lib/bank/catalog";
+import { cn } from "~/lib/utils";
 
-export type TileView = LogoTile & { fileHint: string; exportUrl?: string; state: TileState };
+export type TileView = LogoTile & {
+  group: BankGroup;
+  aliases?: string[];
+  fileHint: string;
+  exportUrl?: string;
+  state: TileState;
+  /** A mock account for this tile already exists. */
+  mockConnected: boolean;
+};
 
 const DEMO_STEPS = ["Sichere Verbindung aufbauen", "Anmeldung bei der Bank", "Konten finden", "Umsätze abrufen"];
 
 /**
- * Tiles that wrap with the screen width. One click opens a dialog that does the next step straight away:
- * off to the bank, pick the branch, or drop the exported file.
+ * Search filters while typing, chips narrow to one kind of institution; without either the tiles are
+ * grouped under headings so the page does not read like one long wall. One click opens a dialog that does
+ * the next step: off to the bank, pick the branch, or (without real access) a clearly marked mock connection.
  */
 export function BankTiles({ tiles, country, demo }: { tiles: TileView[]; country: string; demo: boolean }) {
   const [selected, setSelected] = useState<TileView | null>(null);
+  const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<BankGroup | null>(null);
+  const filtered = tiles.filter((t) => (group === null || t.group === group) && matchesSearch(t, query));
+  const sections =
+    query.trim() || group
+      ? [{ id: "results", label: null as string | null, items: filtered }]
+      : GROUPS.map((g) => ({
+          id: g.id,
+          label: g.label as string | null,
+          items: filtered.filter((t) => t.group === g.id),
+        }));
+
   return (
-    <>
-      <ul
-        aria-label="Banken und Zahlungsdienste"
-        className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-3"
-      >
-        {tiles.map((tile) => {
-          const live = tile.state.kind !== "file";
-          return (
-            <li key={tile.id}>
-              <button
-                type="button"
-                onClick={() => setSelected(tile)}
-                className="group flex w-full flex-col items-center gap-2 rounded-xl border bg-card p-3 transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring active:translate-y-0"
-                aria-label={`${tile.name} hinzufügen`}
-              >
-                <BankLogo tile={tile} className="size-14 transition group-hover:scale-105" />
-                <span className="flex min-h-[2.5em] w-full items-center justify-center text-center text-[0.8rem] leading-tight font-medium break-words">
-                  {tile.name}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem] ${live ? "bg-emerald-100 text-emerald-900" : "bg-muted text-foreground"}`}
-                >
-                  {live ? (
-                    <Zap className="size-3" aria-hidden="true" />
-                  ) : (
-                    <FileUp className="size-3" aria-hidden="true" />
-                  )}
-                  {live ? "Live" : "Datei"}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Bank, Karte oder Dienst suchen …"
+            aria-label="Bank suchen"
+            autoComplete="off"
+            className="h-11 w-full rounded-xl border border-input bg-background pr-3 pl-9 text-base shadow-xs focus-visible:outline-2 focus-visible:outline-ring"
+          />
+        </div>
+        <fieldset className="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" aria-label="Art filtern">
+          {[{ id: null as BankGroup | null, label: "Alle" }, ...GROUPS].map((g) => (
+            <button
+              key={g.label}
+              type="button"
+              onClick={() => setGroup(g.id)}
+              aria-pressed={group === g.id}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1 text-sm transition focus-visible:outline-2 focus-visible:outline-ring",
+                group === g.id ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
+              )}
+            >
+              {g.label}
+            </button>
+          ))}
+        </fieldset>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="rounded-lg border p-4 text-sm" role="status">
+          Nichts gefunden für „{query}“. Andere Banken findest du unten unter „Andere Bank suchen“, jede Bank geht
+          außerdem per Datei-Import.
+        </p>
+      ) : null}
+
+      {sections.map((section) =>
+        section.items.length === 0 ? null : (
+          <section key={section.id} className="space-y-2" aria-label={section.label ?? "Suchergebnis"}>
+            {section.label ? <h3 className="text-sm font-medium text-muted-foreground">{section.label}</h3> : null}
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-3">
+              {section.items.map((tile) => (
+                <li key={tile.id}>
+                  <Tile tile={tile} onOpen={() => setSelected(tile)} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ),
+      )}
+
       {selected ? (
         <TileDialog key={selected.id} tile={selected} country={country} demo={demo} onClose={() => setSelected(null)} />
       ) : null}
-    </>
+    </div>
+  );
+}
+
+function Tile({ tile, onOpen }: { tile: TileView; onOpen: () => void }) {
+  const live = tile.state.kind !== "file" && !tile.mockConnected;
+  const badge = tile.mockConnected ? "Mock verbunden" : live ? "Live" : "Mock";
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group flex w-full flex-col items-center gap-2 rounded-xl border bg-card p-3 transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring active:translate-y-0"
+      aria-label={`${tile.name} hinzufügen`}
+    >
+      <BankLogo tile={tile} className="size-14 transition group-hover:scale-105" />
+      <span className="flex min-h-[2.5em] w-full items-center justify-center text-center text-[0.8rem] leading-tight font-medium break-words">
+        {tile.name}
+      </span>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem]",
+          live ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-950",
+        )}
+      >
+        {live ? <Zap className="size-3" aria-hidden="true" /> : <FlaskConical className="size-3" aria-hidden="true" />}
+        {badge}
+      </span>
+    </button>
   );
 }
 
@@ -70,7 +142,6 @@ function TileDialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [filter, setFilter] = useState("");
-  const [demoStep, setDemoStep] = useState<number | null>(null);
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
 
@@ -78,14 +149,9 @@ function TileDialog({
     if (ref.current && !ref.current.open) ref.current.showModal();
   }, []);
 
-  // The demo plays the connection instead of opening a real bank: same steps, nothing sent anywhere.
-  useEffect(() => {
-    if (demoStep === null || demoStep >= DEMO_STEPS.length) return;
-    const timer = setTimeout(() => setDemoStep(demoStep + 1), 550);
-    return () => clearTimeout(timer);
-  }, [demoStep]);
-
   const state = tile.state;
+  // Without real access (and always in the demo) the connection is simulated, and says so.
+  const mock = state.kind === "file" || demo;
   const matches =
     state.kind === "choose"
       ? state.aspsps.filter((a) => a.toLowerCase().includes(filter.trim().toLowerCase())).slice(0, 40)
@@ -105,45 +171,33 @@ function TileDialog({
             {tile.name} hinzufügen
           </h2>
           <p className="text-xs text-muted-foreground">
-            {state.kind === "file" ? "per Datei-Import" : "Live-Verbindung, Lesezugriff"}
+            {mock ? "simulierte Verbindung" : "Live-Verbindung, Lesezugriff"}
           </p>
         </div>
       </div>
+      {mock ? (
+        <p
+          className="flex items-center gap-2 border-b bg-amber-100 px-5 py-2 text-sm font-medium text-amber-950"
+          data-testid="mock-banner"
+        >
+          <FlaskConical className="size-4 shrink-0" aria-hidden="true" />
+          Mockdaten: keine echte Verbindung zu {tile.name}
+        </p>
+      ) : null}
 
       <div className="space-y-4 p-5">
-        {state.kind !== "file" && demo ? (
-          demoStep === null ? (
-            <>
-              <p className="text-sm">
-                Du meldest dich direkt bei {tile.name} an. Das Haushaltsbuch sieht dein Passwort nie und darf nur lesen.
-                Die Demo spielt den Ablauf nach, ohne eine echte Bank zu kontaktieren.
-              </p>
-              <Button className="w-full" onClick={() => setDemoStep(0)} autoFocus>
-                Verbindung testen (Demo)
-              </Button>
-            </>
-          ) : (
-            <ol className="space-y-2" aria-label="Verbindungsschritte">
-              {DEMO_STEPS.map((step, i) => (
-                <li key={step} className="flex items-center gap-2 text-sm">
-                  {i < demoStep ? (
-                    <Check className="size-4 text-emerald-600" aria-hidden="true" />
-                  ) : i === demoStep ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <span className="size-4" aria-hidden="true" />
-                  )}
-                  <span className={i <= demoStep ? "" : "text-muted-foreground"}>{step}</span>
-                </li>
-              ))}
-              {demoStep >= DEMO_STEPS.length ? (
-                <li role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950">
-                  So einfach geht's: In deiner eigenen App landen die Umsätze von {tile.name} jetzt automatisch jeden
-                  Morgen im Haushaltsbuch. (Demo, nichts wurde verbunden.)
-                </li>
-              ) : null}
-            </ol>
-          )
+        {mock ? (
+          <>
+            <MockConnect tile={tile} demo={demo} />
+            {state.kind === "file" && !demo ? (
+              <details className="rounded-lg border p-3">
+                <summary className="cursor-pointer text-sm font-medium">Echte Umsätze per Datei-Import</summary>
+                <div className="mt-3">
+                  <FileImport tile={tile} demo={demo} busy={busy} />
+                </div>
+              </details>
+            ) : null}
+          </>
         ) : state.kind === "direct" ? (
           <Form method="post" action="/banken" className="space-y-4">
             <input type="hidden" name="intent" value="connect" />
@@ -194,9 +248,7 @@ function TileDialog({
               ) : null}
             </ul>
           </Form>
-        ) : (
-          <FileImport tile={tile} demo={demo} busy={busy} />
-        )}
+        ) : null}
       </div>
 
       <form method="dialog" className="flex justify-end border-t p-3">
@@ -260,5 +312,88 @@ function FileImport({ tile, demo, busy }: { tile: TileView; demo: boolean; busy:
         {demo ? "In der Demo abgeschaltet" : "Importieren"}
       </Button>
     </Form>
+  );
+}
+
+/**
+ * Plays the steps of a bank connection, then (outside the demo) creates the mock account with invented
+ * bookings, so subscriptions, hints and budgets react like after a real connection.
+ */
+function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
+  const fetcher = useFetcher<{ ok: boolean; message: string }>();
+  const [step, setStep] = useState<number | null>(null);
+  const done = step !== null && step >= DEMO_STEPS.length;
+
+  useEffect(() => {
+    if (step === null || done) return;
+    const timer = setTimeout(() => setStep(step + 1), 550);
+    return () => clearTimeout(timer);
+  }, [step, done]);
+
+  const { submit } = fetcher;
+  useEffect(() => {
+    if (done && !demo) submit({ intent: "mock", tile: tile.id }, { method: "post", action: "/banken" });
+  }, [done, demo, submit, tile.id]);
+
+  if (tile.mockConnected && step === null) {
+    return (
+      <p className="text-sm">
+        {tile.name} ist schon als Mock verbunden.{" "}
+        <Link to="/transaktionen" className="underline underline-offset-2">
+          Buchungen ansehen
+        </Link>
+      </p>
+    );
+  }
+  if (step === null) {
+    return (
+      <>
+        <p className="text-sm">
+          So fühlt es sich an, {tile.name} zu verbinden. Statt echter Daten legt die App ein Beispielkonto mit
+          erfundenen Buchungen an. Es ist überall als „Mock“ gekennzeichnet und mit einem Klick wieder entfernt.
+        </p>
+        <Button className="w-full" onClick={() => setStep(0)} autoFocus>
+          <Zap aria-hidden="true" />
+          {demo ? "Verbindung testen (Demo)" : `Mit ${tile.name} verbinden (Mock)`}
+        </Button>
+      </>
+    );
+  }
+  return (
+    <ol className="space-y-2" aria-label="Verbindungsschritte">
+      {DEMO_STEPS.map((label, i) => (
+        <li key={label} className="flex items-center gap-2 text-sm">
+          {i < step ? (
+            <Check className="size-4 text-emerald-600" aria-hidden="true" />
+          ) : i === step ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <span className="size-4" aria-hidden="true" />
+          )}
+          <span className={i <= step ? "" : "text-muted-foreground"}>{label}</span>
+        </li>
+      ))}
+      {done && demo ? (
+        <li role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950">
+          So einfach geht's: In deiner eigenen App landen die Umsätze von {tile.name} jetzt automatisch jeden Morgen im
+          Haushaltsbuch. (Demo, nichts wurde verbunden.)
+        </li>
+      ) : done && fetcher.data ? (
+        <li
+          role={fetcher.data.ok ? "status" : "alert"}
+          className="space-y-1 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950"
+        >
+          <p>{fetcher.data.message}</p>
+          <p className="flex gap-3">
+            <Link to="/transaktionen" className="underline underline-offset-2">
+              Buchungen ansehen
+            </Link>
+            <Link to="/abos" className="underline underline-offset-2">
+              Abos
+            </Link>
+          </p>
+        </li>
+      ) : null}
+    </ol>
   );
 }

@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BANK_TILES, tileState } from "./catalog";
+import { BANK_TILES, GROUPS, matchesSearch, tileState } from "./catalog";
 
 const tile = (id: string) => {
   const t = BANK_TILES.find((x) => x.id === id);
@@ -19,20 +20,26 @@ const LIST = [
   "N26",
 ];
 
-function luminance(hex: string): number {
-  const [r, g, b] = [1, 3, 5].map((i) => {
-    const c = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  }) as [number, number, number];
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
 describe("Bank-Kacheln", () => {
-  it("jedes Monogramm ist lesbar: Kontrast mindestens 4,5:1", () => {
+  it("jede Kachel hat ihr echtes Logo als Datei, keine Kachel ohne Gruppe", () => {
     for (const t of BANK_TILES) {
-      const [hi, lo] = [luminance(t.bg), luminance(t.fg)].sort((a, b) => b - a) as [number, number];
-      expect((hi + 0.05) / (lo + 0.05), t.name).toBeGreaterThanOrEqual(4.5);
+      expect(existsSync(`public/logos/${t.id}.png`), t.name).toBe(true);
+      expect(
+        GROUPS.some((g) => g.id === t.group),
+        t.name,
+      ).toBe(true);
     }
+  });
+
+  it("Suche findet beim Tippen, auch über frühere Namen, ohne Groß/klein und Umlaute", () => {
+    const found = (q: string) => BANK_TILES.filter((t) => matchesSearch(t, q)).map((t) => t.id);
+    expect(found("spark")).toEqual(["sparkasse"]);
+    expect(found("Barcl")).toEqual(["easybank"]);
+    expect(found("santander")).toEqual(["openbank"]);
+    expect(found("AMEX")).toEqual(["amex"]);
+    expect(found("hypo vereins")).toEqual(["hvb"]);
+    expect(found("")).toHaveLength(BANK_TILES.length);
+    expect(found("gibtsnicht")).toEqual([]);
   });
 
   it("genau eine passende Bank: direkt verbinden", () => {
