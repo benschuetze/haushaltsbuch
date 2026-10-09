@@ -1,0 +1,36 @@
+import { describe, expect, it } from "vitest";
+import { createMockModel } from "~/lib/categorize/mock-model";
+import { imports } from "~/lib/db/schema";
+import { openInsights, refreshInsights, subscriptionOverview } from "~/lib/insights";
+import { createTestDb } from "../../../tests/helpers/db";
+import { importDemoData } from "./demo-data";
+
+const october = new Date("2026-10-09T12:00:00Z");
+
+describe("öffentliche Demo", () => {
+  it("zeigt, was die App kann: Abos, Preiserhöhung, doppelter Streamingdienst, PayPal ohne Doppelzählung", async () => {
+    const { db } = await createTestDb();
+    expect(await importDemoData(db, createMockModel())).toBeGreaterThan(150);
+    await refreshInsights(db, october);
+    const titles = (await openInsights(db, 100)).map((i) => i.title);
+
+    expect(titles).toContain("Spotify AB ist teurer geworden");
+    expect(titles).toContain("2× Video-Streaming");
+    expect(titles).toContain("Abo erkannt: FitX Deutschland GmbH");
+    expect(titles).toContain("Abo erkannt: Netflix International B.V.");
+
+    // Netflix is paid via PayPal: one subscription, not a second one hiding behind "PayPal Europe".
+    const { recurring } = await subscriptionOverview(db, october);
+    expect(recurring.filter((r) => /netflix|paypal/i.test(r.merchant)).map((r) => r.merchant)).toEqual([
+      "Netflix International B.V.",
+    ]);
+  });
+
+  it("ein zweiter Lauf (nächster Deploy) legt nichts doppelt an, auch keine Import-Einträge", async () => {
+    const { db } = await createTestDb();
+    await importDemoData(db, null);
+    const before = await db.$count(imports);
+    expect(await importDemoData(db, null)).toBe(0);
+    expect(await db.$count(imports)).toBe(before);
+  });
+});
