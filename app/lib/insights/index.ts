@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, isNull, lte, notInArray, sql } from "drizzle-orm";
+import { availableToSpend } from "~/lib/budget/available";
 import type { Db } from "~/lib/db/client";
 import { budgets, categories, insights, meta, subscriptionCancellations, transactions } from "~/lib/db/schema";
 import { currentMonth } from "~/lib/queries";
@@ -185,6 +186,16 @@ export async function subscriptionOverview(db: Db, now = new Date()) {
     }),
     cancellations: statuses,
   };
+}
+
+/** Today in Germany; a UTC date would switch to tomorrow at 1 or 2 a.m. local time. */
+export function todayInGermany(now = new Date()): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(now);
+}
+
+/** "How much can I spend today": see availableToSpend. */
+export async function spendingToday(db: Db, now = new Date()) {
+  return availableToSpend(await loadBookings(db), todayInGermany(now));
 }
 
 const STALE_MS = 6 * 60 * 60 * 1000;

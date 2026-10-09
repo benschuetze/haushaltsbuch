@@ -6,6 +6,8 @@ import { createMockModel } from "~/lib/categorize/mock-model";
 import type { Db } from "~/lib/db/client";
 import { accounts, categories, imports, transactions } from "~/lib/db/schema";
 import { importCsv } from "~/lib/import/run";
+import { spendingToday } from "~/lib/insights";
+import { formatCents } from "~/lib/money";
 import { createTestDb } from "../../../tests/helpers/db";
 import { failingModel } from "../../../tests/helpers/models";
 import { askAssistant, chatSchema, DAILY_LIMIT } from "./agent.server";
@@ -126,5 +128,31 @@ describe("Assistent", () => {
       false,
     );
     expect(chatSchema.safeParse([{ role: "user", content: "Wie viel für Essen?" }]).success).toBe(true);
+  });
+});
+
+describe("Frag einfach: Geld für heute", () => {
+  const september10 = new Date("2026-09-10T10:00:00Z");
+  const askOn = (question: string) =>
+    askAssistant(db, createMockAssistantModel(), [{ role: "user", content: question }], september10);
+
+  it("„Wie viel kann ich heute ausgeben?“ nennt den Tagesbetrag aus der Rechnung, bis zum nächsten Gehalt", async () => {
+    const reply = await askOn("Wie viel kann ich heute ausgeben?");
+    expect(reply.tools).toEqual(["heute_verfuegbar"]);
+    const a = await spendingToday(db, september10);
+    expect(reply.answer).toContain(`Heute sind ${formatCents(a.perDayCents)} drin`);
+    expect(reply.answer).toContain("Bis zum Gehalt am 1. Oktober");
+  });
+
+  it("„Kann ich mir 80 € fürs Feiern leisten?“ prüft den Betrag und antwortet mit Urteil", async () => {
+    const reply = await askOn("Kann ich mir 80 € fürs Feiern leisten?");
+    expect(reply.tools).toEqual(["leisten"]);
+    expect(reply.answer).toMatch(/^(Ja, locker|Ja, geht|Knapp|Eher nicht)\./);
+  });
+
+  it("„Wann kommt mein Gehalt?“ nennt Datum und Betrag", async () => {
+    const reply = await askOn("Wann kommt mein Gehalt?");
+    expect(reply.tools).toEqual(["naechste_zahlungen"]);
+    expect(reply.answer).toContain("Das nächste Gehalt (3.612,40 €) kommt am 1. Oktober.");
   });
 });

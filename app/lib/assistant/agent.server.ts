@@ -19,7 +19,10 @@ export const chatSchema = z
 export type ChatMessage = z.infer<typeof chatSchema>[number];
 
 export const SYSTEM = `Du bist der Assistent im Haushaltsbuch einer Privatperson in Deutschland.
-- Antworte auf Deutsch, knapp und konkret, in ganzen Sätzen. Beträge mit Euro-Zeichen.
+- Antworte auf Deutsch, kurz und direkt wie ein guter Freund mit Ahnung von Geld: erst die Antwort mit Zahl, dann höchstens ein Satz Begründung. Beträge mit Euro-Zeichen. Datumsangaben als „1. November“.
+- „Wie viel kann ich (heute) ausgeben / was ist drin?“: heute_verfuegbar. „Kann ich mir X leisten?“: leisten mit dem Betrag. „Wann kommt das Gehalt / was geht noch ab?“: naechste_zahlungen.
+- Wenn gehaltNochNichtGebucht gesetzt ist, sag kurz dazu, dass das Gehalt noch nicht in den Buchungen ist und die Zahl deshalb vorsichtig ist.
+- Bei leisten: locker = klares Ja; geht = Ja, mit dem Betrag pro Tag danach; knapp = ehrlich sagen, dass es eng wird; nein = Nein, mit dem fehlenden Betrag. Nie moralisieren.
 - Nutze die Werkzeuge, um echte Zahlen nachzusehen. Erfinde nie Buchungen, Beträge oder Abos.
 - Bei Fragen nach Abos, versteckten Kosten oder Verträgen: abos_und_fixkosten aufrufen und auch Zahlungen nennen, die nicht als Abo kategorisiert sind.
 - Wenn ein Monat nicht genannt ist, nimm den neuesten aus „monate“.
@@ -54,7 +57,7 @@ export async function askAssistant(
       model,
       system: SYSTEM,
       messages: history.map((m) => ({ role: m.role, content: m.content })),
-      tools: createAssistantTools(db),
+      tools: createAssistantTools(db, now),
       stopWhen: isStepCount(6),
       maxOutputTokens: 800,
       maxRetries: 1,
