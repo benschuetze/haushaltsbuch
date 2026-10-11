@@ -17,6 +17,11 @@ describe("Kündigungslinks", () => {
   it("bekannte Dienste führen direkt zur Kündigungsseite", () => {
     expect(cancelLinkFor("NETFLIX.COM")).toEqual({ url: "https://www.netflix.com/cancelplan", direct: true });
     expect(cancelLinkFor("Spotify AB").direct).toBe(true);
+    expect(cancelLinkFor("Telekom Deutschland").url).toBe("https://www.telekom.de/kontakt/kuendigung");
+    expect(cancelLinkFor("congstar GmbH").url).toContain("congstar.de");
+    expect(cancelLinkFor("FitX Deutschland GmbH").url).toBe("https://www.fitx.de/vertrag-kuendigen");
+    expect(cancelLinkFor("Telefonica Germany GmbH (o2)").url).toBe("https://info.o2online.de/kuendigung/");
+    expect(cancelLinkFor("1&1 Telecom GmbH").url).toContain("1und1.de");
   });
 
   it("unbekannte führen zur Suche nach dem Kündigungsbutton, Name sauber kodiert", () => {

@@ -30,6 +30,18 @@ export const CANCEL_LINKS: { match: RegExp; url: string }[] = [
   { match: /linkedin/, url: "https://www.linkedin.com/premium/manage/" },
   { match: /patreon/, url: "https://www.patreon.com/settings/memberships" },
   { match: /urban sports/, url: "https://urbansportsclub.com/de/profile/membership" },
+  // Telecom and gyms: the statutory "Verträge hier kündigen" link from each provider's own homepage, 2026-10-11.
+  // congstar is a Telekom brand with its own contracts, so it comes first.
+  { match: /congstar/, url: "https://www.congstar.de/hilfe-service/vertrag-jetzt-kuendigen" },
+  { match: /telekom/, url: "https://www.telekom.de/kontakt/kuendigung" },
+  { match: /vodafone/, url: "https://www.vodafone.de/einfache-kuendigung.html" },
+  { match: /\bo2\b|telef[oó]nica/, url: "https://info.o2online.de/kuendigung/" },
+  { match: /1\s*&\s*1|1und1/, url: "https://control-center.1und1.de/kuendigung" },
+  { match: /fitx/, url: "https://www.fitx.de/vertrag-kuendigen" },
+  {
+    match: /mcfit/,
+    url: "https://hilfe.mcfit.com/hc/de/requests/new?labels=__dc.tf_kuendigung_einreichen__&ticket_form_id=13313567711505",
+  },
 ];
 
 export type CancelLink = { url: string; direct: boolean };

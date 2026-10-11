@@ -1,6 +1,7 @@
-import { Check, ExternalLink, Loader2, Scissors } from "lucide-react";
+import { Check, ExternalLink, FileText, Loader2, Scissors } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
+import { CancelLetterForm, type LetterHints } from "~/components/cancel-letter-form";
 import { Button } from "~/components/ui/button";
 
 export type CancelTarget = {
@@ -9,6 +10,8 @@ export type CancelTarget = {
   /** False when the app only knows a search for the provider's cancel button. */
   direct: boolean;
   yearlyCents?: number | null;
+  /** Numbers from the latest booking, for a cancellation letter where no cancel page is known. */
+  letter?: LetterHints;
 };
 
 const euro = (cents: number) =>
@@ -21,7 +24,7 @@ const euro = (cents: number) =>
 export function CancelDialog({ target, demo, onClose }: { target: CancelTarget; demo: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const fetcher = useFetcher<{ ok: boolean; message: string }>();
-  const [stage, setStage] = useState<"start" | "away" | "ask">("start");
+  const [stage, setStage] = useState<"start" | "letter" | "away" | "ask">("start");
   const saved = fetcher.data?.ok === true;
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export function CancelDialog({ target, demo, onClose }: { target: CancelTarget; 
       ref={ref}
       onClose={onClose}
       aria-labelledby="cancel-title"
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-2xl border p-0 shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+      className="m-auto max-h-[90dvh] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border p-0 shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
     >
       <div className="space-y-1 border-b p-5">
         <h2 id="cancel-title" className="flex items-center gap-2 text-lg font-semibold">
@@ -78,25 +81,48 @@ export function CancelDialog({ target, demo, onClose }: { target: CancelTarget; 
             <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {fetcher.data?.message}
           </p>
+        ) : stage === "letter" ? (
+          <CancelLetterForm merchant={target.merchant} hints={target.letter ?? null} onSent={() => setStage("ask")} />
         ) : stage === "start" ? (
-          <>
-            <p className="text-sm">
-              {target.direct
-                ? `Öffnet die Kündigungsseite von ${target.merchant} in einem eigenen Fenster. Dort anmelden und kündigen, danach geht's hier weiter.`
-                : `Für ${target.merchant} kennt die App keine feste Kündigungsseite. Die Suche führt zum Kündigungsbutton, den jeder Online-Vertrag haben muss.`}
-            </p>
-            <Button className="w-full" onClick={openProvider} autoFocus>
-              <ExternalLink aria-hidden="true" />
-              {target.direct ? "Kündigungsseite öffnen" : "Kündigungsbutton suchen"}
-            </Button>
-            <button
-              type="button"
-              onClick={() => setStage("ask")}
-              className="w-full text-center text-sm underline underline-offset-4"
-            >
-              Schon gekündigt
-            </button>
-          </>
+          target.direct ? (
+            <>
+              <p className="text-sm">
+                {`Öffnet die Kündigungsseite von ${target.merchant} in einem eigenen Fenster. Dort anmelden und kündigen, danach geht's hier weiter.`}
+              </p>
+              <Button className="w-full" onClick={openProvider} autoFocus>
+                <ExternalLink aria-hidden="true" />
+                Kündigungsseite öffnen
+              </Button>
+              <button
+                type="button"
+                onClick={() => setStage("ask")}
+                className="w-full text-center text-sm underline underline-offset-4"
+              >
+                Schon gekündigt
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm">
+                {`Für ${target.merchant} kennt die App keine feste Kündigungsseite. Ein Kündigungsschreiben geht immer; hat der Anbieter einen Online-Vertrag, gibt es auch einen Kündigungsbutton auf seiner Seite.`}
+              </p>
+              <Button className="w-full" onClick={() => setStage("letter")} autoFocus>
+                <FileText aria-hidden="true" />
+                Kündigungsschreiben erstellen
+              </Button>
+              <Button className="w-full" variant="outline" onClick={openProvider}>
+                <ExternalLink aria-hidden="true" />
+                Kündigungsbutton suchen
+              </Button>
+              <button
+                type="button"
+                onClick={() => setStage("ask")}
+                className="w-full text-center text-sm underline underline-offset-4"
+              >
+                Schon gekündigt
+              </button>
+            </>
+          )
         ) : (
           <>
             <p className="text-sm font-medium">
