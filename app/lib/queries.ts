@@ -55,8 +55,14 @@ export type MonthSummary = {
 };
 
 /** Transfers between own accounts are neither income nor spending, so they are reported separately. */
-export async function monthSummary(db: Db, month: string): Promise<MonthSummary> {
-  const { from, to } = monthRange(month);
+/** `untilDay`: only the 1st to that day, for comparing a running month with the same days of the one before. */
+export async function monthSummary(db: Db, month: string, untilDay?: number): Promise<MonthSummary> {
+  const range = monthRange(month);
+  const from = range.from;
+  // On the 31st the shorter month before is compared in full, never as an impossible "31 September".
+  const [y, m] = month.split("-").map(Number) as [number, number];
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const to = untilDay && untilDay < daysInMonth ? `${month}-${String(untilDay + 1).padStart(2, "0")}` : range.to;
   const inMonth = and(gte(transactions.bookingDate, from), lt(transactions.bookingDate, to));
 
   const rows = await db

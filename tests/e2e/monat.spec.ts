@@ -30,3 +30,11 @@ test("ungültiger Monat ergibt eine verständliche 404", async ({ page }) => {
   expect(response?.status()).toBe(404);
   await expect(page.getByText("Monat im Format JJJJ-MM")).toBeVisible();
 });
+
+test("Vergleich mit dem Vormonat in Worten statt mit Vorzeichen", async ({ page }) => {
+  await importDemo(page);
+  await page.goto("/monat/2026-09");
+  // From erwartet.json: spent 1.608,30 (August 1.715,45), earned 4.121,40 (August 3.871,40).
+  await expect(page.getByTestId("expenses")).toContainText("107,15 € weniger ausgegeben als im August");
+  await expect(page.getByTestId("income")).toContainText("250,00 € mehr eingenommen als im August");
+});

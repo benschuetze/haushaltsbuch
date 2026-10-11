@@ -4,6 +4,8 @@ import { CategoryBars } from "~/components/category-bars";
 import { Stat } from "~/components/stat";
 import { getDb } from "~/lib/db/client";
 import { countLabel, formatMonth } from "~/lib/format";
+import { todayInGermany } from "~/lib/insights";
+import { formatCents } from "~/lib/money";
 import { MONTH_PATTERN, monthSummary, previousMonth } from "~/lib/queries";
 import type { Route } from "./+types/monat";
 
@@ -20,23 +22,43 @@ export async function loader({ params }: Route.LoaderArgs) {
   }
   const db = getDb();
   const prev = previousMonth(params.month);
-  const [summary, before] = await Promise.all([monthSummary(db, params.month), monthSummary(db, prev)]);
-  return { month: params.month, prev, next: nextMonth(params.month), summary, before };
+  // A running month is compared with the same days of the month before, not with all of it.
+  const today = todayInGermany();
+  const untilDay = today.startsWith(params.month) ? Number(today.slice(8, 10)) : undefined;
+  const [summary, before] = await Promise.all([monthSummary(db, params.month), monthSummary(db, prev, untilDay)]);
+  return { month: params.month, prev, next: nextMonth(params.month), summary, before, untilDay };
 }
 
-function Change({ now, before }: { now: number; before: number }) {
+/** In words, not with a sign: "+251,70 €" on spending reads like more, when it meant less. */
+function Change({
+  now,
+  before,
+  kind,
+  prevName,
+  untilDay,
+}: {
+  now: number;
+  before: number;
+  kind: "income" | "expense";
+  prevName: string;
+  untilDay?: number;
+}) {
   if (before === 0) return null;
-  const diff = now - before;
+  const diff = Math.abs(now) - Math.abs(before);
+  const verb = kind === "income" ? "eingenommen" : "ausgegeben";
+  const period = untilDay ? `im ${prevName} bis zum ${untilDay}.` : `im ${prevName}`;
   return (
     <p className="mt-1 text-xs font-normal text-muted-foreground">
-      Vormonat <Amount cents={before} /> ({diff >= 0 ? "+" : ""}
-      <Amount cents={diff} className="text-inherit" />)
+      {diff === 0
+        ? `Gleich viel ${verb} wie ${period}`
+        : `${formatCents(Math.abs(diff))} ${diff > 0 ? "mehr" : "weniger"} ${verb} als ${period}`}
     </p>
   );
 }
 
 export default function Monat({ loaderData }: Route.ComponentProps) {
-  const { month, prev, next, summary, before } = loaderData;
+  const { month, prev, next, summary, before, untilDay } = loaderData;
+  const prevName = formatMonth(prev).split(" ")[0] ?? prev;
   const expenses = summary.byCategory
     .filter((c) => c.kind !== "transfer" && c.cents < 0)
     .sort((a, b) => a.cents - b.cents);
@@ -68,11 +90,23 @@ export default function Monat({ loaderData }: Route.ComponentProps) {
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat label="Einnahmen" testId="income">
               <Amount cents={summary.incomeCents} />
-              <Change now={summary.incomeCents} before={before.incomeCents} />
+              <Change
+                now={summary.incomeCents}
+                before={before.incomeCents}
+                kind="income"
+                prevName={prevName}
+                untilDay={untilDay}
+              />
             </Stat>
             <Stat label="Ausgaben" testId="expenses">
               <Amount cents={summary.expenseCents} />
-              <Change now={summary.expenseCents} before={before.expenseCents} />
+              <Change
+                now={summary.expenseCents}
+                before={before.expenseCents}
+                kind="expense"
+                prevName={prevName}
+                untilDay={untilDay}
+              />
             </Stat>
             <Stat label="Saldo" testId="balance">
               <Amount cents={summary.incomeCents + summary.expenseCents} />
