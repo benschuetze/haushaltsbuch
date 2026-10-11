@@ -1,5 +1,5 @@
 import { eq, isNull } from "drizzle-orm";
-import { data, Form, Link, useNavigation } from "react-router";
+import { data, Form, Link, useNavigation, useSearchParams } from "react-router";
 import { z } from "zod";
 import { Amount } from "~/components/amount";
 import { SourceBadges } from "~/components/source-badge";
@@ -11,10 +11,13 @@ import { getDb } from "~/lib/db/client";
 import { rules, transactions } from "~/lib/db/schema";
 import { countLabel, formatDate, formatMonth } from "~/lib/format";
 import { refreshInsights } from "~/lib/insights";
-import { listCategories, listTransactions, MONTH_PATTERN, monthsWithData } from "~/lib/queries";
+import { countTransactions, listCategories, listTransactions, MONTH_PATTERN, monthsWithData } from "~/lib/queries";
 import type { Route } from "./+types/transaktionen";
 
 export const meta: Route.MetaFunction = () => [{ title: "Buchungen · Haushaltsbuch" }];
+
+/** Rows per page: each one carries a category picker, so a year of bookings at once makes phones sluggish. */
+const PAGE_SIZE = 100;
 
 const filterSchema = z.object({
   monat: z.string().regex(MONTH_PATTERN).optional().catch(undefined),
@@ -23,19 +26,22 @@ const filterSchema = z.object({
     .optional()
     .catch(undefined),
   pruefen: z.literal("1").optional().catch(undefined),
+  anzahl: z.coerce.number().int().min(PAGE_SIZE).max(1000).optional().catch(undefined),
 });
 
 export async function loader({ request }: Route.LoaderArgs) {
   const params = Object.fromEntries(new URL(request.url).searchParams);
   const filter = filterSchema.parse(params);
   const db = getDb();
-  const [rows, categories, months, uncategorized] = await Promise.all([
-    listTransactions(db, { month: filter.monat, categoryId: filter.kategorie, review: filter.pruefen === "1" }),
+  const query = { month: filter.monat, categoryId: filter.kategorie, review: filter.pruefen === "1" };
+  const [rows, total, categories, months, uncategorized] = await Promise.all([
+    listTransactions(db, query, filter.anzahl ?? PAGE_SIZE),
+    countTransactions(db, query),
     listCategories(db),
     monthsWithData(db),
     db.$count(transactions, isNull(transactions.categoryId)),
   ]);
-  return { rows, categories, months, filter, uncategorized, demo: isDemo() };
+  return { rows, total, categories, months, filter, uncategorized, demo: isDemo() };
 }
 
 const actionSchema = z.discriminatedUnion("intent", [
@@ -105,7 +111,10 @@ async function handle({ request }: Route.ActionArgs) {
 const selectClass = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
 export default function Transaktionen({ loaderData, actionData }: Route.ComponentProps) {
-  const { rows, categories, months, filter, demo } = loaderData;
+  const { rows, total, categories, months, filter, demo } = loaderData;
+  const [params] = useSearchParams();
+  const more = new URLSearchParams(params);
+  more.set("anzahl", String(Math.min(rows.length + PAGE_SIZE, 1000)));
   const busy = useNavigation().state !== "idle";
   const result = actionData as ActionData | null | undefined;
 
@@ -201,8 +210,10 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
         </p>
       ) : null}
 
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        {countLabel(rows.length, "Buchung", "Buchungen")}
+      <p className="text-sm text-muted-foreground" aria-live="polite" data-testid="transactions-count">
+        {rows.length < total
+          ? `Die neuesten ${rows.length} von ${total} Buchungen`
+          : countLabel(rows.length, "Buchung", "Buchungen")}
       </p>
 
       {rows.length === 0 ? (
@@ -267,6 +278,15 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
           ))}
         </ul>
       )}
+      {rows.length < total && rows.length < 1000 ? (
+        <Link
+          to={`?${more}`}
+          preventScrollReset
+          className="block rounded border-2 border-foreground px-4 py-3 text-center text-sm font-medium hover:bg-accent"
+        >
+          Weitere {Math.min(PAGE_SIZE, total - rows.length)} anzeigen
+        </Link>
+      ) : null}
     </div>
   );
 }

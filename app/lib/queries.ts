@@ -117,7 +117,7 @@ export type TransactionFilter = {
   review?: boolean;
 };
 
-export async function listTransactions(db: Db, filter: TransactionFilter) {
+function transactionConditions(filter: TransactionFilter) {
   const conditions = [];
   if (filter.month) {
     const { from, to } = monthRange(filter.month);
@@ -126,7 +126,11 @@ export async function listTransactions(db: Db, filter: TransactionFilter) {
   if (filter.categoryId === "none") conditions.push(isNull(transactions.categoryId));
   else if (filter.categoryId) conditions.push(eq(transactions.categoryId, filter.categoryId));
   if (filter.review) conditions.push(eq(transactions.needsReview, true));
+  return and(...conditions);
+}
 
+/** Newest first. Pages of a few hundred at most: every row carries a category picker, which phones feel. */
+export async function listTransactions(db: Db, filter: TransactionFilter, limit = 1000) {
   return db
     .select({
       id: transactions.id,
@@ -141,9 +145,13 @@ export async function listTransactions(db: Db, filter: TransactionFilter) {
       needsReview: transactions.needsReview,
     })
     .from(transactions)
-    .where(and(...conditions))
+    .where(transactionConditions(filter))
     .orderBy(desc(transactions.bookingDate), asc(transactions.counterparty), asc(transactions.id))
-    .limit(1000);
+    .limit(Math.min(limit, 1000));
+}
+
+export async function countTransactions(db: Db, filter: TransactionFilter): Promise<number> {
+  return db.$count(transactions, transactionConditions(filter));
 }
 
 export async function listRules(db: Db) {
