@@ -56,3 +56,29 @@ for (const { path, heading, action } of PAGES) {
     expect(errors).toEqual([]);
   });
 }
+
+test("Navigation lädt die Zielseite schon beim Zeigen vor, Hinweise aber nicht (das würde sie als gelesen markieren)", async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto("/");
+  if (isMobile) {
+    await page.getByText("Mehr", { exact: true }).click();
+    await page.getByRole("link", { name: "Budgets", exact: true }).hover();
+    await expect(page.locator('link[rel="prefetch"][href*="/budgets.data"]')).toHaveCount(1);
+    await page.getByRole("link", { name: "Hinweise", exact: true }).hover();
+  } else {
+    await page.getByRole("navigation").getByRole("link", { name: "Buchungen" }).first().hover();
+    await expect(page.locator('link[rel="prefetch"][href*="/transaktionen.data"]')).toHaveCount(1);
+  }
+  await expect(page.locator('link[rel="prefetch"][href*="/hinweise"]')).toHaveCount(0);
+});
+
+test("die sofort sichtbaren Schriften werden vorab geladen", async ({ page }) => {
+  await page.goto("/");
+  const preloads = page.locator('link[rel="preload"][as="font"][type="font/woff2"]');
+  await expect(preloads).toHaveCount(4);
+  for (const href of await preloads.evaluateAll((links) => links.map((l) => l.getAttribute("href")))) {
+    expect((await page.request.get(href ?? "")).ok()).toBe(true);
+  }
+});

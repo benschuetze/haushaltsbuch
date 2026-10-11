@@ -5,7 +5,14 @@ import { accounts } from "~/lib/db/schema";
 import { importCsv } from "~/lib/import/run";
 import expected from "../../beispieldaten/erwartet.json";
 import { createTestDb } from "../../tests/helpers/db";
-import { monthRange, monthSummary, monthsWithData, previousMonth } from "./queries";
+import {
+  countTransactions,
+  listTransactions,
+  monthRange,
+  monthSummary,
+  monthsWithData,
+  previousMonth,
+} from "./queries";
 
 describe("Monatsübersicht", () => {
   it.each(Object.entries(expected.months))(
@@ -48,5 +55,24 @@ describe("Monatsrechnung", () => {
   it("previousMonth über den Jahreswechsel", () => {
     expect(previousMonth("2026-01")).toBe("2025-12");
     expect(previousMonth("2026-10")).toBe("2026-09");
+  });
+});
+
+describe("Buchungsliste in Seiten", () => {
+  it("liefert die neuesten zuerst, nur so viele wie verlangt, und kennt die Gesamtzahl je Filter", async () => {
+    const { db } = await createTestDb();
+    const [account] = await db.select().from(accounts);
+    if (!account) throw new Error("Demo-Konto fehlt");
+    await importCsv(db, {
+      accountId: account.id,
+      filename: "demo.csv",
+      bytes: new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv")),
+      model: createMockModel(),
+    });
+    const all = await listTransactions(db, {});
+    const first = await listTransactions(db, {}, 10);
+    expect(first).toEqual(all.slice(0, 10));
+    expect(await countTransactions(db, {})).toBe(expected.rows_total);
+    expect(await countTransactions(db, { month: "2026-09" })).toBe(expected.months["2026-09"].rows);
   });
 });

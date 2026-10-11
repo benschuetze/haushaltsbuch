@@ -37,11 +37,11 @@ export function TabBar({ chatOpen, onChat, assistant }: { chatOpen: boolean; onC
       className="fixed inset-x-0 bottom-0 z-20 border-t-2 border-foreground bg-background pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <div className="flex items-stretch">
-        <NavLink to="/" end className={link}>
+        <NavLink prefetch="intent" to="/" end className={link}>
           <Home className="size-5" aria-hidden="true" />
           Übersicht
         </NavLink>
-        <NavLink to="/transaktionen" className={link}>
+        <NavLink prefetch="intent" to="/transaktionen" className={link}>
           <List className="size-5" aria-hidden="true" />
           Buchungen
         </NavLink>
@@ -59,7 +59,7 @@ export function TabBar({ chatOpen, onChat, assistant }: { chatOpen: boolean; onC
             Fragen
           </button>
         ) : null}
-        <NavLink to="/ziele" className={link}>
+        <NavLink prefetch="intent" to="/ziele" className={link}>
           <PiggyBank className="size-5" aria-hidden="true" />
           Sparziele
         </NavLink>
@@ -77,6 +77,8 @@ export function TabBar({ chatOpen, onChat, assistant }: { chatOpen: boolean; onC
                 <li key={m.to}>
                   <NavLink
                     to={m.to}
+                    // Opening /hinweise marks them as read, so it must not load before the tap.
+                    prefetch={m.to === "/hinweise" ? "none" : "intent"}
                     className={({ isActive }) =>
                       cn("block rounded px-3 py-2.5 text-sm hover:bg-accent", isActive && "bg-accent font-semibold")
                     }
