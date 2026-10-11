@@ -50,15 +50,18 @@ describe("CSV-Import", () => {
     expect(result.inserted + result.duplicates + result.rejected.length).toBe(result.total);
   });
 
-  it("ohne Modell landet alles, was keine Regel trifft, in „prüfen“", async () => {
+  it("ohne Modell landet alles, was weder eigene Regel noch Händlerliste kennt, in „prüfen“", async () => {
     const result = await importCsv(db, { accountId, filename: "demo.csv", bytes: demoCsv, model: null });
-    expect(result).toMatchObject({ byRule: 0, byAi: 0, needsReview: 44 });
-    expect(await db.$count(transactions, eq(transactions.needsReview, true))).toBe(44);
+    expect(result.byAi).toBe(0);
+    expect(result.byRule + result.needsReview).toBe(44);
+    expect(result.needsReview).toBeGreaterThan(0);
+    expect(await db.$count(transactions, eq(transactions.needsReview, true))).toBe(result.needsReview);
   });
 
   it("Modell fällt aus: Import klappt trotzdem, Buchungen landen in „prüfen“", async () => {
     const result = await importCsv(db, { accountId, filename: "demo.csv", bytes: demoCsv, model: failingModel() });
-    expect(result).toMatchObject({ inserted: 44, needsReview: 44 });
+    expect(result).toMatchObject({ inserted: 44, byAi: 0 });
+    expect(result.byRule + result.needsReview).toBe(44);
   });
 });
 

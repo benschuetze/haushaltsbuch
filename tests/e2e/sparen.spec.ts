@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "./fixtures";
-import { importDemo, resetDb, sql } from "./helpers";
+import { importDemo, modelUnsureAboutDm, resetDb, sql } from "./helpers";
 
 test.beforeEach(resetDb);
 
@@ -9,7 +9,8 @@ test("Glocke zeigt einen Punkt, durch die unsicheren Buchungen klicken, Pop-up b
   page,
 }) => {
   await importDemo(page);
-  // The mock model is unsure about Zalando (PayPal) and dm: 3 bookings wait for review.
+  await modelUnsureAboutDm();
+  // Zalando (via PayPal) and the two dm bookings wait for review.
   await page.goto("/");
   await expect(bell(page).getByTestId("notification-dot")).toBeVisible();
   await bell(page).locator("summary").click();

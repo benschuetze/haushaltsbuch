@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "~/lib/db/client";
 import { accounts, categories, rules, transactions } from "~/lib/db/schema";
@@ -34,17 +34,18 @@ beforeEach(async () => {
 
 describe("Prüfen", () => {
   it("die Wahl gilt dauerhaft: Regel entsteht, alle Buchungen des Empfängers sind erledigt", async () => {
-    const [rewe] = await db.select().from(transactions).where(eq(transactions.counterparty, "REWE Markt"));
-    if (!rewe) throw new Error("REWE fehlt");
-    const decision = await decideReview(db, rewe.id, cat.Lebensmittel as string);
+    // A merchant the built-in list does not know, so it is still open for review.
+    const [kita] = await db.select().from(transactions).where(eq(transactions.counterparty, "Kita Regenbogen e.V."));
+    if (!kita) throw new Error("Kita fehlt");
+    const decision = await decideReview(db, kita.id, cat["Kind & Kita"] as string);
     expect(decision).toEqual({
-      counterparty: "REWE Markt",
-      categoryName: "Lebensmittel",
+      counterparty: "Kita Regenbogen e.V.",
+      categoryName: "Kind & Kita",
       permanent: true,
-      alsoChanged: 3,
+      alsoChanged: 1,
     });
-    const all = await db.select().from(transactions).where(eq(transactions.counterparty, "REWE Markt"));
-    expect(all.every((t) => t.categoryId === cat.Lebensmittel && !t.needsReview)).toBe(true);
+    const all = await db.select().from(transactions).where(eq(transactions.counterparty, "Kita Regenbogen e.V."));
+    expect(all.every((t) => t.categoryId === cat["Kind & Kita"] && !t.needsReview)).toBe(true);
     expect(await db.select({ note: rules.note }).from(rules)).toEqual([{ note: "Beim Prüfen festgelegt" }]);
   });
 
@@ -73,8 +74,16 @@ describe("Prüfen", () => {
 
   it("nextReview liefert die neueste offene Buchung, Übersprungene nicht", async () => {
     const { tx, remaining } = await nextReview(db, []);
-    expect(remaining).toBe(44);
-    expect(tx?.bookingDate).toBe("2026-09-27");
+    // Everything the built-in merchant list does not know waits for review.
+    expect(remaining).toBe(await db.$count(transactions, eq(transactions.needsReview, true)));
+    expect(remaining).toBeGreaterThan(0);
+    const newest = await db
+      .select({ d: transactions.bookingDate })
+      .from(transactions)
+      .where(eq(transactions.needsReview, true))
+      .orderBy(desc(transactions.bookingDate))
+      .limit(1);
+    expect(tx?.bookingDate).toBe(newest[0]?.d);
     const after = await nextReview(db, [tx?.id ?? ""]);
     expect(after.tx?.id).not.toBe(tx?.id);
   });
