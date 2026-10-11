@@ -61,6 +61,7 @@ test("Budget anpassen, Überschreitung erscheint als Hinweis in der Glocke, Erle
 test("eigene Kategorie mit Budget anlegen", async ({ page }) => {
   await page.goto("/budgets");
   await page.getByRole("button", { name: "Budget hinzufügen" }).click();
+  await page.getByText("Kategorie fehlt? Neue anlegen").click();
   await page.getByLabel("Name").fill("Urlaub");
   await page.getByLabel("Budget pro Monat (€, optional)").fill("250");
   await page.getByRole("button", { name: "Kategorie anlegen" }).click();

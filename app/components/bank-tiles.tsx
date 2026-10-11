@@ -91,7 +91,7 @@ export function BankTiles({ tiles, country, demo }: { tiles: TileView[]; country
         section.items.length === 0 ? null : (
           <section key={section.id} className="space-y-2" aria-label={section.label ?? "Suchergebnis"}>
             {section.label ? <h3 className="text-sm font-medium text-muted-foreground">{section.label}</h3> : null}
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-3">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] sm:gap-3">
               {section.items.map((tile) => (
                 <li key={tile.id}>
                   <Tile tile={tile} onOpen={() => setSelected(tile)} />
@@ -111,27 +111,35 @@ export function BankTiles({ tiles, country, demo }: { tiles: TileView[]; country
 
 function Tile({ tile, onOpen }: { tile: TileView; onOpen: () => void }) {
   const live = tile.state.kind !== "file" && !tile.mockConnected;
-  const badge = tile.mockConnected ? "Mock verbunden" : live ? "Live" : "Mock";
+  // Only what stands out gets a badge: a real connection or an existing mock account. "Mock" on every tile
+  // was noise; the dialog behind each tile says it in full.
+  const badge = tile.mockConnected ? "Mock verbunden" : live ? "Live" : null;
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="group flex w-full flex-col items-center gap-2 rounded-xl border bg-card p-3 transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring active:translate-y-0"
+      className="group flex w-full flex-col items-center gap-1.5 rounded-xl border bg-card p-2 transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring active:translate-y-0 sm:gap-2 sm:p-3"
       aria-label={`${tile.name} hinzufügen`}
     >
-      <BankLogo tile={tile} className="size-14 transition group-hover:scale-105" />
-      <span className="flex min-h-[2.5em] w-full items-center justify-center text-center text-[0.8rem] leading-tight font-medium break-words">
+      <BankLogo tile={tile} className="size-10 transition group-hover:scale-105 sm:size-14" />
+      <span className="flex min-h-[2.5em] w-full items-center justify-center text-center text-[0.7rem] leading-tight font-medium break-words sm:text-[0.8rem]">
         {tile.name}
       </span>
-      <span
-        className={cn(
-          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem]",
-          live ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-950",
-        )}
-      >
-        {live ? <Zap className="size-3" aria-hidden="true" /> : <FlaskConical className="size-3" aria-hidden="true" />}
-        {badge}
-      </span>
+      {badge ? (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem]",
+            live ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-950",
+          )}
+        >
+          {live ? (
+            <Zap className="size-3" aria-hidden="true" />
+          ) : (
+            <FlaskConical className="size-3" aria-hidden="true" />
+          )}
+          {badge}
+        </span>
+      ) : null}
     </button>
   );
 }

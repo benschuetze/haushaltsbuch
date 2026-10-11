@@ -1,10 +1,10 @@
-import { Home, List, Menu, MessageCircle, PiggyBank } from "lucide-react";
+import { Home, List, Menu, MessageCircle, Wallet } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router";
 import { cn } from "~/lib/utils";
 
 const MORE = [
-  { to: "/budgets", label: "Budgets" },
+  { to: "/ziele", label: "Sparziele" },
   { to: "/abos", label: "Abos" },
   { to: "/rueckblick", label: "Monatsrückblick" },
   { to: "/hinweise", label: "Hinweise" },
@@ -59,9 +59,9 @@ export function TabBar({ chatOpen, onChat, assistant }: { chatOpen: boolean; onC
             Fragen
           </button>
         ) : null}
-        <NavLink prefetch="intent" to="/ziele" className={link}>
-          <PiggyBank className="size-5" aria-hidden="true" />
-          Sparziele
+        <NavLink prefetch="intent" to="/budgets" className={link}>
+          <Wallet className="size-5" aria-hidden="true" />
+          Budgets
         </NavLink>
         <details ref={more} className="relative flex flex-1">
           <summary

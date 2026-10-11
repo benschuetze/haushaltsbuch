@@ -163,8 +163,8 @@
       to bottom,
       transparent 0,
       transparent 31px,
-      color-mix(in srgb, var(--foreground) 5%, transparent) 31px,
-      color-mix(in srgb, var(--foreground) 5%, transparent) 32px
+      color-mix(in srgb, var(--foreground) 3%, transparent) 31px,
+      color-mix(in srgb, var(--foreground) 3%, transparent) 32px
     );
   }
   h1,

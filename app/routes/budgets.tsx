@@ -137,7 +137,7 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
         </p>
       </div>
       {adding ? (
-        <div id="budget-add" className="grid gap-4 md:grid-cols-2">
+        <div id="budget-add" className="space-y-3">
           {free.length > 0 ? (
             <section aria-labelledby="add-budget" className="space-y-3 rounded-lg border p-4">
               <h2 id="add-budget" className="font-semibold">
@@ -179,10 +179,9 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
               </Form>
             </section>
           ) : null}
-          <section aria-labelledby="new-category" className="space-y-3 rounded-lg border p-4">
-            <h2 id="new-category" className="font-semibold">
-              Neue Kategorie
-            </h2>
+          {/* A different thing from a budget: tucked away until it is needed. */}
+          <details className="space-y-3 rounded-lg border p-4">
+            <summary className="cursor-pointer font-semibold">Kategorie fehlt? Neue anlegen</summary>
             <Form method="post" className="space-y-3">
               <input type="hidden" name="intent" value="createCategory" />
               <fieldset disabled={demo || busy} className="space-y-3">
@@ -203,7 +202,7 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
                 </Button>
               </fieldset>
             </Form>
-          </section>
+          </details>
         </div>
       ) : null}
       {actionData ? (

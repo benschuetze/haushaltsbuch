@@ -65,3 +65,12 @@ test("Handy: Beträge passen in die Kacheln, auch vierstellige mit Minus", async
     expect(overflowing, path).toEqual([]);
   }
 });
+
+test("Handy: Budgets in der Tab-Leiste, Sparziele unter „Mehr“", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "betrifft nur Handys");
+  await page.goto("/");
+  const bar = page.getByRole("navigation", { name: "Schnellnavigation" });
+  await expect(bar.getByRole("link", { name: "Budgets" })).toBeVisible();
+  await bar.getByText("Mehr", { exact: true }).click();
+  await expect(bar.getByRole("link", { name: "Sparziele" })).toBeVisible();
+});
