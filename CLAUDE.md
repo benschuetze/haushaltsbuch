@@ -105,6 +105,7 @@ Details und Pflichtfälle: Skill `verify`.
 | `db-change` | Tabelle oder Spalte ändern |
 | `bank-profile` | Neues CSV-Format einer Bank unterstützen |
 | `categorizer-eval` | Prompt, Modell oder Kategorien der KI-Zuordnung ändern |
+| `e-ink-design` | Neue oder geänderte UI im E-Ink-Look (Papier, Tinte, Stiftblau) |
 | `ship` | Feature abschließen und deployen |
 
 Neue Skills anlegen, sobald eine Aufgabe zum zweiten Mal gleich abläuft.
