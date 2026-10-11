@@ -1,5 +1,5 @@
 import { Check, SkipForward } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { data, Form, Link, useNavigate, useNavigation, useSearchParams, useSubmit } from "react-router";
 import { z } from "zod";
 import { Amount } from "~/components/amount";
@@ -168,6 +168,8 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
   const skip = params.get("skip");
   const submit = useSubmit();
   const navigate = useNavigate();
+  // The demo cannot save, but trying it out should feel the same: say what would happen, then show the next card.
+  const [demoNote, setDemoNote] = useState<string | null>(null);
 
   if (!tx) {
     return (
@@ -185,10 +187,32 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
   const suggested = categories.find((c) => c.id === tx.categoryId);
   const ordered = suggested ? [suggested, ...categories.filter((c) => c.id !== suggested.id)] : categories;
   const nextSkip = [skip, tx.id].filter(Boolean).join(",");
+  const tryInDemo = (categoryId: string) => {
+    const name = categories.find((c) => c.id === categoryId)?.name ?? "zugeordnet";
+    setDemoNote(`Demo: „${tx.counterparty}“ wäre jetzt ${name}. Gespeichert wird hier nichts.`);
+    navigate(`/pruefen?skip=${nextSkip}`);
+  };
+  const demoSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const categoryId = submitter?.getAttribute("value") || new FormData(event.currentTarget).get("categoryId");
+    if (typeof categoryId === "string" && categoryId) tryInDemo(categoryId);
+  };
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
       {actionData?.decision ? <SavedDialog key={tx.id} decision={actionData.decision} /> : null}
+      {demo ? (
+        <p className="rounded border-2 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          <span className="pixel block text-amber-950">Demo</span>
+          In der Demo kannst du hier alles ausprobieren. Gespeichert wird nichts.
+        </p>
+      ) : null}
+      {demoNote ? (
+        <p role="status" className="text-sm font-medium">
+          {demoNote}
+        </p>
+      ) : null}
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-2xl font-semibold">Prüfen</h1>
         <p className="text-sm text-muted-foreground" data-testid="review-remaining">
@@ -197,9 +221,14 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
       </div>
 
       <SwipeCard
-        disabled={demo || busy}
+        disabled={busy}
         onAccept={
-          suggested ? () => submit({ transactionId: tx.id, categoryId: suggested.id }, { method: "post" }) : null
+          suggested
+            ? () =>
+                demo
+                  ? tryInDemo(suggested.id)
+                  : submit({ transactionId: tx.id, categoryId: suggested.id }, { method: "post" })
+            : null
         }
         onSkip={() => navigate(`/pruefen?skip=${nextSkip}`)}
       >
@@ -220,10 +249,10 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
       </SwipeCard>
 
       {suggested ? (
-        <Form method="post" className="flex gap-2">
+        <Form method="post" className="flex gap-2" onSubmit={demo ? demoSubmit : undefined}>
           <input type="hidden" name="transactionId" value={tx.id} />
           <input type="hidden" name="categoryId" value={suggested.id} />
-          <Button type="submit" className="h-12 flex-1 text-base" disabled={demo || busy}>
+          <Button type="submit" className="h-12 flex-1 text-base" disabled={busy}>
             <Check aria-hidden="true" />
             Passt: {suggested.name}
           </Button>
@@ -235,9 +264,9 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         </Form>
       ) : null}
 
-      <Form method="post" className="space-y-3">
+      <Form method="post" className="space-y-3" onSubmit={demo ? demoSubmit : undefined}>
         <input type="hidden" name="transactionId" value={tx.id} />
-        <fieldset disabled={demo || busy}>
+        <fieldset disabled={busy}>
           <legend className="mb-2 text-sm font-medium">
             {suggested ? "Oder doch woanders hin?" : "Wohin gehört die Buchung?"}
           </legend>
