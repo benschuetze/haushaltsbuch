@@ -52,3 +52,36 @@ test("eine ruhige Stimme: keine Ton-Auswahl, auch ein früher gespeichertes „f
   await expect(page.getByTestId("ask-answer")).toBeVisible();
   await expect(page.getByTestId("ask-answer")).not.toHaveText(/^(Gönn dir\.|Autsch\.|Hm, mutig\.) /);
 });
+
+test("doppelt abgeschickt (Tastatur + Spracheingabe auf iOS) ergibt eine Frage und eine Antwort, keinen hängenden Kringel", async ({
+  page,
+}) => {
+  await importDemo(page);
+  await page.goto("/");
+  const box = page.getByLabel("Frage an dein Haushaltsbuch");
+  await box.fill("Wie viel kann ich heute ausgeben?");
+  // Two submits in the same moment, before React has re-rendered.
+  await box.evaluate((input) => {
+    const form = (input as HTMLInputElement).form as HTMLFormElement;
+    form.requestSubmit();
+    form.requestSubmit();
+  });
+  await expect(page.getByTestId("ask-answer")).toHaveCount(1);
+  await expect(page.getByTestId("ask-answer")).toContainText("Tagesbudget");
+  await expect(page.getByLabel("Antwort kommt")).toHaveCount(0);
+});
+
+test("Assistent: doppelt abgeschickt ergibt eine Frage", async ({ page }) => {
+  await importDemo(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Assistent öffnen" }).last().click();
+  const panel = page.getByRole("dialog", { name: "Assistent" });
+  await panel.getByLabel("Frage an den Assistenten").fill("Wie stehen meine Budgets?");
+  await panel.getByLabel("Frage an den Assistenten").evaluate((el) => {
+    const form = (el as HTMLTextAreaElement).form as HTMLFormElement;
+    form.requestSubmit();
+    form.requestSubmit();
+  });
+  await expect(panel.locator('[data-role="assistant"]')).toHaveCount(1);
+  await expect(panel.locator('[data-role="user"]')).toHaveCount(1);
+});

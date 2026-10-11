@@ -63,11 +63,13 @@ export function Assistant({
   const busy = fetcher.state !== "idle";
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const pending = useRef(false);
   const handled = useRef<unknown>(null);
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data && handled.current !== fetcher.data) {
       handled.current = fetcher.data;
+      pending.current = false;
       setMessages((m) => [...m, { role: "assistant", content: fetcher.data?.answer ?? "" }]);
     }
   }, [fetcher.state, fetcher.data]);
@@ -90,7 +92,9 @@ export function Assistant({
 
   function send(text: string) {
     const content = text.trim().slice(0, 1000);
-    if (!content || busy) return;
+    // A ref, not fetcher.state: two submits in one moment would otherwise both get through.
+    if (!content || busy || pending.current) return;
+    pending.current = true;
     const next = [...messages, { role: "user" as const, content }];
     setMessages(next);
     setDraft("");

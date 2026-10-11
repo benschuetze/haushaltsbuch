@@ -133,6 +133,9 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
   }
   const handled = useRef<unknown>(null);
   const nextId = useRef(0);
+  // Set at once, not on the next render: iOS can submit twice in one moment (keyboard "Go" plus the end of
+  // dictation). A second request would cancel the first and leave its question spinning forever.
+  const pending = useRef(false);
   const busy = fetcher.state !== "idle";
   const inputRef = useRef<HTMLInputElement>(null);
   const speech = useSpeech(
@@ -149,6 +152,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data && handled.current !== fetcher.data) {
       handled.current = fetcher.data;
+      pending.current = false;
       const answer = fetcher.data.answer;
       setTurns((t) => t.map((turn, i) => (i === t.length - 1 ? { ...turn, answer } : turn)));
     }
@@ -156,7 +160,8 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
 
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
-    if (!question || busy) return;
+    if (!question || busy || pending.current) return;
+    pending.current = true;
     const history = turns
       .slice(-2)
       .flatMap((t) => [
