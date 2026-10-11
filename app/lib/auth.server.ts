@@ -15,9 +15,24 @@ function sessionSecret(): string | null {
   return process.env.NODE_ENV === "production" ? null : DEV_SECRET;
 }
 
+type SessionData = { loggedIn: true; issuedAt: number; passwordVersion: string };
+
+const SESSION_MAX_AGE_S = 60 * 60 * 24 * 7;
+
+/**
+ * Ties a session to the password it was created with: changing APP_PASSWORD logs out every device,
+ * which is the only way to revoke a stateless cookie session.
+ */
+function passwordVersion(secret: string): string {
+  return createHash("sha256")
+    .update(`${secret}:${process.env.APP_PASSWORD ?? ""}`)
+    .digest("hex")
+    .slice(0, 16);
+}
+
 // Built per call so env changes (tests, rotated secrets after a redeploy) take effect without module state.
 function sessionStorage(secret: string) {
-  return createCookieSessionStorage<{ loggedIn: true }>({
+  return createCookieSessionStorage<SessionData>({
     cookie: {
       name: "hb_session",
       httpOnly: true,
@@ -26,7 +41,7 @@ function sessionStorage(secret: string) {
       // E2E runs the production build over plain http; WebKit drops Secure cookies there, Chromium does not.
       secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
       // A week: long enough not to annoy, short enough that a forgotten session on a shared device expires.
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: SESSION_MAX_AGE_S,
       secrets: [secret],
     },
   });
@@ -47,7 +62,10 @@ export async function isLoggedIn(request: Request): Promise<boolean> {
   const secret = sessionSecret();
   if (!secret) return false;
   const session = await sessionStorage(secret).getSession(request.headers.get("Cookie"));
-  return session.get("loggedIn") === true;
+  const issuedAt = session.get("issuedAt");
+  // The browser drops the cookie after maxAge; a copied cookie does not. The server checks the age itself.
+  const fresh = typeof issuedAt === "number" && Date.now() - issuedAt < SESSION_MAX_AGE_S * 1000;
+  return session.get("loggedIn") === true && fresh && session.get("passwordVersion") === passwordVersion(secret);
 }
 
 /** Hashing first makes both sides the same length, which timingSafeEqual requires, without leaking the length. */
@@ -65,6 +83,8 @@ export async function logIn(redirectTo: string): Promise<Response> {
   const storage = sessionStorage(secret);
   const session = await storage.getSession();
   session.set("loggedIn", true);
+  session.set("issuedAt", Date.now());
+  session.set("passwordVersion", passwordVersion(secret));
   return redirect(safeRedirect(redirectTo), {
     headers: { "Set-Cookie": await storage.commitSession(session) },
   });
@@ -76,10 +96,16 @@ export async function logOut(request: Request): Promise<Response> {
   return redirect("/login", { headers: { "Set-Cookie": await storage.destroySession(session) } });
 }
 
-/** Only same-site paths; "//evil.example" would otherwise be followed as a protocol-relative URL. */
+/**
+ * Only same-site paths. "//evil.example" would be followed as a protocol-relative URL, and browsers strip tabs
+ * and newlines first, so "/<tab>/evil.example" turns into the same thing: control characters are refused.
+ */
 export function safeRedirect(to: string | null | undefined): string {
-  if (!to?.startsWith("/") || to.startsWith("//") || to.startsWith("/\\")) return "/";
-  return to;
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are exactly what is refused
+  if (!to?.startsWith("/") || /[\u0000-\u001f\u007f\\]/.test(to)) return "/";
+  const url = new URL(to, "http://same.invalid");
+  if (url.origin !== "http://same.invalid") return "/";
+  return url.pathname + url.search + url.hash;
 }
 
 // Reachable without login. The cron endpoint checks its own secret; the legal pages must be public.
