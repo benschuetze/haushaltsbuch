@@ -60,3 +60,11 @@ test("ungültiger Betrag: verständlicher Hinweis", async ({ page }) => {
   await page.getByRole("button", { name: "Anlegen" }).click();
   await expect(page.getByRole("alert")).toHaveText("Bitte einen Betrag wie 800 oder 49,90 eingeben.");
 });
+
+test("Zieldatum als Monatsauswahl, kein leerer Datums-Platzhalter", async ({ page }) => {
+  await page.goto("/ziele");
+  const due = page.getByLabel("Bis wann? (optional)");
+  await expect(due).toHaveValue("");
+  await expect(due.locator("option").first()).toHaveText("ohne festes Datum");
+  await expect(due.locator("option").nth(1)).toHaveText(/^\w+ \d{4}$/);
+});

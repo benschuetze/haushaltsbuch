@@ -33,7 +33,8 @@ test("Sparkasse: erst die richtige auswählen, Suche filtert die Liste", async (
 test("PayPal: echte Umsätze per Datei, mit Export-Link, direkt im Pop-up importieren", async ({ page }) => {
   await page.goto("/banken");
   const tile = page.getByRole("button", { name: "PayPal hinzufügen" });
-  await expect(tile).toContainText("Mock");
+  // Not live; the dialog says "Mockdaten" in full instead of a badge on every tile.
+  await expect(tile).not.toContainText("Live");
   await tile.click();
   const dialog = page.getByRole("dialog");
   await dialog.getByText("Echte Umsätze per Datei-Import").click();
@@ -83,7 +84,7 @@ test("Live-Anbindung noch nicht freigeschaltet: klarer Hinweis, alle Kacheln lau
   await fetch(`${FAKE_BANK_URL}/__inactive`);
   await page.goto("/banken");
   await expect(page.getByText("noch nicht freigeschaltet")).toBeVisible();
-  await expect(page.getByRole("button", { name: "DKB hinzufügen" })).toContainText("Mock");
+  await expect(page.getByRole("button", { name: "DKB hinzufügen" })).not.toContainText("Live");
   await page.getByRole("button", { name: "DKB hinzufügen" }).click();
   await expect(page.getByRole("dialog").getByTestId("mock-banner")).toBeVisible();
 });
@@ -159,4 +160,11 @@ test("Demo-Verbindung spricht vom Institut, nicht von „der Bank“, und verspr
   await expect(dialog.getByRole("list", { name: "Verbindungsschritte" })).toContainText("Anmeldung bei PayPal");
   await expect(dialog.getByRole("status")).toContainText("Danach erscheinen die Umsätze von PayPal");
   await expect(dialog).not.toContainText("jeden Morgen");
+});
+
+test("keine Kartennetze als Bank, kein „Mock“-Schild auf jeder Kachel", async ({ page }) => {
+  await page.goto(`${DEMO_URL}/banken`);
+  await expect(page.getByRole("button", { name: "Visa hinzufügen" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Mastercard hinzufügen" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "DKB hinzufügen" })).not.toContainText("Mock");
 });

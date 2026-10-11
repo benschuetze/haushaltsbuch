@@ -109,6 +109,15 @@ function Confetti() {
   );
 }
 
+/** This month and the following ones, as yyyy-mm. */
+function nextMonths(from: string, count: number): string[] {
+  const [y, m] = from.split("-").map(Number) as [number, number];
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(Date.UTC(y, m - 1 + i, 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  });
+}
+
 export default function Ziele({ loaderData, actionData }: Route.ComponentProps) {
   const { demo, goals, thisMonth } = loaderData;
   const busy = useNavigation().state !== "idle";
@@ -166,7 +175,20 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
               <label htmlFor="goal-due" className="block">
                 Bis wann? (optional)
               </label>
-              <Input id="goal-due" name="due" type="month" min={thisMonth} />
+              {/* A select, not <input type="month">: Safari shows that one as "---------- ----". */}
+              <select
+                id="goal-due"
+                name="due"
+                defaultValue=""
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="">ohne festes Datum</option>
+                {nextMonths(thisMonth, 60).map((m) => (
+                  <option key={m} value={m}>
+                    {formatMonth(m)}
+                  </option>
+                ))}
+              </select>
             </div>
             <Button type="submit" disabled={busy}>
               Anlegen

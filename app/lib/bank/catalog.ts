@@ -145,21 +145,6 @@ export const BANK_TILES: BankTile[] = [
     fileHint: "Umsätze → Herunterladen → CSV.",
   },
   {
-    id: "mastercard",
-    name: "Mastercard",
-    group: "card",
-    // A card network, not a bank: statements come from the issuing bank.
-    match: null,
-    fileHint: "Kreditkarten-Portal deiner Bank → Umsätze → CSV.",
-  },
-  {
-    id: "visa",
-    name: "Visa",
-    group: "card",
-    match: null,
-    fileHint: "Kreditkarten-Portal deiner Bank → Umsätze → CSV.",
-  },
-  {
     id: "hanseatic",
     name: "Hanseatic Bank",
     group: "card",

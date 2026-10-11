@@ -95,7 +95,7 @@ const GENERIC: { monthly: Monthly[]; purchases: Purchase[] } = {
   ],
 };
 
-const CARD_TILES = new Set(["mastercard", "visa", "hanseatic", "advanzia"]);
+const CARD_TILES = new Set(["hanseatic", "advanzia"]);
 
 function seedOf(text: string): number {
   let h = 2166136261;
