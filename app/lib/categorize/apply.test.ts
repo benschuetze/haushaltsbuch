@@ -51,7 +51,7 @@ describe("Kategorisierung in der Datenbank", () => {
     const rewe = await txBy("REWE Markt");
     expect(rewe.every((t) => t.categoryId === cat.Haushalt && t.categorySource === "rule")).toBe(true);
     expect(JSON.stringify(calls.map((c) => c.prompt))).not.toContain("REWE");
-    expect(result.byRule).toBe(rewe.length);
+    expect(result.byRule).toBeGreaterThanOrEqual(rewe.length);
   });
 
   it("höhere Priorität schlägt niedrigere", async () => {
@@ -110,14 +110,14 @@ describe("Kategorisierung in der Datenbank", () => {
       field: "counterparty",
       matchType: "equals",
       pattern: "Spotify AB",
-      categoryId: cat["Abos & Software"] as string,
+      categoryId: cat.Hobbys as string,
     });
     expect(await reapplyRules(db)).toBe(1);
 
     const after = Object.fromEntries((await txBy("Spotify AB")).map((t) => [t.id, t]));
     expect(after[first.id]).toMatchObject({ categoryId: cat.Freizeit, categorySource: "manual" });
     expect(after[second.id]).toMatchObject({
-      categoryId: cat["Abos & Software"],
+      categoryId: cat.Hobbys,
       categorySource: "rule",
       needsReview: false,
     });
@@ -126,10 +126,12 @@ describe("Kategorisierung in der Datenbank", () => {
   it("LLM unter 0,7 Konfidenz: Kategorie als Vorschlag, aber in „prüfen“", async () => {
     const { model } = modelSaying("Lebensmittel", 0.6);
     const result = await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
-    expect(result).toMatchObject({ byAi: 0, needsReview: 44 });
-    const [rewe] = await txBy("REWE Markt");
-    expect(rewe).toMatchObject({ categoryId: cat.Lebensmittel, categorySource: "ai", needsReview: true });
-    expect(rewe?.aiConfidence).toBeCloseTo(0.6);
+    expect(result.byAi).toBe(0);
+    expect(result.needsReview).toBeGreaterThan(0);
+    // A merchant the built-in list does not know, so it is the model's call.
+    const [club] = await txBy("Club Hafen");
+    expect(club).toMatchObject({ categoryId: cat.Lebensmittel, categorySource: "ai", needsReview: true });
+    expect(club?.aiConfidence).toBeCloseTo(0.6);
   });
 
   it("Bestätigen nimmt die Buchung aus „prüfen“ und schützt sie vor späteren Regeln", async () => {
@@ -144,6 +146,49 @@ describe("Kategorisierung in der Datenbank", () => {
     await reapplyRules(db);
     const [after] = await db.select().from(transactions).where(eq(transactions.id, rewe.id));
     expect(after).toMatchObject({ categoryId: cat.Lebensmittel, categorySource: "manual", needsReview: false });
+  });
+});
+
+describe("eingebaute Händlerliste", () => {
+  it("bekannte Händler bekommen ihre Kategorie ohne Modell, unbekannte gehen weiter an die KI", async () => {
+    const { model, calls } = modelSaying("Sonstiges");
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
+    const spotify = await txBy("Spotify AB");
+    expect(spotify.every((t) => t.categoryId === cat["Abos & Software"] && t.categorySource === "rule")).toBe(true);
+    expect((await txBy("ALDI SUED")).every((t) => t.categoryId === cat.Lebensmittel)).toBe(true);
+    const asked = JSON.stringify(calls.map((c) => c.prompt));
+    expect(asked).not.toContain("Spotify");
+    expect(asked).toContain("Club Hafen");
+  });
+
+  it("eine eigene Regel schlägt die eingebaute Liste", async () => {
+    await db
+      .insert(rules)
+      .values({ field: "counterparty", matchType: "contains", pattern: "spotify", categoryId: cat.Hobbys as string });
+    const { model } = modelSaying("Sonstiges");
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
+    expect((await txBy("Spotify AB")).every((t) => t.categoryId === cat.Hobbys)).toBe(true);
+  });
+
+  it("schon falsch von der KI zugeordnete Buchungen werden korrigiert, manuelle nicht", async () => {
+    const { model } = modelSaying("Sonstiges");
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
+    const [first, second] = await txBy("Spotify AB");
+    if (!first || !second) throw new Error("Spotify fehlt");
+    // As an older version left it: the model's guess, and one the user set by hand.
+    await db
+      .update(transactions)
+      .set({ categoryId: cat.Sonstiges as string, categorySource: "ai", aiConfidence: 0.4, needsReview: true })
+      .where(eq(transactions.id, first.id));
+    await setManualCategory(db, second.id, cat.Freizeit as string);
+    await reapplyRules(db);
+    const after = Object.fromEntries((await txBy("Spotify AB")).map((t) => [t.id, t]));
+    expect(after[first.id]).toMatchObject({
+      categoryId: cat["Abos & Software"],
+      categorySource: "rule",
+      needsReview: false,
+    });
+    expect(after[second.id]).toMatchObject({ categoryId: cat.Freizeit, categorySource: "manual" });
   });
 });
 
@@ -171,13 +216,14 @@ describe("offene Buchungen nachträglich zuordnen", () => {
 
     const { model, calls } = modelSaying("Lebensmittel", 0.9);
     const stats = await categorizeOpen(db, model);
-    expect(stats).toMatchObject({ open: 43, byAi: 43, needsReview: 0 });
+    expect(stats.open).toBeGreaterThan(0);
+    expect(stats).toMatchObject({ byAi: stats.open, needsReview: 0 });
     const [after] = await db.select().from(transactions).where(eq(transactions.id, spotify.id));
     expect(after).toMatchObject({ categoryId: cat.Freizeit, categorySource: "manual" });
 
     // A second run finds nothing open and calls nothing.
     const again = await categorizeOpen(db, model);
     expect(again.open).toBe(0);
-    expect(calls).toHaveLength(2);
+    expect(calls.length).toBe(Math.ceil(stats.open / 25));
   });
 });

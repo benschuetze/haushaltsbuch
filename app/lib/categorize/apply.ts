@@ -4,6 +4,7 @@ import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { categories, rules, transactions } from "~/lib/db/schema";
 import { linkOwnTransfers } from "~/lib/import/transfers";
+import { knownMerchantCategory } from "./known-merchants";
 import { categorizeWithLlm } from "./llm";
 import { firstMatchingRule } from "./rules";
 
@@ -31,6 +32,15 @@ async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void
     from (values ${values}) as v(id, category_id, source, confidence, needs_review)
     where t.id = v.id and t.category_source is distinct from 'manual'
   `);
+}
+
+/** Built-in merchant list resolved to this database's category ids; a renamed or deleted category is skipped. */
+function knownCategoryIds(all: { id: string; name: string }[]): (counterparty: string) => string | null {
+  const byName = new Map(all.map((c) => [c.name, c.id]));
+  return (counterparty) => {
+    const name = knownMerchantCategory(counterparty);
+    return name ? (byName.get(name) ?? null) : null;
+  };
 }
 
 export type CategorizeStats = { byRule: number; byAi: number; needsReview: number };
@@ -66,16 +76,12 @@ export async function categorizeTransactions(
 
   const assignments: Assignment[] = [];
   const forLlm: typeof txs = [];
+  const known = knownCategoryIds(allCategories);
   for (const tx of txs) {
-    const rule = firstMatchingRule(allRules, tx);
-    if (rule) {
-      assignments.push({
-        id: tx.id,
-        categoryId: rule.categoryId,
-        source: "rule",
-        confidence: null,
-        needsReview: false,
-      });
+    // Own rules first, then the built-in merchant list; the model only sees what neither knows.
+    const categoryId = firstMatchingRule(allRules, tx)?.categoryId ?? known(tx.counterparty);
+    if (categoryId) {
+      assignments.push({ id: tx.id, categoryId, source: "rule", confidence: null, needsReview: false });
       stats.byRule++;
     } else {
       forLlm.push(tx);
@@ -143,24 +149,21 @@ export async function categorizeOpen(db: Db, model: LanguageModel | null): Promi
 
 /** After a rule is added or changed: re-run all rules over every non-manual transaction. Returns how many changed. */
 export async function reapplyRules(db: Db): Promise<number> {
-  const [allRules, txs] = await Promise.all([
+  const [allRules, allCategories, txs] = await Promise.all([
     db.select().from(rules),
+    db.select().from(categories),
     db
       .select()
       .from(transactions)
       .where(or(isNull(transactions.categorySource), ne(transactions.categorySource, "manual"))),
   ]);
   const assignments: Assignment[] = [];
+  const known = knownCategoryIds(allCategories);
   for (const tx of txs) {
-    const rule = firstMatchingRule(allRules, tx);
-    if (rule && (tx.categoryId !== rule.categoryId || tx.categorySource !== "rule" || tx.needsReview)) {
-      assignments.push({
-        id: tx.id,
-        categoryId: rule.categoryId,
-        source: "rule",
-        confidence: null,
-        needsReview: false,
-      });
+    // Also fixes what the model (or an older version without the merchant list) got wrong before.
+    const categoryId = firstMatchingRule(allRules, tx)?.categoryId ?? known(tx.counterparty);
+    if (categoryId && (tx.categoryId !== categoryId || tx.categorySource !== "rule" || tx.needsReview)) {
+      assignments.push({ id: tx.id, categoryId, source: "rule", confidence: null, needsReview: false });
     }
   }
   await writeAssignments(db, assignments);

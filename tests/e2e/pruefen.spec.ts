@@ -1,12 +1,13 @@
 import { expect, test } from "./fixtures";
-import { DEMO_URL, importDemo, resetDb, sql } from "./helpers";
+import { DEMO_URL, importDemo, modelUnsureAboutDm, resetDb, sql } from "./helpers";
 
 test.beforeEach(resetDb);
 
 test("Filter „prüfen“ zeigt nur unsichere Buchungen, Bestätigen nimmt sie heraus", async ({ page }) => {
   await importDemo(page);
-  // The mock model is unsure about Zalando (via PayPal) and dm: 3 bookings in the demo data.
-  await expect(page.getByTestId("import-needs-review")).toHaveText("3");
+  // The mock model is unsure about Zalando (via PayPal); dm is known to the merchant list.
+  await expect(page.getByTestId("import-needs-review")).toHaveText("1");
+  await modelUnsureAboutDm();
 
   await page.goto("/transaktionen");
   await page.getByLabel("Nur „prüfen“").check();
@@ -38,7 +39,8 @@ test("Buchungen, die beim Import ohne Kategorie blieben, lassen sich nachträgli
   await page.goto("/transaktionen");
   await expect(page.getByText("6 Buchungen haben noch keine Kategorie.")).toBeVisible();
   await page.getByRole("button", { name: "Jetzt zuordnen" }).click();
-  await expect(page.getByRole("status")).toHaveText("6 Buchungen zugeordnet.");
+  // REWE and Lidl are on the built-in merchant list, so no model is needed for them.
+  await expect(page.getByRole("status")).toHaveText("6 Buchungen zugeordnet (6 per Regel).");
   await expect(page.getByText("noch keine Kategorie")).toHaveCount(0);
 });
 
@@ -47,6 +49,7 @@ test("Demo: Prüfen lässt sich ausprobieren, die Rückmeldung ist sofort im Bil
 }) => {
   // In tests the demo server reads the same database.
   await importDemo(page);
+  await modelUnsureAboutDm();
   await page.goto(`${DEMO_URL}/pruefen`);
   await expect(page.getByText("In der Demo kannst du hier alles ausprobieren")).toBeVisible();
   const first = await page.getByTestId("review-counterparty").textContent();

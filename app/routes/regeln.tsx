@@ -8,6 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { isDemo } from "~/lib/auth.server";
 import { reapplyRules } from "~/lib/categorize/apply";
+import { KNOWN_MERCHANTS } from "~/lib/categorize/known-merchants";
 import { getModel } from "~/lib/categorize/model";
 import {
   parseRuleWish,
@@ -546,6 +547,28 @@ export default function Regeln({ loaderData, actionData }: Route.ComponentProps)
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Bookings show the "Regel" badge for these too; without this list it looks like rules nobody made. */}
+      <section className="space-y-3" aria-labelledby="builtin-rules">
+        <h2 id="builtin-rules" className="font-semibold">
+          Eingebaute Regeln
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Greifen nach deinen eigenen Regeln und vor der KI. Eine eigene Regel geht immer vor, eine von Hand gesetzte
+          Kategorie sowieso.
+        </p>
+        <ul className="divide-y rounded-lg border" data-testid="builtin-rules">
+          <li className="p-3 text-sm">
+            <span className="font-medium">Umbuchung</span>: Geld zwischen deinen eigenen Konten, PayPal-Aufladungen und
+            der Ausgleich der Kreditkarte zählen weder als Einnahme noch als Ausgabe.
+          </li>
+          {KNOWN_MERCHANTS.map((m) => (
+            <li key={m.category} className="p-3 text-sm">
+              <span className="font-medium">{m.category}</span>: {m.examples} und ähnliche
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

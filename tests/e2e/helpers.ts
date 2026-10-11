@@ -85,3 +85,15 @@ export async function expectOnTop(locator: ReturnType<Page["locator"]>): Promise
   );
   expect(onTop).toBe(true);
 }
+
+/**
+ * The built-in merchant list files dm under Haushalt by itself. The review tests are about bookings the model was
+ * unsure of, so they put the two dm bookings back into that state: the model said Haushalt, 65 % sure.
+ */
+export async function modelUnsureAboutDm() {
+  await sql(`
+    update transactions set category_id = (select id from categories where name = 'Haushalt'),
+      category_source = 'ai', ai_confidence = 0.65, needs_review = true
+    where counterparty = 'dm-drogerie markt';
+    delete from meta where key = 'insights_refreshed_at';`);
+}

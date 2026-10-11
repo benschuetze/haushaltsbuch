@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { reapplyRules } from "~/lib/categorize/apply";
 import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { importDemoData } from "~/lib/db/demo-data";
@@ -14,7 +15,11 @@ if (process.env.DEMO_MODE === "true") {
   const inserted = await importDemoData(db, getModel());
   console.log(`Demo-Daten: ${inserted} neue Buchungen`);
 }
-// Runs on every deploy: hints computed by an older version of the logic must not linger for hours.
+// Runs on every deploy: own rules and the built-in merchant list fix what an older version (or the model)
+// filed wrongly. No model call; manual choices stay.
+const fixed = await reapplyRules(db);
+console.log(`Regeln neu angewandt: ${fixed} Buchungen korrigiert`);
+// Hints computed by an older version of the logic must not linger for hours.
 await refreshInsights(db);
 console.log("Hinweise neu berechnet");
 process.exit(0);

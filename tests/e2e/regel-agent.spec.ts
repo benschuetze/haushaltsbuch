@@ -71,3 +71,11 @@ test("Demo: Agent sichtbar, aber abgeschaltet", async ({ page }) => {
   await expect(page.getByLabel("Was soll die Regel tun?")).toBeDisabled();
   await expect(page.getByText("In der Demo lassen sich keine Regeln anlegen.")).toBeVisible();
 });
+
+test("eingebaute Regeln sind sichtbar, damit das Badge „Regel“ ohne eigene Regel erklärt ist", async ({ page }) => {
+  await page.goto("/regeln");
+  const builtin = page.getByTestId("builtin-rules");
+  await expect(builtin).toContainText("Umbuchung");
+  await expect(builtin).toContainText("Restaurant & Lieferdienst: Lieferando");
+  await expect(builtin).toContainText("Abos & Software: Netflix, Disney+, Spotify");
+});

@@ -1,5 +1,5 @@
 import { expect, type Locator, test } from "./fixtures";
-import { importDemo, resetDb } from "./helpers";
+import { importDemo, modelUnsureAboutDm, resetDb } from "./helpers";
 
 test.beforeEach(resetDb);
 
@@ -17,6 +17,7 @@ async function swipe(card: Locator, dx: number) {
 
 test("nach rechts wischen übernimmt den Vorschlag, nach links kommt die nächste", async ({ page }) => {
   await importDemo(page);
+  await modelUnsureAboutDm();
   await page.goto("/pruefen");
   await expect(page.getByTestId("review-counterparty")).toHaveText("dm-drogerie markt");
   await expect(page.getByRole("button", { name: "Passt: Haushalt" })).toBeVisible();
@@ -34,6 +35,7 @@ test("nach rechts wischen übernimmt den Vorschlag, nach links kommt die nächst
 
 test("schneller Wischer (alle Bewegungen vor dem nächsten Render) zählt trotzdem", async ({ page }) => {
   await importDemo(page);
+  await modelUnsureAboutDm();
   await page.goto("/pruefen");
   const card = page.getByTestId("review-card");
   const box = await card.boundingBox();
@@ -54,6 +56,7 @@ test("schneller Wischer (alle Bewegungen vor dem nächsten Render) zählt trotzd
 
 test("kurzes Antippen oder kleines Ziehen ändert nichts", async ({ page }) => {
   await importDemo(page);
+  await modelUnsureAboutDm();
   await page.goto("/pruefen");
   await swipe(page.getByTestId("review-card"), 40);
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -62,6 +65,7 @@ test("kurzes Antippen oder kleines Ziehen ändert nichts", async ({ page }) => {
 
 test("„Passt“-Knopf macht dasselbe wie Wischen, ohne Geste", async ({ page }) => {
   await importDemo(page);
+  await modelUnsureAboutDm();
   await page.goto("/pruefen");
   await page.getByRole("button", { name: "Passt: Haushalt" }).click();
   await expect(page.getByRole("dialog", { name: "Gespeichert" })).toContainText("Haushalt");
