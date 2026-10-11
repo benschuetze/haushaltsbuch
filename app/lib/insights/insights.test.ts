@@ -131,11 +131,10 @@ describe("computeInsights", () => {
       title: "2× Video-Streaming",
       savingsCentsPerYear: 10788,
     });
-    // One hint per subscription, each with its own cancel button; /abos has the total.
-    expect(drafts.filter((d) => d.kind === "subscription_found").map((d) => d.title)).toEqual([
-      "Abo erkannt: Netflix",
-      "Abo erkannt: Disney Plus",
-    ]);
+    // One hint for all subscriptions instead of one each; cancelling one by one happens on /abos.
+    const abos = drafts.filter((d) => d.kind === "subscription_found");
+    expect(abos.map((d) => d.title)).toEqual(["2 Abos erkannt"]);
+    expect(abos[0]?.body).toContain("Netflix, Disney Plus");
   });
 
   it("Preiserhöhung im betrachteten Monat mit Mehrkosten pro Jahr", () => {
@@ -143,7 +142,10 @@ describe("computeInsights", () => {
       ...base,
       bookings: monthly("Spotify AB", [-999, -999, -999, -1099], "Abos & Software"),
     });
-    expect(drafts.find((d) => d.kind === "price_increase")).toMatchObject({ savingsCentsPerYear: 1200 });
+    // Extra cost per year in the text, but not counted as savings: paying more is not money one could save.
+    const increase = drafts.find((d) => d.kind === "price_increase");
+    expect(increase).toMatchObject({ savingsCentsPerYear: null });
+    expect(increase?.body).toContain("12 € mehr im Jahr");
   });
 
   it("Ausreißer gegenüber den Vormonaten, kleine Schwankungen nicht", () => {

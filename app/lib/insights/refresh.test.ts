@@ -117,18 +117,20 @@ describe("Abo kündigen", () => {
   }
   const titles = async () => (await openInsights(db, 100)).map((i) => i.title);
 
-  it("erkanntes Abo erscheint einzeln mit Händler, damit die Glocke „Kündigen“ anbieten kann", async () => {
+  const aboHint = async () => (await openInsights(db, 100)).find((i) => i.kind === "subscription_found");
+
+  it("erkannte Abos erscheinen in einem gemeinsamen Hinweis, nicht als einzelne Einträge", async () => {
     await refreshInsights(db, october);
-    const [spotify] = (await openInsights(db, 100)).filter((i) => i.title === "Abo erkannt: Spotify AB");
-    expect(spotify).toMatchObject({ kind: "subscription_found", subject: "Spotify AB" });
-    expect(spotify?.body).toContain("10,99 € im Monat");
+    const all = (await openInsights(db, 100)).filter((i) => i.kind === "subscription_found");
+    expect(all).toHaveLength(1);
+    expect(all[0]?.body).toContain("Spotify AB");
   });
 
   it("gekündigt: Abo-Hinweis weg; bucht es weiter ab, kommt eine Warnung; zurücknehmen bringt es zurück", async () => {
     const september = new Date("2026-09-10T12:00:00Z");
     await refreshInsights(db, september);
     await markCancelled(db, "Spotify AB", september);
-    expect(await titles()).not.toContain("Abo erkannt: Spotify AB");
+    expect((await aboHint())?.body ?? "").not.toContain("Spotify AB");
 
     await spotifyIn("07.10.2026");
     await refreshInsights(db, october);
@@ -137,7 +139,7 @@ describe("Abo kündigen", () => {
     expect(failed?.body).toContain("Gekündigt am 10.09.2026, am 07.10.2026 wurden trotzdem 10,99 € abgebucht");
 
     await undoCancellation(db, "spotify", october);
-    expect(await titles()).toContain("Abo erkannt: Spotify AB");
+    expect((await aboHint())?.body).toContain("Spotify AB");
     expect((await openInsights(db, 100)).some((i) => i.kind === "cancellation_failed")).toBe(false);
   });
 

@@ -26,7 +26,9 @@ export async function loader({ params }: Route.LoaderArgs) {
   const today = todayInGermany();
   const untilDay = today.startsWith(params.month) ? Number(today.slice(8, 10)) : undefined;
   const [summary, before] = await Promise.all([monthSummary(db, params.month), monthSummary(db, prev, untilDay)]);
-  return { month: params.month, prev, next: nextMonth(params.month), summary, before, untilDay };
+  const next = nextMonth(params.month);
+  // No link into a month that has not started: it could only be empty.
+  return { month: params.month, prev, next, showNext: next <= today.slice(0, 7), summary, before, untilDay };
 }
 
 /** In words, not with a sign: "+251,70 €" on spending reads like more, when it meant less. */
@@ -57,7 +59,7 @@ function Change({
 }
 
 export default function Monat({ loaderData }: Route.ComponentProps) {
-  const { month, prev, next, summary, before, untilDay } = loaderData;
+  const { month, prev, next, showNext, summary, before, untilDay } = loaderData;
   const prevName = formatMonth(prev).split(" ")[0] ?? prev;
   const expenses = summary.byCategory
     .filter((c) => c.kind !== "transfer" && c.cents < 0)
@@ -75,9 +77,11 @@ export default function Monat({ loaderData }: Route.ComponentProps) {
           <Link to={`/monat/${prev}`} className="rounded-md border px-3 py-1.5 hover:bg-accent">
             ← {formatMonth(prev)}
           </Link>
-          <Link to={`/monat/${next}`} className="rounded-md border px-3 py-1.5 hover:bg-accent">
-            {formatMonth(next)} →
-          </Link>
+          {showNext ? (
+            <Link to={`/monat/${next}`} className="rounded-md border px-3 py-1.5 hover:bg-accent">
+              {formatMonth(next)} →
+            </Link>
+          ) : null}
         </nav>
       </div>
 
@@ -114,7 +118,8 @@ export default function Monat({ loaderData }: Route.ComponentProps) {
           </dl>
           {summary.reviewCount > 0 ? (
             <p className="text-sm">
-              {countLabel(summary.reviewCount, "Buchung ist", "Buchungen sind")} noch nicht geprüft.{" "}
+              In {formatMonth(month)} {summary.reviewCount === 1 ? "ist" : "sind"}{" "}
+              {countLabel(summary.reviewCount, "Buchung", "Buchungen")} noch nicht geprüft.{" "}
               <Link to={`/transaktionen?monat=${month}&pruefen=1`} className="underline underline-offset-4">
                 Jetzt prüfen
               </Link>

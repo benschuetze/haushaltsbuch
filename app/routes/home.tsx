@@ -98,7 +98,7 @@ function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }
     >
       <div className="space-y-0.5">
         <h2 id="week-title" className="pixel text-muted-foreground">
-          Diese Woche
+          Diese Woche ausgegeben
         </h2>
         <p className="text-2xl font-semibold tabular-nums" data-testid="week-spent">
           {formatCents(week.spentCents)}
@@ -178,7 +178,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         <Stat label="Saldo">
           <Amount cents={summary.incomeCents + summary.expenseCents} />
         </Stat>
-        <Stat label="Zu prüfen" testId="review-count">
+        <Stat label="Zu prüfen, gesamt" testId="review-count">
           {reviewCount > 0 ? (
             <Link to="/pruefen" className="underline underline-offset-4">
               {reviewCount}

@@ -13,6 +13,9 @@ import { decideReview, nextReview, type ReviewDecision } from "~/lib/review";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/pruefen";
 
+/** Below this the model's category is shown as a guess, not offered as the default answer. */
+const MIN_SUGGESTION_CONFIDENCE = 0.6;
+
 export const meta: Route.MetaFunction = () => [{ title: "Prüfen · Haushaltsbuch" }];
 
 function skipList(url: URL): string[] {
@@ -185,7 +188,10 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
     );
   }
 
-  const suggested = categories.find((c) => c.id === tx.categoryId);
+  // Below 60 % the model is guessing: offering that as the big default button invites a wrong click.
+  const confident = tx.aiConfidence === null || tx.aiConfidence >= MIN_SUGGESTION_CONFIDENCE;
+  const suggested = confident ? categories.find((c) => c.id === tx.categoryId) : undefined;
+  const guess = confident ? undefined : categories.find((c) => c.id === tx.categoryId);
   const ordered = suggested ? [suggested, ...categories.filter((c) => c.id !== suggested.id)] : categories;
   const nextSkip = [skip, tx.id].filter(Boolean).join(",");
   const tryInDemo = (categoryId: string) => {
@@ -250,7 +256,9 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         <p className="text-sm text-muted-foreground">
           {suggested
             ? `Vorschlag der KI: ${suggested.name}${tx.aiConfidence !== null ? ` (${formatPercent(tx.aiConfidence)} sicher)` : ""}`
-            : "Die KI hatte keinen Vorschlag."}
+            : guess && tx.aiConfidence !== null
+              ? `Die KI ist unsicher (${formatPercent(tx.aiConfidence)}, vielleicht ${guess.name}). Bitte selbst wählen.`
+              : "Die KI hatte keinen Vorschlag."}
         </p>
         <p className="text-xs text-muted-foreground">
           {suggested ? "Nach rechts wischen: passt · nach links: später" : "Nach links wischen: später"}

@@ -166,7 +166,7 @@ export default function Rueckblick({ loaderData }: Route.ComponentProps) {
           >
             <p className="pixel opacity-80">{c.kicker}</p>
             <p className="font-serif text-5xl leading-none font-bold break-words">{c.title}</p>
-            <p className="text-base opacity-90">{c.note}</p>
+            {c.note ? <p className="text-base opacity-90">{c.note}</p> : null}
           </article>
         ))}
       </section>

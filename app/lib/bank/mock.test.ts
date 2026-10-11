@@ -31,7 +31,8 @@ describe("Mockdaten", () => {
       .where(eq(transactions.accountId, account?.id ?? ""));
     expect(rows).toHaveLength(result.inserted);
     expect(rows.some((r) => r.needsReview)).toBe(true);
-    expect((await openInsights(db, 100)).map((i) => i.title)).toContain("Abo erkannt: Netflix");
+    const abos = (await openInsights(db, 100)).find((i) => i.kind === "subscription_found");
+    expect(abos?.body).toContain("Netflix");
   });
 
   it("zweimal verbinden legt nichts doppelt an", async () => {
