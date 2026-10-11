@@ -26,7 +26,7 @@ export function createAssistantTools(db: Db, now = new Date()) {
         const a = await spendingToday(db, now);
         return {
           heute: a.today,
-          heuteDrin: euro(a.perDayCents),
+          tagesbudget: euro(a.perDayCents),
           freiBisGehalt: euro(a.freeCents),
           tageBisGehalt: a.daysLeft,
           naechstesGehalt: a.nextIncome
@@ -53,7 +53,7 @@ export function createAssistantTools(db: Db, now = new Date()) {
           urteil: r.verdict,
           wofuer: wofuer ?? null,
           betrag: euro(r.amountCents),
-          heuteDrinVorher: euro(a.perDayCents),
+          tagesbudgetVorher: euro(a.perDayCents),
           freiBisGehaltDanach: euro(r.afterCents),
           proTagDanach: euro(r.perDayAfterCents),
           tageBisGehalt: a.daysLeft,

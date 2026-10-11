@@ -169,7 +169,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
     <section aria-labelledby="today-title" className="space-y-5 rounded border-2 border-foreground bg-card p-5">
       <div className="space-y-2">
         <h2 id="today-title" className="pixel text-muted-foreground">
-          Heute drin
+          Tagesbudget
         </h2>
         <p
           className={cn("font-mono text-5xl font-bold tracking-tight", overdrawn ? "text-red-700" : "text-foreground")}

@@ -48,7 +48,7 @@ describe("Sparziel mit Termin", () => {
   });
 });
 
-describe("Sparziel in „Heute drin“", () => {
+describe("Sparziel im Tagesbudget", () => {
   const salary = (d: string): AvailableBooking => ({
     bookingDate: d,
     counterparty: "Arbeitgeber",

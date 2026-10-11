@@ -18,7 +18,7 @@ describe("Sparziele in der Datenbank", () => {
     expect((await loadGoalInputs(db, { includeAchieved: true }))[0]?.deposits).toHaveLength(3);
   });
 
-  it("ein Ziel senkt „Heute drin“ um seine offene Monatsrate", async () => {
+  it("ein Ziel senkt das Tagesbudget um seine offene Monatsrate", async () => {
     const { db } = await createTestDb();
     await importDemoData(db, createMockModel());
     const before = await spendingToday(db, october);

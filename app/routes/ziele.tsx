@@ -71,7 +71,7 @@ export async function action({ request }: Route.ActionArgs) {
     });
     return {
       ok: true,
-      message: `Sparziel „${input.name}“ angelegt. Die Monatsrate ist ab sofort in „Heute drin“ eingeplant.`,
+      message: `Sparziel „${input.name}“ angelegt. Die Monatsrate ist ab sofort im Tagesbudget eingeplant.`,
       celebrate: null,
     };
   }
@@ -122,7 +122,7 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Sparziele</h1>
         <p className="text-sm text-muted-foreground">
-          Wofür sparst du? Die Monatsrate ist in „Heute drin“ schon abgezogen, du musst nichts mehr im Kopf behalten.
+          Wofür sparst du? Die Monatsrate ist im Tagesbudget schon abgezogen, du musst nichts mehr im Kopf behalten.
           {perMonth > 0 ? ` Zusammen ${formatCents(perMonth)} im Monat.` : ""}
         </p>
       </div>

@@ -262,7 +262,7 @@ export const subscriptionCancellations = pgTable("subscription_cancellations", {
 });
 
 /**
- * "Mallorca, 800 € bis Juli". The monthly share is reserved in "Heute drin", so saving for it does not need
+ * "Mallorca, 800 € bis Juli". The monthly share is reserved in the daily budget ("Tagesbudget"), so saving for it does not need
  * willpower at the till. Money set aside is recorded as deposits; the goal is reached when they add up.
  */
 export const savingsGoals = pgTable("savings_goals", {
