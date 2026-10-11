@@ -1,4 +1,6 @@
 import { eq, notInArray } from "drizzle-orm";
+import { Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { data, Form, useNavigation } from "react-router";
 import { z } from "zod";
 import { BudgetBar } from "~/components/progress";
@@ -102,18 +104,108 @@ function euroInput(cents: number) {
 export default function Budgets({ loaderData, actionData }: Route.ComponentProps) {
   const { month, items, free, demo } = loaderData;
   const busy = useNavigation().state !== "idle";
+  // The form sits right under the heading, opened by the button; open from the start when there is no budget yet.
+  const [adding, setAdding] = useState(items.length === 0);
+  const firstField = useRef<HTMLSelectElement>(null);
+  useEffect(() => {
+    if (adding) firstField.current?.focus();
+  }, [adding]);
+  useEffect(() => {
+    if (actionData?.ok) setAdding(false);
+  }, [actionData]);
   const total = items.reduce((s, i) => s + i.budgetCents, 0);
   const spent = items.reduce((s, i) => s + i.spentCents, 0);
 
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Budgets</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">Budgets</h1>
+          <Button
+            type="button"
+            onClick={() => setAdding((open) => !open)}
+            aria-expanded={adding}
+            aria-controls="budget-add"
+          >
+            <Plus aria-hidden="true" />
+            Budget hinzufügen
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           {formatMonth(month)}: {formatCents(spent)} von {formatCents(total)} in Kategorien mit Budget. Wird ein Budget
           knapp oder überschritten, meldet sich die Glocke.
         </p>
       </div>
+      {adding ? (
+        <div id="budget-add" className="grid gap-4 md:grid-cols-2">
+          {free.length > 0 ? (
+            <section aria-labelledby="add-budget" className="space-y-3 rounded-lg border p-4">
+              <h2 id="add-budget" className="font-semibold">
+                Budget hinzufügen
+              </h2>
+              <Form method="post" className="space-y-3">
+                <input type="hidden" name="intent" value="set" />
+                <fieldset disabled={demo || busy} className="space-y-3">
+                  <div className="space-y-1">
+                    <label htmlFor="add-category" className="block text-sm">
+                      Kategorie
+                    </label>
+                    <select
+                      ref={firstField}
+                      id="add-category"
+                      name="categoryId"
+                      required
+                      defaultValue=""
+                      className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    >
+                      <option value="" disabled>
+                        wählen
+                      </option>
+                      {free.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="add-amount" className="block text-sm">
+                      Betrag pro Monat (€)
+                    </label>
+                    <Input id="add-amount" name="amount" inputMode="decimal" required placeholder="z. B. 100" />
+                  </div>
+                  <Button type="submit">Hinzufügen</Button>
+                </fieldset>
+              </Form>
+            </section>
+          ) : null}
+          <section aria-labelledby="new-category" className="space-y-3 rounded-lg border p-4">
+            <h2 id="new-category" className="font-semibold">
+              Neue Kategorie
+            </h2>
+            <Form method="post" className="space-y-3">
+              <input type="hidden" name="intent" value="createCategory" />
+              <fieldset disabled={demo || busy} className="space-y-3">
+                <div className="space-y-1">
+                  <label htmlFor="category-name" className="block text-sm">
+                    Name
+                  </label>
+                  <Input id="category-name" name="name" required maxLength={40} placeholder="z. B. Urlaub" />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="category-amount" className="block text-sm">
+                    Budget pro Monat (€, optional)
+                  </label>
+                  <Input id="category-amount" name="amount" inputMode="decimal" placeholder="leer = kein Budget" />
+                </div>
+                <Button type="submit" variant="outline">
+                  Kategorie anlegen
+                </Button>
+              </fieldset>
+            </Form>
+          </section>
+        </div>
+      ) : null}
       {actionData ? (
         <p
           role={actionData.ok ? "status" : "alert"}
@@ -164,74 +256,6 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
           </li>
         ))}
       </ul>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {free.length > 0 ? (
-          <section aria-labelledby="add-budget" className="space-y-3 rounded-lg border p-4">
-            <h2 id="add-budget" className="font-semibold">
-              Budget hinzufügen
-            </h2>
-            <Form method="post" className="space-y-3">
-              <input type="hidden" name="intent" value="set" />
-              <fieldset disabled={demo || busy} className="space-y-3">
-                <div className="space-y-1">
-                  <label htmlFor="add-category" className="block text-sm">
-                    Kategorie
-                  </label>
-                  <select
-                    id="add-category"
-                    name="categoryId"
-                    required
-                    defaultValue=""
-                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                  >
-                    <option value="" disabled>
-                      wählen
-                    </option>
-                    {free.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="add-amount" className="block text-sm">
-                    Betrag pro Monat (€)
-                  </label>
-                  <Input id="add-amount" name="amount" inputMode="decimal" required placeholder="z. B. 100" />
-                </div>
-                <Button type="submit">Hinzufügen</Button>
-              </fieldset>
-            </Form>
-          </section>
-        ) : null}
-        <section aria-labelledby="new-category" className="space-y-3 rounded-lg border p-4">
-          <h2 id="new-category" className="font-semibold">
-            Neue Kategorie
-          </h2>
-          <Form method="post" className="space-y-3">
-            <input type="hidden" name="intent" value="createCategory" />
-            <fieldset disabled={demo || busy} className="space-y-3">
-              <div className="space-y-1">
-                <label htmlFor="category-name" className="block text-sm">
-                  Name
-                </label>
-                <Input id="category-name" name="name" required maxLength={40} placeholder="z. B. Urlaub" />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="category-amount" className="block text-sm">
-                  Budget pro Monat (€, optional)
-                </label>
-                <Input id="category-amount" name="amount" inputMode="decimal" placeholder="leer = kein Budget" />
-              </div>
-              <Button type="submit" variant="outline">
-                Kategorie anlegen
-              </Button>
-            </fieldset>
-          </Form>
-        </section>
-      </div>
     </div>
   );
 }
