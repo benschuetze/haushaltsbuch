@@ -1,6 +1,7 @@
 import { ArrowUp, Loader2, Mic, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher, useSearchParams } from "react-router";
+import { RichText } from "~/components/rich-text";
 import { formatCents } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
@@ -107,6 +108,12 @@ type Turn = { id: number; question: string; answer: string | null };
  * The first thing on the start page: today's number, no question needed, and right below a box to ask
  * anything ("Kann ich mir … leisten?"). The answer appears in place; a follow-up keeps the last turns.
  */
+/**
+ * The "frech" voice works (see TONE in agent.server.ts) but is switched off for now: the demo should show one
+ * calm voice. Setting this to true brings the choice back, including a stored preference.
+ */
+const TONE_CHOICE = false;
+
 export function AskToday({ today, assistant }: { today: TodayView; assistant: boolean }) {
   const fetcher = useFetcher<{ answer: string; tools: string[] }>();
   const [draft, setDraft] = useState("");
@@ -115,7 +122,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
   const [tone, setTone] = useState<"freundlich" | "frech">("freundlich");
   useEffect(() => {
     try {
-      if (localStorage.getItem("ton") === "frech") setTone("frech");
+      if (TONE_CHOICE && localStorage.getItem("ton") === "frech") setTone("frech");
     } catch {}
   }, []);
   function chooseTone(next: "freundlich" | "frech") {
@@ -257,23 +264,25 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
               )}
             </button>
           </form>
-          <fieldset className="flex items-center gap-1 text-xs" aria-label="Ton der Antworten">
-            <span className="text-muted-foreground">Ton:</span>
-            {(["freundlich", "frech"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={tone === t}
-                onClick={() => chooseTone(t)}
-                className={cn(
-                  "rounded-full border px-2.5 py-0.5",
-                  tone === t ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
-                )}
-              >
-                {t === "freundlich" ? "freundlich" : "frech 😏"}
-              </button>
-            ))}
-          </fieldset>
+          {TONE_CHOICE ? (
+            <fieldset className="flex items-center gap-1 text-xs" aria-label="Ton der Antworten">
+              <span className="text-muted-foreground">Ton:</span>
+              {(["freundlich", "frech"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={tone === t}
+                  onClick={() => chooseTone(t)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5",
+                    tone === t ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
+                  )}
+                >
+                  {t === "freundlich" ? "freundlich" : "frech 😏"}
+                </button>
+              ))}
+            </fieldset>
+          ) : null}
           {turns.length === 0 ? (
             <fieldset className="flex min-w-0 flex-wrap gap-2" aria-label="Vorschläge">
               {SUGGESTIONS.map((s) => (
@@ -298,7 +307,11 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
                     className="w-fit max-w-[90%] rounded-2xl rounded-bl-sm border bg-background px-3 py-2 text-sm"
                     data-testid="ask-answer"
                   >
-                    {t.answer ?? <Loader2 className="size-4 animate-spin" aria-label="Antwort kommt" />}
+                    {t.answer !== null ? (
+                      <RichText text={t.answer} />
+                    ) : (
+                      <Loader2 className="size-4 animate-spin" aria-label="Antwort kommt" />
+                    )}
                   </p>
                 </li>
               ))}
