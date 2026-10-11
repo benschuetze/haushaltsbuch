@@ -1,6 +1,7 @@
 import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
+import { RichText } from "~/components/rich-text";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -123,7 +124,7 @@ export function Assistant({
                     : "mr-8 rounded-lg bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
                 }
               >
-                {m.content}
+                {m.role === "assistant" ? <RichText text={m.content} /> : m.content}
               </p>
             ))}
             {busy ? <p className="mr-8 text-sm text-muted-foreground">Sehe nach …</p> : null}
