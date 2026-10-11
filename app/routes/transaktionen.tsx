@@ -1,4 +1,5 @@
 import { eq, isNull } from "drizzle-orm";
+import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { data, Form, Link, useNavigation, useSearchParams } from "react-router";
 import { z } from "zod";
@@ -225,86 +226,100 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
         <p className="rounded-lg border p-4">Keine Buchungen für diesen Filter.</p>
       ) : (
         <ul className="divide-y rounded-lg border" aria-label="Buchungen">
-          {rows.map((tx) => (
-            <li
-              key={tx.id}
-              className="grid gap-2 p-3 sm:grid-cols-[6rem_1fr_auto] sm:items-start"
-              data-testid="transaction"
-            >
-              <span className="text-sm text-muted-foreground tabular-nums">{formatDate(tx.bookingDate)}</span>
-              <div className="min-w-0 space-y-1">
-                <p className="font-medium break-words" data-testid="counterparty">
-                  {tx.counterparty}
+          {rows.map((tx) => {
+            const category = categories.find((c) => c.id === tx.categoryId);
+            return (
+              <li key={tx.id} className="space-y-1.5 p-3" data-testid="transaction">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="min-w-0 font-medium break-words" data-testid="counterparty">
+                    {tx.counterparty}
+                  </p>
+                  <Amount cents={tx.amountCents} className="shrink-0 font-medium" />
+                </div>
+                {/* One line on phones: a long purpose made every booking half a screen tall. */}
+                <p className="line-clamp-1 text-sm text-muted-foreground break-words sm:line-clamp-none">
+                  <span className="tabular-nums">{formatDate(tx.bookingDate)}</span> · {tx.purpose}
                 </p>
-                <p className="text-sm text-muted-foreground break-words">{tx.purpose}</p>
-                <SourceBadges source={tx.categorySource} confidence={tx.aiConfidence} needsReview={tx.needsReview} />
-              </div>
-              <div className="flex flex-col gap-2 sm:items-end">
-                <Amount cents={tx.amountCents} className="font-medium" />
-                <Form
-                  method="post"
-                  className="flex flex-wrap gap-2"
-                  onSubmit={
-                    demo
-                      ? (e) => {
-                          e.preventDefault();
-                          const id = new FormData(e.currentTarget).get("categoryId");
-                          const name = categories.find((c) => c.id === id)?.name ?? "neu zugeordnet";
-                          setDemoNote(`„${tx.counterparty}“ wäre jetzt ${name}. Gespeichert wird hier nichts.`);
+                <div className="flex flex-wrap items-center gap-2">
+                  <SourceBadges source={tx.categorySource} confidence={tx.aiConfidence} needsReview={tx.needsReview} />
+                  {/* The category as a chip; the picker only opens on a tap instead of sitting in every row. */}
+                  <details className="group">
+                    <summary
+                      className="inline-flex cursor-pointer list-none items-center gap-1 rounded-full border-2 border-foreground px-2.5 py-0.5 text-xs font-medium hover:bg-accent [&::-webkit-details-marker]:hidden"
+                      data-testid="category-chip"
+                    >
+                      {category?.name ?? "Kategorie wählen"}
+                      <Pencil className="size-3" aria-hidden="true" />
+                      <span className="sr-only"> ändern</span>
+                    </summary>
+                    <div className="mt-2">
+                      <Form
+                        method="post"
+                        className="flex flex-wrap gap-2"
+                        onSubmit={
+                          demo
+                            ? (e) => {
+                                e.preventDefault();
+                                const id = new FormData(e.currentTarget).get("categoryId");
+                                const name = categories.find((c) => c.id === id)?.name ?? "neu zugeordnet";
+                                setDemoNote(`„${tx.counterparty}“ wäre jetzt ${name}. Gespeichert wird hier nichts.`);
+                              }
+                            : undefined
                         }
-                      : undefined
-                  }
-                >
-                  <input type="hidden" name="intent" value="setCategory" />
-                  <input type="hidden" name="transactionId" value={tx.id} />
-                  <label className="sr-only" htmlFor={`cat-${tx.id}`}>
-                    Kategorie für {tx.counterparty} am {formatDate(tx.bookingDate)}
-                  </label>
-                  <select
-                    id={`cat-${tx.id}`}
-                    name="categoryId"
-                    defaultValue={tx.categoryId ?? ""}
-                    key={tx.categoryId ?? "none"}
-                    required
-                    className={selectClass}
-                  >
-                    <option value="" disabled>
-                      Kategorie wählen
-                    </option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button type="submit" size="sm" variant="outline" disabled={busy}>
-                    Ändern
-                  </Button>
-                </Form>
-                {tx.needsReview && tx.categoryId ? (
-                  <Form
-                    method="post"
-                    onSubmit={
-                      demo
-                        ? (e) => {
-                            e.preventDefault();
-                            setDemoNote(
-                              `„${tx.counterparty}“ wäre jetzt bestätigt und käme nicht mehr in „prüfen“. Gespeichert wird hier nichts.`,
-                            );
-                          }
-                        : undefined
-                    }
-                  >
-                    <input type="hidden" name="intent" value="confirm" />
-                    <input type="hidden" name="transactionId" value={tx.id} />
-                    <Button type="submit" size="sm" disabled={busy}>
-                      Bestätigen
-                    </Button>
-                  </Form>
-                ) : null}
-              </div>
-            </li>
-          ))}
+                      >
+                        <input type="hidden" name="intent" value="setCategory" />
+                        <input type="hidden" name="transactionId" value={tx.id} />
+                        <label className="sr-only" htmlFor={`cat-${tx.id}`}>
+                          Kategorie für {tx.counterparty} am {formatDate(tx.bookingDate)}
+                        </label>
+                        <select
+                          id={`cat-${tx.id}`}
+                          name="categoryId"
+                          defaultValue={tx.categoryId ?? ""}
+                          key={tx.categoryId ?? "none"}
+                          required
+                          className={selectClass}
+                        >
+                          <option value="" disabled>
+                            Kategorie wählen
+                          </option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button type="submit" size="sm" variant="outline" disabled={busy}>
+                          Ändern
+                        </Button>
+                      </Form>
+                    </div>
+                  </details>
+                  {tx.needsReview && tx.categoryId ? (
+                    <Form
+                      method="post"
+                      onSubmit={
+                        demo
+                          ? (e) => {
+                              e.preventDefault();
+                              setDemoNote(
+                                `„${tx.counterparty}“ wäre jetzt bestätigt und käme nicht mehr in „prüfen“. Gespeichert wird hier nichts.`,
+                              );
+                            }
+                          : undefined
+                      }
+                    >
+                      <input type="hidden" name="intent" value="confirm" />
+                      <input type="hidden" name="transactionId" value={tx.id} />
+                      <Button type="submit" size="sm" disabled={busy}>
+                        Bestätigen
+                      </Button>
+                    </Form>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       {rows.length < total && rows.length < 1000 ? (
