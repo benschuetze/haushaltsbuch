@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("import", "routes/import.tsx"),
   route("transaktionen", "routes/transaktionen.tsx"),
+  route("buchungen", "routes/buchungen.ts"),
   route("monat/:month", "routes/monat.tsx"),
   route("regeln", "routes/regeln.tsx"),
   route("konten", "routes/konten.tsx"),

@@ -73,3 +73,17 @@ test("Navigation lädt die Zielseite schon beim Zeigen vor, Hinweise aber nicht 
   }
   await expect(page.locator('link[rel="prefetch"][href*="/hinweise"]')).toHaveCount(0);
 });
+
+test("unbekannte Adresse: verständliche 404 statt rohem Fehler, mit Weg zurück", async ({ page }) => {
+  const response = await page.goto("/gibt-es-nicht");
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Seite nicht gefunden" })).toBeVisible();
+  await expect(page.getByText(/No route matches/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Zur Übersicht" })).toBeVisible();
+});
+
+test("/buchungen führt zur Buchungsliste, wie der Menüpunkt heißt", async ({ page }) => {
+  await page.goto("/buchungen?monat=2026-09");
+  await expect(page).toHaveURL(/\/transaktionen\?monat=2026-09$/);
+  await expect(page.getByRole("heading", { name: "Buchungen" })).toBeVisible();
+});
