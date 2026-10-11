@@ -7,7 +7,7 @@ import type { Db } from "~/lib/db/client";
 import { budgets, categories, insights, meta, subscriptionCancellations, transactions } from "~/lib/db/schema";
 import { currentMonth } from "~/lib/queries";
 import { cancellationStatus } from "~/lib/subscriptions/status";
-import { computeInsights } from "./compute";
+import { computeInsights, projectSpend } from "./compute";
 import { detectRecurring, merchantKey } from "./recurring";
 
 async function loadBookings(db: Db) {
@@ -146,6 +146,8 @@ export async function budgetStatus(db: Db, now = new Date()): Promise<{ month: s
     if (!b.bookingDate.startsWith(ref.month) || !b.categoryId || b.categoryKind === "transfer") continue;
     spent.set(b.categoryId, (spent.get(b.categoryId) ?? 0) - b.amountCents);
   }
+  const reference = bookings.reduce((max, b) => (b.bookingDate > max ? b.bookingDate : max), `${ref.month}-01`);
+  const recurring = detectRecurring(bookings, reference);
   return {
     month: ref.month,
     items: budgetRows.map((b) => {
@@ -155,7 +157,17 @@ export async function budgetStatus(db: Db, now = new Date()): Promise<{ month: s
         categoryName: b.categoryName,
         budgetCents: b.amountCents,
         spentCents: used,
-        projectedCents: ref.dayOfMonth ? Math.round((used / ref.dayOfMonth) * ref.daysInMonth) : null,
+        projectedCents: ref.dayOfMonth
+          ? projectSpend({
+              usedCents: used,
+              categoryName: b.categoryName,
+              month: ref.month,
+              dayOfMonth: ref.dayOfMonth,
+              daysInMonth: ref.daysInMonth,
+              bookings,
+              recurring,
+            })
+          : null,
       };
     }),
   };

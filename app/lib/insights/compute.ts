@@ -1,7 +1,7 @@
 import { formatDate } from "~/lib/format";
 import { formatCents } from "~/lib/money";
 import { type Cancellation, cancellationStatus } from "~/lib/subscriptions/status";
-import { type Booking, detectRecurring, merchantKey, type Recurring, serviceGroupOf } from "./recurring";
+import { type Booking, detectRecurring, merchantKey, merchantOf, type Recurring, serviceGroupOf } from "./recurring";
 
 export type BudgetInput = { categoryId: string; categoryName: string; amountCents: number };
 
@@ -59,11 +59,47 @@ function spentByCategory(bookings: InsightInput["bookings"], month: string): Map
   return map;
 }
 
+/**
+ * Where a category's month will end. Fixed monthly payments (stable subscriptions, standing orders) count once
+ * with their monthly amount; only the rest is extrapolated. Linear for everything made three subscriptions paid
+ * by the 11th look like 95 € by month's end.
+ */
+export function projectSpend(input: {
+  usedCents: number;
+  categoryName: string;
+  month: string;
+  dayOfMonth: number;
+  daysInMonth: number;
+  bookings: Pick<Booking, "bookingDate" | "amountCents" | "counterparty" | "purpose" | "categoryName">[];
+  recurring: Recurring[];
+}): number {
+  const fixed = input.recurring.filter(
+    (r) => r.active && r.stable && r.cadence === "monthly" && r.categoryName === input.categoryName,
+  );
+  const fixedKeys = new Set(fixed.map((r) => merchantKey(r.merchant)));
+  const fixedMonthlyCents = fixed.reduce((s, r) => s + Math.abs(r.lastAmountCents), 0);
+  const paidFixedCents = input.bookings
+    .filter(
+      (b) =>
+        b.bookingDate.startsWith(input.month) &&
+        b.amountCents < 0 &&
+        b.categoryName === input.categoryName &&
+        fixedKeys.has(merchantKey(merchantOf(b))),
+    )
+    .reduce((s, b) => s - b.amountCents, 0);
+  const variableCents = Math.max(0, input.usedCents - paidFixedCents);
+  return Math.round(
+    Math.max(fixedMonthlyCents, paidFixedCents) + (variableCents / input.dayOfMonth) * input.daysInMonth,
+  );
+}
+
 /** Pure: everything is derived from bookings and budgets, so it can be tested without a database. */
 export function computeInsights(input: InsightInput, recurring?: Recurring[]): InsightDraft[] {
   const { month } = input;
   const drafts: InsightDraft[] = [];
   const spent = spentByCategory(input.bookings, month);
+  const reference = input.bookings.reduce((max, b) => (b.bookingDate > max ? b.bookingDate : max), `${month}-01`);
+  const all = recurring ?? detectRecurring(input.bookings, reference);
 
   for (const budget of input.budgets) {
     const used = spent.get(budget.categoryId) ?? 0;
@@ -78,7 +114,15 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
         month,
       });
     } else if (input.dayOfMonth !== null && input.dayOfMonth >= 7) {
-      const projected = Math.round((used / input.dayOfMonth) * input.daysInMonth);
+      const projected = projectSpend({
+        usedCents: used,
+        categoryName: budget.categoryName,
+        month,
+        dayOfMonth: input.dayOfMonth,
+        daysInMonth: input.daysInMonth,
+        bookings: input.bookings,
+        recurring: all,
+      });
       if (projected > budget.amountCents * 1.05) {
         drafts.push({
           key: `budget:${budget.categoryId}:${month}`,
@@ -92,8 +136,6 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
     }
   }
 
-  const reference = input.bookings.reduce((max, b) => (b.bookingDate > max ? b.bookingDate : max), `${month}-01`);
-  const all = recurring ?? detectRecurring(input.bookings, reference);
   const today = input.today ?? reference;
 
   // Cancelled ones leave the subscription hints; a cancellation that did not stop the charges comes back loud.

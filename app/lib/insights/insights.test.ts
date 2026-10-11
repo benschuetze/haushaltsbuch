@@ -99,6 +99,37 @@ describe("computeInsights", () => {
     );
   });
 
+  it("feste Abos werden nicht hochgerechnet: 3 Abos am 11. sind schon der ganze Monat", () => {
+    // Three monthly subscriptions, all paid by the 11th: 10,99 + 13,99 + 9,99 = 34,97 €.
+    // Linear would say 34,97 / 11 × 30 = 95,37 € and warn; really the month ends at 34,97 €.
+    const abos = [
+      ...monthly("Spotify AB", [-1099, -1099, -1099, -1099], "Abos & Software", 3, "05"),
+      ...monthly("Netflix", [-1399, -1399, -1399, -1399], "Abos & Software", 3, "07"),
+      ...monthly("Disney Plus", [-999, -999, -999, -999], "Abos & Software", 3, "09"),
+    ];
+    const drafts = computeInsights({
+      ...base,
+      dayOfMonth: 11,
+      bookings: abos,
+      budgets: [{ categoryId: "id-Abos & Software", categoryName: "Abos & Software", amountCents: 5000 }],
+    });
+    expect(drafts.find((d) => d.kind === "budget_warning")).toBeUndefined();
+  });
+
+  it("feste Kosten plus hochgerechneter Rest: der variable Teil zählt weiter", () => {
+    // Fixed 10,99 € (paid) + variable 60 € by the 10th → 10,99 + 60 / 10 × 30 = 190,99 € over a 150 € budget.
+    const drafts = computeInsights({
+      ...base,
+      dayOfMonth: 10,
+      bookings: [
+        ...monthly("Spotify AB", [-1099, -1099, -1099, -1099], "Hobbys", 3, "05"),
+        b("2026-06-08", -6000, "Thomann", "Hobbys"),
+      ],
+      budgets: [{ categoryId: "id-Hobbys", categoryName: "Hobbys", amountCents: 15000 }],
+    });
+    expect(drafts.find((d) => d.kind === "budget_warning")?.body).toContain("etwa 190,99 €");
+  });
+
   it("Hochrechnung warnt im laufenden Monat, bevor das Budget gerissen ist", () => {
     const drafts = computeInsights({
       ...base,

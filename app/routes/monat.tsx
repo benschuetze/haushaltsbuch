@@ -136,8 +136,9 @@ export default function Monat({ loaderData }: Route.ComponentProps) {
           {transfers.length > 0 ? (
             <section className="space-y-1 text-sm text-muted-foreground">
               <h2 className="font-semibold">Umbuchungen (nicht in Ausgaben enthalten)</h2>
-              <p>
-                <Amount cents={summary.transferCents} />
+              <p data-testid="transfers">
+                {countLabel(summary.transferCount, "Umbuchung", "Umbuchungen")} zwischen eigenen Konten ·{" "}
+                {formatCents(summary.transferVolumeCents)} bewegt
               </p>
             </section>
           ) : null}
