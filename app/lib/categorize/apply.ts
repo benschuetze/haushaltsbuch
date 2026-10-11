@@ -1,5 +1,6 @@
 import type { LanguageModel } from "ai";
 import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { categories, rules, transactions } from "~/lib/db/schema";
 import { linkOwnTransfers } from "~/lib/import/transfers";
@@ -33,6 +34,12 @@ async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void
 }
 
 export type CategorizeStats = { byRule: number; byAi: number; needsReview: number };
+
+/**
+ * Bookings per day that may go to the model (40 calls of 25). A normal month is a few hundred; a 4 MB file of
+ * old history could be tens of thousands and would otherwise drain the credit. The rest waits in "prüfen".
+ */
+export const LLM_DAILY_ITEMS = 1000;
 
 /** Rules first, then the model for whatever is left. Without a model the rest goes to review instead of a guess. */
 export async function categorizeTransactions(
@@ -76,11 +83,12 @@ export async function categorizeTransactions(
   }
 
   if (forLlm.length > 0) {
+    const granted = model ? await takeFromDailyBudget(db, "llm_items", forLlm.length, LLM_DAILY_ITEMS) : 0;
     const verdicts = model
       ? await categorizeWithLlm(
           model,
           allCategories,
-          forLlm.map((tx) => ({
+          forLlm.slice(0, granted).map((tx) => ({
             id: tx.id,
             counterparty: tx.counterparty,
             purpose: tx.purpose,

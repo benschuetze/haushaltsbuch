@@ -17,9 +17,10 @@ import {
   type RuleProposal,
 } from "~/lib/categorize/rule-agent";
 import { ruleInputSchema } from "~/lib/categorize/rules";
+import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { getDb } from "~/lib/db/client";
-import { meta as metaTable, rules, transactions } from "~/lib/db/schema";
+import { rules, transactions } from "~/lib/db/schema";
 import { countLabel, formatDate } from "~/lib/format";
 import { refreshInsights } from "~/lib/insights";
 import { listCategories, listRules } from "~/lib/queries";
@@ -42,15 +43,7 @@ type ActionData =
 const AGENT_DAILY_LIMIT = 40;
 
 async function withinAgentLimit(db: Db, now = new Date()): Promise<boolean> {
-  const key = `rule_agent_calls_${now.toISOString().slice(0, 10)}`;
-  const [row] = await db.select().from(metaTable).where(eq(metaTable.key, key));
-  const used = Number(row?.value ?? 0);
-  if (used >= AGENT_DAILY_LIMIT) return false;
-  await db
-    .insert(metaTable)
-    .values({ key, value: String(used + 1) })
-    .onConflictDoUpdate({ target: metaTable.key, set: { value: String(used + 1) } });
-  return true;
+  return (await takeFromDailyBudget(db, "rule_agent_calls", 1, AGENT_DAILY_LIMIT, now)) === 1;
 }
 
 export async function action(args: Route.ActionArgs) {
