@@ -51,3 +51,17 @@ test("Handy: der Assistent ist ein Vollbild, Seite und Tab-Leiste liegen nicht d
   await panel.getByRole("button", { name: "Assistent schließen" }).click();
   await expect(panel).toHaveCount(0);
 });
+
+test("Handy: Beträge passen in die Kacheln, auch vierstellige mit Minus", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "betrifft nur Handys");
+  await importDemo(page);
+  // Smaller than the iPhone 13 profile: many Android phones and the iPhone SE/mini are 360–375 px wide.
+  await page.setViewportSize({ width: 360, height: 780 });
+  for (const path of ["/", "/monat/2026-09"]) {
+    await page.goto(path);
+    const overflowing = await page
+      .locator("dd")
+      .evaluateAll((dds) => dds.filter((dd) => dd.scrollWidth > dd.clientWidth + 1).map((dd) => dd.textContent));
+    expect(overflowing, path).toEqual([]);
+  }
+});

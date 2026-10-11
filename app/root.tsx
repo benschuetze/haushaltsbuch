@@ -3,6 +3,7 @@ import {
   data,
   Form,
   isRouteErrorResponse,
+  Link,
   Links,
   Meta,
   NavLink,
@@ -191,11 +192,12 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   if (isRouteErrorResponse(error)) {
     title = error.status === 404 ? "Seite nicht gefunden" : `Fehler ${error.status}`;
     // A loader that throws with its own message knows better than the generic text.
+    // A loader's own message beats the generic text; React Router's internal "Error: No route matches …" does not.
     details =
-      typeof error.data === "string" && error.data
+      typeof error.data === "string" && error.data && !error.data.startsWith("Error:")
         ? error.data
         : error.status === 404
-          ? "Diese Seite gibt es nicht."
+          ? "Diese Seite gibt es nicht. Vielleicht ein alter Link?"
           : error.statusText;
   } else if (import.meta.env.DEV && error instanceof Error) {
     details = error.message;
@@ -206,6 +208,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     <div className="space-y-3">
       <h1 className="text-2xl font-semibold">{title}</h1>
       <p>{details}</p>
+      <p>
+        <Link to="/" className="underline underline-offset-4">
+          Zur Übersicht
+        </Link>
+      </p>
       {stack ? (
         <pre className="overflow-x-auto rounded-md bg-muted p-4 text-xs">
           <code>{stack}</code>
