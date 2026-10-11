@@ -14,9 +14,9 @@ export function CategoryBars({ items, label }: { items: CategoryTotal[]; label: 
             </span>
             <Amount cents={item.cents} />
           </div>
-          <div className="h-2 rounded-full bg-muted" aria-hidden="true">
+          <div className="h-3 border-2 border-foreground" aria-hidden="true">
             <div
-              className="h-2 rounded-full"
+              className="h-full"
               style={{ width: `${(Math.abs(item.cents) / max) * 100}%`, backgroundColor: item.color }}
             />
           </div>

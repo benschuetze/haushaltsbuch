@@ -14,7 +14,8 @@
 
 /*
  * "E-Ink-Haushaltsbuch": paper and ink, four grey levels like an e-paper display, ruled lines like a ledger,
- * pixel labels, and one signal yellow used only as a highlighter on the number that matters.
+ * pixel labels, and one accent: ballpoint blue, the ink a ledger is kept in by hand. The number that matters
+ * is written in it and closed with a double underline, the way bookkeeping closes a sum.
  */
 
 @theme {
@@ -31,11 +32,12 @@
   --color-emerald-800: #141412;
   --color-emerald-900: #141412;
   --color-emerald-950: #141412;
-  --color-amber-50: #fbf6c9;
-  --color-amber-100: #f6ec7a;
-  --color-amber-300: #e3d200;
-  --color-amber-500: #c9b800;
-  --color-amber-950: #141412;
+  /* Notes and mock labels: pale blue paper with pen-blue writing instead of a yellow highlighter. */
+  --color-amber-50: #eef1fa;
+  --color-amber-100: #dfe5f6;
+  --color-amber-300: #8fa1d6;
+  --color-amber-500: #3a57b8;
+  --color-amber-950: #10265f;
   --color-rose-600: #8f1d17;
   --color-rose-800: #5e120e;
   --color-red-100: #f1d9d3;
@@ -44,7 +46,7 @@
   --color-red-900: #5e120e;
   --color-slate-800: #2b2a26;
   --color-slate-950: #141412;
-  --color-marker: #f2e600;
+  --color-pen: #1c3fae;
 }
 
 @theme inline {
@@ -125,6 +127,7 @@
 
 /* Night mode: the same display, inverted. */
 .dark {
+  --color-pen: #9db2ff;
   --background: #191815;
   --foreground: #ece8dd;
   --card: #201f1b;
@@ -184,15 +187,14 @@
 }
 
 @layer utilities {
-  /* Highlighter stroke behind the one number that matters. */
-  .marker {
-    background-image: linear-gradient(
-      transparent 55%,
-      var(--color-marker) 55%,
-      var(--color-marker) 92%,
-      transparent 92%
-    );
-    padding-inline: 0.1em;
+  /* A closed sum: written in pen, double underline. */
+  .summe {
+    display: inline-block;
+    line-height: 1.05;
+    color: var(--color-pen);
+    border-bottom: 0.12em double var(--color-pen);
+    padding-bottom: 0.04em;
+    margin-bottom: 0.15em;
   }
   /* Small caps labels in pixel type. */
   .pixel {
