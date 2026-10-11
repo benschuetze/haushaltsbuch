@@ -76,3 +76,28 @@ describe("Buchungsliste in Seiten", () => {
     expect(await countTransactions(db, { month: "2026-09" })).toBe(expected.months["2026-09"].rows);
   });
 });
+
+describe("Vormonat im gleichen Zeitraum", () => {
+  it("Monatssumme nur bis zu einem Tag: zählt genau die Buchungen 1. bis N.", async () => {
+    const { db } = await createTestDb();
+    const [account] = await db.select().from(accounts);
+    if (!account) throw new Error("Demo-Konto fehlt");
+    await importCsv(db, {
+      accountId: account.id,
+      filename: "demo.csv",
+      bytes: new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv")),
+      model: createMockModel(),
+    });
+    // Independent of the app: straight from the file, rows of 1.–11. September.
+    const rows = readFileSync("beispieldaten/demo-umsaetze.csv", "utf8")
+      .split("\n")
+      .map((l) => l.split(";"))
+      .filter((c) => /^(0[1-9]|1[01])\.09\.2026$/.test(c[0] ?? ""));
+    const partial = await monthSummary(db, "2026-09", 11);
+    expect(partial.transactionCount).toBe(rows.length);
+    const full = await monthSummary(db, "2026-09");
+    expect(full.transactionCount).toBe(expected.months["2026-09"].rows);
+    // The 31st against a 30-day month: the whole month, no invalid date.
+    expect((await monthSummary(db, "2026-09", 31)).transactionCount).toBe(full.transactionCount);
+  });
+});

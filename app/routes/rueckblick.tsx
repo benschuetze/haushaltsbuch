@@ -7,7 +7,7 @@ import { monthStory } from "~/lib/budget/story";
 import { getDb } from "~/lib/db/client";
 import { categories, savingsDeposits, transactions } from "~/lib/db/schema";
 import { formatMonth } from "~/lib/format";
-import { monthFlows, recurringPayments } from "~/lib/insights";
+import { monthFlows, recurringPayments, todayInGermany } from "~/lib/insights";
 import { MONTH_PATTERN, monthRange, monthSummary, monthsWithData } from "~/lib/queries";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/rueckblick";
@@ -32,7 +32,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const [summary, previousSummary, biggestRows, recurring, flows, deposits] = await Promise.all([
     monthSummary(db, month),
-    previous ? monthSummary(db, previous) : null,
+    // The running month (only when asked for) is compared with the same days of the month before.
+    previous ? monthSummary(db, previous, month === current ? Number(todayInGermany().slice(8, 10)) : undefined) : null,
     db
       .select({
         counterparty: transactions.counterparty,
