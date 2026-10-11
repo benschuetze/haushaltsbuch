@@ -1,7 +1,9 @@
 import { eq, isNull } from "drizzle-orm";
+import { useState } from "react";
 import { data, Form, Link, useNavigation, useSearchParams } from "react-router";
 import { z } from "zod";
 import { Amount } from "~/components/amount";
+import { DemoNotice } from "~/components/demo-notice";
 import { SourceBadges } from "~/components/source-badge";
 import { Button } from "~/components/ui/button";
 import { isDemo } from "~/lib/auth.server";
@@ -113,6 +115,8 @@ const selectClass = "h-9 rounded-md border border-input bg-background px-2 text-
 export default function Transaktionen({ loaderData, actionData }: Route.ComponentProps) {
   const { rows, total, categories, months, filter, demo } = loaderData;
   const [params] = useSearchParams();
+  // The demo cannot save; trying it should still answer, visibly, wherever on the page the tap was.
+  const [demoNote, setDemoNote] = useState<string | null>(null);
   const more = new URLSearchParams(params);
   more.set("anzahl", String(Math.min(rows.length + PAGE_SIZE, 1000)));
   const busy = useNavigation().state !== "idle";
@@ -120,6 +124,7 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
 
   return (
     <div className="space-y-6">
+      {demoNote ? <DemoNotice key={demoNote} message={demoNote} onClose={() => setDemoNote(null)} /> : null}
       <h1 className="text-2xl font-semibold">Buchungen</h1>
 
       <Form method="get" className="flex flex-wrap items-end gap-3" aria-label="Buchungen filtern">
@@ -236,7 +241,20 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
                 <Amount cents={tx.amountCents} className="font-medium" />
-                <Form method="post" className="flex flex-wrap gap-2">
+                <Form
+                  method="post"
+                  className="flex flex-wrap gap-2"
+                  onSubmit={
+                    demo
+                      ? (e) => {
+                          e.preventDefault();
+                          const id = new FormData(e.currentTarget).get("categoryId");
+                          const name = categories.find((c) => c.id === id)?.name ?? "neu zugeordnet";
+                          setDemoNote(`„${tx.counterparty}“ wäre jetzt ${name}. Gespeichert wird hier nichts.`);
+                        }
+                      : undefined
+                  }
+                >
                   <input type="hidden" name="intent" value="setCategory" />
                   <input type="hidden" name="transactionId" value={tx.id} />
                   <label className="sr-only" htmlFor={`cat-${tx.id}`}>
@@ -248,7 +266,6 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
                     defaultValue={tx.categoryId ?? ""}
                     key={tx.categoryId ?? "none"}
                     required
-                    disabled={demo}
                     className={selectClass}
                   >
                     <option value="" disabled>
@@ -260,15 +277,27 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
                       </option>
                     ))}
                   </select>
-                  <Button type="submit" size="sm" variant="outline" disabled={demo || busy}>
+                  <Button type="submit" size="sm" variant="outline" disabled={busy}>
                     Ändern
                   </Button>
                 </Form>
                 {tx.needsReview && tx.categoryId ? (
-                  <Form method="post">
+                  <Form
+                    method="post"
+                    onSubmit={
+                      demo
+                        ? (e) => {
+                            e.preventDefault();
+                            setDemoNote(
+                              `„${tx.counterparty}“ wäre jetzt bestätigt und käme nicht mehr in „prüfen“. Gespeichert wird hier nichts.`,
+                            );
+                          }
+                        : undefined
+                    }
+                  >
                     <input type="hidden" name="intent" value="confirm" />
                     <input type="hidden" name="transactionId" value={tx.id} />
-                    <Button type="submit" size="sm" disabled={demo || busy}>
+                    <Button type="submit" size="sm" disabled={busy}>
                       Bestätigen
                     </Button>
                   </Form>

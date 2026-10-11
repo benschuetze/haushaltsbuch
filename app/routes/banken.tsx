@@ -276,12 +276,7 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
           <h2 id="connect" className="text-lg font-semibold">
             Bank hinzufügen
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {listError ??
-              (configured
-                ? "„Live“ verbindet echt mit der Bank. „Mock“ zeigt den Ablauf mit erfundenen Buchungen; echte Umsätze dieser Banken kommen per Datei."
-                : "„Mock“ zeigt den Ablauf mit erfundenen Buchungen; echte Umsätze kommen per Datei.")}
-          </p>
+          {listError ? <p className="text-sm text-muted-foreground">{listError}</p> : null}
         </div>
         <BankTiles tiles={tiles} country={country} demo={demo} />
       </section>
