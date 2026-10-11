@@ -9,7 +9,9 @@ function cents(text: string): number {
   return sign * Math.round(Number(text.replace(/[^\d,]/g, "").replace(",", ".")) * 100);
 }
 
-test("Ziel anlegen: Monatsrate steht da, „Heute drin“ wird kleiner, Einzahlen füllt den Balken", async ({ page }) => {
+test("Ziel anlegen: Monatsrate steht da, das Tagesbudget wird kleiner, Einzahlen füllt den Balken", async ({
+  page,
+}) => {
   await importDemo(page);
   // The free sum, not today's share: with the test data's dates the share can already be 0 €.
   const free = async () => {

@@ -43,45 +43,6 @@ function Line({ label, cents }: { label: string; cents: number }) {
   );
 }
 
-const DAY_MS = 86_400_000;
-
-/**
- * Time against money: how much of the pay period is over, and how much of the spendable money is gone.
- * When money runs ahead of time, it shows before any number has to be read.
- */
-function PaceBars({ today }: { today: TodayView }) {
-  const total = Math.max(1, (Date.parse(today.periodEnd) - Date.parse(today.periodStart)) / DAY_MS + 1);
-  const passed = Math.min(total, (Date.parse(today.today) - Date.parse(today.periodStart)) / DAY_MS + 1);
-  const time = Math.round((passed / total) * 100);
-  const spendable = today.spentCents + Math.max(0, today.freeCents);
-  const money = spendable > 0 ? Math.min(100, Math.round((today.spentCents / spendable) * 100)) : 100;
-  const ahead = money > time + 10;
-  const bar = (label: string, value: number, fill: string, testId: string) => (
-    <div className="flex items-center gap-2">
-      <span className="pixel w-10 text-muted-foreground">{label}</span>
-      <div
-        role="progressbar"
-        aria-label={`${label}: ${value} Prozent`}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={value}
-        className="h-3 flex-1 border-2 border-foreground"
-        data-testid={testId}
-      >
-        <div className={cn("h-full", fill)} style={{ width: `${value}%` }} />
-      </div>
-      <span className="w-10 text-right font-mono text-xs">{value} %</span>
-    </div>
-  );
-  return (
-    <div className="space-y-1.5 pt-1">
-      {bar("Zeit", time, "dither text-foreground", "pace-time")}
-      {bar("Geld", money, ahead ? "bg-red-700" : "bg-foreground", "pace-money")}
-      {ahead ? <p className="text-xs font-medium text-red-700">Das Geld geht schneller weg als die Zeit.</p> : null}
-    </div>
-  );
-}
-
 type Recognition = {
   lang: string;
   interimResults: boolean;
@@ -208,20 +169,19 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
     <section aria-labelledby="today-title" className="space-y-5 rounded border-2 border-foreground bg-card p-5">
       <div className="space-y-2">
         <h2 id="today-title" className="pixel text-muted-foreground">
-          Heute drin
+          Tagesbudget
         </h2>
         <p
           className={cn("font-mono text-5xl font-bold tracking-tight", overdrawn ? "text-red-700" : "text-foreground")}
           data-testid="today-amount"
         >
-          <span className={overdrawn ? "" : "marker"}>{formatCents(today.perDayCents)}</span>
+          <span className={overdrawn ? "" : "summe"}>{formatCents(today.perDayCents)}</span>
         </p>
         <p className="text-sm" data-testid="today-context">
           {overdrawn
             ? `Bis ${today.nextIncome ? `zum Gehalt am ${longDate(today.nextIncome.date)}` : "Monatsende"} fehlen ${formatCents(-today.freeCents)}.`
             : `${formatCents(today.freeCents)} frei bis ${today.nextIncome ? `zum Gehalt am ${longDate(today.nextIncome.date)}` : "Monatsende"} · noch ${today.daysLeft === 1 ? "1 Tag" : `${today.daysLeft} Tage`}`}
         </p>
-        <PaceBars today={today} />
         {today.missingIncome ? (
           <p className="border-2 border-dashed border-foreground px-3 py-2 text-sm" data-testid="missing-income">
             Das Gehalt vom {longDate(today.missingIncome.date)} ist noch nicht in den Buchungen. Die Zahl rechnet ohne;

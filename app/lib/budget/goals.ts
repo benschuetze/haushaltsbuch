@@ -1,6 +1,6 @@
 /**
  * Savings goals: how much to put aside per month, and what of that is still open in the current pay period.
- * The open part is reserved in "Heute drin", so the money is gone before it can be spent.
+ * The open part is reserved in the daily budget, so the money is gone before it can be spent.
  */
 export type GoalInput = {
   id: string;
@@ -22,7 +22,7 @@ export type GoalStatus = {
   perMonthCents: number;
   monthsLeft: number | null;
   depositedThisPeriodCents: number;
-  /** What this pay period still has to put aside; reserved in "Heute drin". */
+  /** What this pay period still has to put aside; reserved in the daily budget. */
   stillToReserveCents: number;
   done: boolean;
 };

@@ -51,15 +51,15 @@ function phrase(toolName: string, value: Row): string {
   if (toolName === "heute_verfuegbar") {
     const gehalt = value.naechstesGehalt as Row | null;
     const missing = value.gehaltNochNichtGebucht as Row | null;
-    return `Heute sind ${value.heuteDrin} drin. Bis ${gehalt ? `zum Gehalt am ${day(gehalt.am)}` : "Monatsende"} bleiben ${value.freiBisGehalt} für ${value.tageBisGehalt} Tage, Fixkosten und Sparrate schon abgezogen.${missing ? ` Das Gehalt vom ${day(missing.erwartetAm)} ist noch nicht gebucht, deshalb rechne ich vorsichtig ohne.` : ""}`;
+    return `Dein Tagesbudget heute: ${value.tagesbudget}. Bis ${gehalt ? `zum Gehalt am ${day(gehalt.am)}` : "Monatsende"} bleiben ${value.freiBisGehalt} für ${value.tageBisGehalt} Tage, Fixkosten und Sparrate schon abgezogen.${missing ? ` Das Gehalt vom ${day(missing.erwartetAm)} ist noch nicht gebucht, deshalb rechne ich vorsichtig ohne.` : ""}`;
   }
   if (toolName === "leisten") {
     const until = value.naechstesGehaltAm ? `bis zum Gehalt am ${day(value.naechstesGehaltAm)}` : "bis Monatsende";
     switch (value.urteil) {
       case "locker":
-        return `Ja, locker. ${value.betrag} passen in die ${value.heuteDrinVorher}, die heute drin sind.`;
+        return `Ja, locker. ${value.betrag} passen in dein Tagesbudget von ${value.tagesbudgetVorher}.`;
       case "geht":
-        return `Ja, geht. Danach bleiben ${until} noch ${value.proTagDanach} pro Tag statt ${value.heuteDrinVorher}.`;
+        return `Ja, geht. Danach bleiben ${until} noch ${value.proTagDanach} pro Tag statt ${value.tagesbudgetVorher}.`;
       case "knapp":
         return `Knapp. Danach bleiben ${until} nur noch ${value.proTagDanach} pro Tag.`;
       default:

@@ -51,5 +51,5 @@ test("Frage sprechen: erkannter Text steht im Feld und wird beantwortet", async 
   await page.goto("/");
   await page.getByRole("button", { name: "Frage sprechen" }).click();
   await expect(page.getByTestId("ask-turns")).toContainText("Wie viel kann ich heute ausgeben");
-  await expect(page.getByTestId("ask-answer")).toContainText("drin");
+  await expect(page.getByTestId("ask-answer")).toContainText("Tagesbudget");
 });

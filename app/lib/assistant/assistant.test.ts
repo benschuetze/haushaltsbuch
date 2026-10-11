@@ -140,7 +140,7 @@ describe("Frag einfach: Geld für heute", () => {
     const reply = await askOn("Wie viel kann ich heute ausgeben?");
     expect(reply.tools).toEqual(["heute_verfuegbar"]);
     const a = await spendingToday(db, september10);
-    expect(reply.answer).toContain(`Heute sind ${formatCents(a.perDayCents)} drin`);
+    expect(reply.answer).toContain(`Dein Tagesbudget heute: ${formatCents(a.perDayCents)}.`);
     expect(reply.answer).toContain("Bis zum Gehalt am 1. Oktober");
   });
 

@@ -112,7 +112,7 @@ function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }
         </p>
       </div>
       {week.streakWeeks > 0 ? (
-        <p className="pixel border-2 border-foreground bg-marker px-2 py-1 text-foreground" data-testid="week-streak">
+        <p className="pixel border-2 border-pen px-2 py-1 text-pen" data-testid="week-streak">
           Serie: {week.streakWeeks === 1 ? "1 Woche" : `${week.streakWeeks} Wochen`} unter Schnitt
         </p>
       ) : null}

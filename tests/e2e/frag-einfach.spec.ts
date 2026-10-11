@@ -25,7 +25,7 @@ test("eigene Frage tippen, Nachfrage behält den Zusammenhang", async ({ page })
   const box = page.getByLabel("Frage an dein Haushaltsbuch");
   await box.fill("Wie viel kann ich heute ausgeben?");
   await box.press("Enter");
-  await expect(page.getByTestId("ask-answer").first()).toContainText("drin");
+  await expect(page.getByTestId("ask-answer").first()).toContainText("Tagesbudget");
   await box.fill("Kann ich mir 25 € für Pizza leisten?");
   await page.getByRole("button", { name: "Fragen" }).click();
   await expect(page.getByTestId("ask-answer")).toHaveCount(2);

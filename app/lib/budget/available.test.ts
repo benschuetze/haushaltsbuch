@@ -35,7 +35,7 @@ HOUSEHOLD.push(
   b("2026-10-08", "Lidl", -4500, "expense", "Lebensmittel"),
 );
 
-describe("Wie viel ist heute drin?", () => {
+describe("Tagesbudget: wie viel ist heute drin?", () => {
   const a = availableToSpend(HOUSEHOLD, "2026-10-09");
 
   it("erkennt das Gehalt und den nächsten Zahltag", () => {
