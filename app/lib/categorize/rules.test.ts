@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstMatchingRule, ruleInputSchema, ruleMatches } from "./rules";
+import { firstMatchingRule, ruleInputSchema, ruleMatches, slowRegex } from "./rules";
 
 const tx = { counterparty: "PayPal Europe", purpose: "PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann" };
 const rule = (overrides: object) => ({
@@ -57,5 +57,31 @@ describe("ruleInputSchema", () => {
   });
   it("lehnt leeres Muster ab", () => {
     expect(ruleInputSchema.safeParse({ ...valid, pattern: "  " }).success).toBe(false);
+  });
+});
+
+describe("langsame reguläre Ausdrücke (ReDoS)", () => {
+  it.each(["(a+)+$", "(\\w+\\s?)*$", "(a|aa)+$", "(foo|fo)*x", "(.*a){12}", "(x+x+)+y", "(a)\\1+"])(
+    "%s wird beim Speichern abgelehnt",
+    (pattern) => {
+      expect(slowRegex(pattern)).toBe(true);
+    },
+  );
+
+  it.each(["rewe|edeka", "^amazon", "(netflix|disney)", "\\d{4}", "lidl.*filiale", "(abo)?nnement"])(
+    "%s bleibt erlaubt",
+    (pattern) => {
+      expect(slowRegex(pattern)).toBe(false);
+    },
+  );
+
+  it("eine schon gespeicherte langsame Regel wird übersprungen, statt den Import hängen zu lassen", () => {
+    const started = performance.now();
+    const hit = ruleMatches(
+      { field: "purpose", matchType: "regex", pattern: "(a|aa)+$" },
+      { counterparty: "", purpose: `${"a".repeat(60)}!` },
+    );
+    expect(hit).toBe(false);
+    expect(performance.now() - started).toBeLessThan(50);
   });
 });
