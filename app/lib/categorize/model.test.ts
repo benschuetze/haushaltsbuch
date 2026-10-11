@@ -1,6 +1,6 @@
 import { generateText } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getModel } from "./model";
+import { getAssistantModel, getModel } from "./model";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -41,5 +41,32 @@ describe("getModel", () => {
     expect(getModel()).toBeNull();
     vi.stubEnv("AI_MOCK", "1");
     expect(getModel()).not.toBeNull();
+  });
+});
+
+describe("getAssistantModel", () => {
+  const modelId = (m: unknown) => (m as { modelId?: string } | null)?.modelId;
+
+  it("öffentliche Demo: Kategorisierung bleibt beim Testmodell, der Assistent spricht mit dem echten Modell", async () => {
+    vi.stubEnv("AI_MOCK", "1");
+    vi.stubEnv("ASSISTANT_LIVE", "1");
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key-ohne-wert");
+    vi.stubEnv("AI_MODEL", "");
+    expect(modelId(getModel())).not.toBe("claude-haiku-5-5");
+    expect(modelId(await getAssistantModel())).toBe("claude-haiku-5-5");
+  });
+
+  it("ohne ASSISTANT_LIVE antwortet in der Demo weiter das Testmodell", async () => {
+    vi.stubEnv("AI_MOCK", "1");
+    vi.stubEnv("ASSISTANT_LIVE", "");
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key-ohne-wert");
+    expect(modelId(await getAssistantModel())).not.toBe("claude-haiku-5-5");
+  });
+
+  it("ASSISTANT_LIVE ohne Key: kein Modell statt still das Testmodell", async () => {
+    vi.stubEnv("AI_MOCK", "1");
+    vi.stubEnv("ASSISTANT_LIVE", "1");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    expect(await getAssistantModel()).toBeNull();
   });
 });

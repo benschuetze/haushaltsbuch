@@ -4,7 +4,7 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 
 | | |
 |---|---|
-| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, nur lesend. Der Assistent antwortet dort mit einem Mock-Modell. |
+| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, nur lesend. Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
 | **App** | [haushaltsbuch-woad-tau.vercel.app](https://haushaltsbuch-woad-tau.vercel.app): Produktion mit Login, echtem Claude-Modell und Bankanbindung |
 | **Code** | [github.com/benschuetze/haushaltsbuch](https://github.com/benschuetze/haushaltsbuch) |
 
