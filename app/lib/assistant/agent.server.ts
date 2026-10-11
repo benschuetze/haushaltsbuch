@@ -8,8 +8,14 @@ import { createAssistantTools } from "./tools.server";
 
 export const MAX_HISTORY = 10;
 export const MAX_MESSAGE = 1000;
-/** Per calendar day. Each question is a few small model calls; this caps a runaway loop or a stuck key. */
-export const DAILY_LIMIT = 60;
+/**
+ * Per calendar day. Each question is a few small model calls; this caps a runaway loop or a stuck key.
+ * The public demo sets a lower ASSISTANT_DAILY_LIMIT: anyone can ask there, and every answer costs.
+ */
+export function dailyLimit(): number {
+  const n = Number(process.env.ASSISTANT_DAILY_LIMIT || Number.NaN);
+  return Number.isInteger(n) && n > 0 ? n : 60;
+}
 
 export const chatSchema = z
   .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(MAX_MESSAGE) }))
@@ -34,7 +40,7 @@ async function withinDailyLimit(db: Db, now: Date): Promise<boolean> {
   const key = `assistant_calls_${now.toISOString().slice(0, 10)}`;
   const [row] = await db.select().from(meta).where(eq(meta.key, key));
   const used = Number(row?.value ?? 0);
-  if (used >= DAILY_LIMIT) return false;
+  if (used >= dailyLimit()) return false;
   await db
     .insert(meta)
     .values({ key, value: String(used + 1) })
@@ -65,7 +71,7 @@ export async function askAssistant(
   tone: Tone = "freundlich",
 ): Promise<AssistantReply> {
   if (!(await withinDailyLimit(db, now))) {
-    return { answer: `Für heute ist das Limit von ${DAILY_LIMIT} Fragen erreicht. Morgen geht es weiter.`, tools: [] };
+    return { answer: `Für heute ist das Limit von ${dailyLimit()} Fragen erreicht. Morgen geht es weiter.`, tools: [] };
   }
   try {
     const result = await generateText({

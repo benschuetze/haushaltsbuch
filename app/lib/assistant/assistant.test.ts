@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { MockLanguageModelV4 } from "ai/test";
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockModel } from "~/lib/categorize/mock-model";
 import type { Db } from "~/lib/db/client";
 import { accounts, categories, imports, transactions } from "~/lib/db/schema";
@@ -10,7 +10,7 @@ import { spendingToday } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { createTestDb } from "../../../tests/helpers/db";
 import { failingModel } from "../../../tests/helpers/models";
-import { askAssistant, chatSchema, DAILY_LIMIT } from "./agent.server";
+import { askAssistant, chatSchema, dailyLimit } from "./agent.server";
 import { createMockAssistantModel } from "./mock-model";
 
 let db: Db;
@@ -109,11 +109,22 @@ describe("Assistent", () => {
       calls++;
       return original(o);
     };
-    for (let i = 0; i < DAILY_LIMIT; i++) await askAssistant(db, counting, [{ role: "user", content: "Budget?" }], now);
+    for (let i = 0; i < dailyLimit(); i++)
+      await askAssistant(db, counting, [{ role: "user", content: "Budget?" }], now);
     const before = calls;
     const reply = await askAssistant(db, counting, [{ role: "user", content: "Budget?" }], now);
     expect(reply.answer).toMatch(/Limit/);
     expect(calls).toBe(before);
+  });
+
+  it("Tageslimit pro Umgebung einstellbar, ungültige Werte fallen auf 60 zurück", () => {
+    vi.stubEnv("ASSISTANT_DAILY_LIMIT", "25");
+    expect(dailyLimit()).toBe(25);
+    for (const bad of ["", "0", "-3", "abc", "2.5"]) {
+      vi.stubEnv("ASSISTANT_DAILY_LIMIT", bad);
+      expect(dailyLimit()).toBe(60);
+    }
+    vi.unstubAllEnvs();
   });
 
   it("API-Fehler: verständliche Antwort statt Absturz", async () => {
