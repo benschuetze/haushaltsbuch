@@ -17,7 +17,7 @@ test("Demo-CSV hochladen zeigt 44 neu, erneut hochladen zeigt 44 Duplikate", asy
 
 test("kaputte Zeilen werden mit Zeilennummer und Grund gezeigt, der Rest wird importiert", async ({ page }) => {
   await page.goto("/import");
-  await page.getByLabel("CSV-Dateien").setInputFiles({
+  await page.getByLabel("Kontoauszüge").setInputFiles({
     name: "kaputt.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
@@ -36,11 +36,29 @@ test("kaputte Zeilen werden mit Zeilennummer und Grund gezeigt, der Rest wird im
 
 test("falsches Dateiformat wird verständlich abgelehnt", async ({ page }) => {
   await page.goto("/import");
-  await page.getByLabel("CSV-Dateien").setInputFiles({
+  await page.getByLabel("Kontoauszüge").setInputFiles({
     name: "andere-bank.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Datum,Betrag\n01.10.2026,5.00"),
   });
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByRole("alert")).toContainText("sieht nicht nach einer Umsatz-Tabelle aus");
+});
+
+test("CAMT.053 und MT940 werden erkannt und importiert, Vorgemerktes übersprungen", async ({ page }) => {
+  await page.goto("/import");
+  await page
+    .getByLabel("Kontoauszüge")
+    .setInputFiles([
+      "app/lib/import/profiles/__fixtures__/camt053.xml",
+      "app/lib/import/profiles/__fixtures__/mt940.sta",
+    ]);
+  await page.getByRole("button", { name: "Importieren" }).click();
+  const camt = page.getByRole("status", { name: "Ergebnis für camt053.xml" });
+  await expect(camt.getByTestId("import-account")).toContainText("CAMT.053 ··2051");
+  await expect(camt.getByTestId("import-inserted")).toHaveText("3");
+  await expect(camt.getByTestId("import-skipped")).toHaveText("1");
+  const mt940 = page.getByRole("status", { name: "Ergebnis für mt940.sta" });
+  await expect(mt940.getByTestId("import-account")).toContainText("MT940 ··5100");
+  await expect(mt940.getByTestId("import-inserted")).toHaveText("4");
 });

@@ -42,7 +42,7 @@ export async function sql(query: string): Promise<void> {
 
 export async function importDemo(page: Page): Promise<void> {
   await page.goto("/import");
-  await page.getByLabel("CSV-Dateien").setInputFiles(DEMO_CSV);
+  await page.getByLabel("Kontoauszüge").setInputFiles(DEMO_CSV);
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByRole("status", { name: /^Ergebnis für/ })).toBeVisible();
 }

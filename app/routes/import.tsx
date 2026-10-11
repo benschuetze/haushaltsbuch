@@ -28,7 +28,7 @@ const inputSchema = z.object({
     .pipe(
       z
         .array(z.instanceof(File))
-        .min(1, "Bitte mindestens eine CSV-Datei wählen.")
+        .min(1, "Bitte mindestens eine Datei wählen.")
         .max(MAX_FILES, `Höchstens ${MAX_FILES} Dateien auf einmal.`)
         .refine((files) => files.reduce((sum, f) => sum + f.size, 0) <= MAX_TOTAL_BYTES, TOO_LARGE),
     ),
@@ -107,20 +107,20 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Kontoauszug importieren</h1>
         <p className="text-sm text-muted-foreground">
-          CSV-Export deiner Bank hochladen, gern mehrere auf einmal. Bank und Konto erkennt die App selbst; ein neues
-          Format lernt sie beim ersten Mal.
+          Export deiner Bank hochladen (CSV, CAMT.053 oder MT940), gern mehrere auf einmal. Bank und Konto erkennt die
+          App selbst; ein neues Format lernt sie beim ersten Mal.
         </p>
       </div>
       {demo ? <p className="rounded-lg border p-4">In der Demo ist der Import abgeschaltet.</p> : null}
       <Form method="post" encType="multipart/form-data" className="max-w-md space-y-4">
         <fieldset disabled={demo || busy} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="file">CSV-Dateien</Label>
+            <Label htmlFor="file">Kontoauszüge</Label>
             <input
               id="file"
               name="file"
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,text/csv,.xml,application/xml,text/xml,.sta,.mt940,.txt"
               multiple
               required
               onChange={checkSelection}
