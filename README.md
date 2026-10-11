@@ -1,33 +1,55 @@
 # Haushaltsbuch
 
-Kontoauszüge als CSV importieren, Buchungen automatisch kategorisieren, Monatsübersicht.
+Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie viel kann ich heute ausgeben?** Kontoauszüge kommen per Bankanbindung oder Datei, Regeln und ein LLM kategorisieren, ein KI-Assistent rechnet mit echten Zahlen. Was die KI nicht sicher weiß, wird nicht geraten, sondern landet in „prüfen“.
 
-**Demo:** [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app) mit erfundenen Beispieldaten, nur lesend und ohne Login.
+| | |
+|---|---|
+| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, nur lesend. Der Assistent antwortet dort mit einem Mock-Modell. |
+| **App** | [haushaltsbuch-woad-tau.vercel.app](https://haushaltsbuch-woad-tau.vercel.app): Produktion mit Login, echtem Claude-Modell und Bankanbindung |
+| **Code** | [github.com/benschuetze/haushaltsbuch](https://github.com/benschuetze/haushaltsbuch) |
 
-Die Kategorisierung läuft zweistufig: Zuerst greifen eigene Regeln, für den Rest schlägt ein LLM eine Kategorie vor. Was das Modell nicht sicher weiß, wird nicht geraten, sondern landet in „prüfen“. Jede Korrektur kann mit einem Klick zur Regel werden, damit derselbe Fehler nicht zweimal passiert.
+## Was die App kann
 
-## Problem
+**Frag zuerst**
+- **Tagesbudget:** Die Startseite zeigt eine Zahl: was bis zum nächsten Gehalt pro Tag bleibt. Die App erkennt Gehalt und Zahltag selbst, zieht kommende Fixkosten, Sparraten und offene Sparziel-Anteile ab und rundet ab. Unter „Wie gerechnet?“ steht die Rechnung Zeile für Zeile.
+- **Assistent:** Fragen tippen oder sprechen („Kann ich mir ein Fahrrad für 600 € leisten?“, „Wann kann ich mir das leisten?“, „Habe ich versteckte Abo-Kosten?“). Claude Haiku antwortet über 13 lesende Werkzeuge (`heute_verfuegbar`, `leisten`, `wann_leisten`, `naechste_zahlungen`, `buchungen_suchen`, `abos_und_fixkosten` …) mit echten Zahlen aus der Datenbank. Er kann nichts ändern; höchstens 60 Fragen am Tag. Der Ton ist wählbar: freundlich oder frech („Schon wieder Lieferando?“), die Zahlen bleiben gleich.
 
-Banking-Apps kategorisieren grob und falsch, und man kann sie nicht korrigieren. Excel-Haushaltsbücher scheitern am Abtippen. Hier lädt man einmal im Monat die CSV hoch und prüft nur noch die paar Buchungen, bei denen das System unsicher ist.
+**Weniger Arbeit**
+- **Import ohne Einstellungen:** CSV, CAMT.053 oder MT940 hochladen, auch mehrere Dateien. Die App erkennt Bank und Konto (über die eigene IBAN). Unbekannte CSV-Formate lernt sie beim ersten Upload, erst kostenlos über Spaltennamen, dann per LLM, das nur Spaltennamen und maskierte Muster sieht.
+- **Bankanbindung:** Enable Banking (PSD2, 2.500+ Banken), Lesezugriff bis 180 Tage, täglicher Abruf per Cron. Andere Institute sind als Kacheln mit echten Logos vorhanden und sichtbar als **Mockdaten** gekennzeichnet.
+- **Prüfen per Wischen:** Unsichere Buchungen kommen als Karten. Rechts wischen übernimmt den Vorschlag, links schiebt auf.
+- **Regel-Agent:** „Alles von Rewe ist Lebensmittel“ in normaler Sprache. Der Agent baut die Regel, zeigt vorher, welche Buchungen sie trifft, und legt sie erst nach Bestätigung an.
 
-## Ablauf einer Buchung
+**Überblick und Motivation**
+- **Sparziele** mit Rate pro Monat, die das Tagesbudget schon einplant, und Konfetti beim Erreichen.
+- **Wochenrückblick** mit Vergleich zu denselben Wochentagen und Serien; **Monatsrückblick** als Karten zum Durchwischen.
+- **Abos und Fixkosten** werden erkannt. „Kündigen“ öffnet die Kündigungsseite des Anbieters. Die Glocke meldet Preiserhöhungen und ablaufende Bankzugänge.
+- **Budgets** je Kategorie, Monatsübersicht mit Vormonatsvergleich. Umbuchungen zwischen eigenen Konten, PayPal-Aufladungen und Kreditkartenausgleich zählen nicht doppelt.
+
+**Design:** „E-Ink-Kassenbuch“, Papier und Tinte wie ein E-Paper-Display, eine Akzentfarbe (Kugelschreiber-Blau) für die eine wichtige Zahl, doppelt unterstrichen wie eine Summe in der Buchhaltung. Am Handy eine Tab-Leiste mit der Frage in der Mitte.
+
+## Kategorisierung einer Buchung
 
 ```
-CSV ──► Bankprofil ──► Dedupe ──► Regeln ──► LLM ──► Konfidenz ≥ 0,7 ? ──► fertig
-         (Zod)        (Hash)     (Priorität)  (nur 4 Felder)     │
-                                                                 └──► „prüfen“
+Datei/Bank ──► Bankprofil ──► Dedupe ──► Umbuchungen ──► Regeln ──► LLM ──► Konfidenz ≥ 0,7 ? ──► fertig
+               (Zod)         (Hash)     verknüpfen     (Priorität) (nur 4 Felder)      │
+                                                                                       └──► „prüfen“
 Korrektur in der UI ──► manuell (nie wieder überschrieben) ──► optional Regel ──► alle passenden Buchungen neu
 ```
 
-- **Import ohne Einstellungen:** Kontoauszüge hochladen, auch mehrere auf einmal. Die App erkennt die Bank, ordnet das Konto über die eigene IBAN zu oder legt es an. Ein Format, das sie noch nicht kennt, lernt sie beim ersten Upload: erst kostenlos über die Spaltennamen, nur wenn das nicht reicht mit einem LLM-Aufruf, der ausschließlich Spaltennamen und maskierte Muster sieht (`99.99.9999`, `-999,99`). Gelernte Formate werden gespeichert, dieselbe Bank kostet nie einen zweiten Aufruf.
-- **Assistent:** Chat unten rechts. Er beantwortet Fragen wie „Habe ich versteckte Abo-Kosten?“ mit echten Zahlen über lesende Werkzeuge (Monatsübersicht, Buchungssuche, Abos, Budgets, Hinweise, Verlauf). Er kann nichts ändern; höchstens 60 Fragen am Tag.
-- **Bankanbindung:** Konten über Enable Banking verbinden (Open Banking nach PSD2, 2.500+ Banken). Die Anmeldung läuft bei der Bank selbst, die App bekommt nur Lesezugriff für bis zu 180 Tage und ruft jeden Morgen automatisch ab; läuft der Zugang ab, meldet sich die Glocke.
-- **Bankprofile:** Ein Bankprofil übersetzt das CSV-Format einer Bank. Encoding (UTF-8, BOM, Windows-1252), deutsche Beträge und Datumsangaben werden ohne Float gelesen, alles ist in Cent. Jede Zeile ist danach neu, Duplikat oder mit Zeilennummer und Grund abgelehnt. Keine verschwindet still.
-- **Duplikate:** Ein Hash aus Konto, Datum, Betrag, Empfänger und Zweck. Zwei echte, gleiche Kartenzahlungen am selben Tag bleiben beide erhalten, weil Wiederholungen in einer Datei mitgezählt werden.
-- **Regeln:** Empfänger oder Verwendungszweck, „enthält“, „ist gleich“ oder Regex. Höhere Priorität gewinnt, bei Gleichstand die ältere Regel.
-- **LLM:** Batches à 25 und strukturierter Output über das Vercel AI SDK. Das Modell bekommt nur Empfänger, Zweck, Betrag und Datum, keine IBAN und keine Rohdaten. Jede Antwort wird einzeln geprüft: Bei unbekannter Kategorie, fehlender Antwort, kaputtem JSON oder Netzwerkfehler landet genau diese Buchung in „prüfen“, und der Import läuft trotzdem durch.
-- **Manuell schlägt alles:** Eine manuell gesetzte oder bestätigte Kategorie wird weder von Regeln noch vom LLM überschrieben. Das sichert auch die `WHERE`-Klausel des Updates in der Datenbank ab, nicht nur der App-Code.
-- **Monatsübersicht:** Einnahmen und Ausgaben je Kategorie mit Vergleich zum Vormonat. Umbuchungen zwischen eigenen Konten zählen weder als Einnahme noch als Ausgabe.
+- **Keine Zeile geht still verloren:** Jede Zeile ist danach neu, Duplikat, übersprungen (z. B. vorgemerkt) oder mit Zeilennummer und Grund abgelehnt. Beträge werden ohne Float gelesen, alles ist in Cent.
+- **Duplikate:** Hash aus Konto, Datum, Betrag, Empfänger und Zweck; zwei echte gleiche Zahlungen am selben Tag bleiben beide erhalten.
+- **LLM:** Batches à 25, strukturierter Output über das Vercel AI SDK. Jede Antwort wird einzeln mit Zod geprüft: unbekannte Kategorie, fehlende Antwort, kaputtes JSON oder Netzwerkfehler schicken genau diese Buchung nach „prüfen“, der Import läuft weiter.
+- **Manuell schlägt alles:** Das sichert die `WHERE`-Klausel des Updates in der Datenbank ab, nicht nur der App-Code.
+
+## Datenschutz und Sicherheit
+
+- An das LLM gehen nur Empfänger, Verwendungszweck, Betrag und Datum, IBANs darin geschwärzt. Keine Kontonummer, keine Rohdaten.
+- Bank-Sitzungen sind mit AES-256-GCM verschlüsselt gespeichert.
+- Strikte Content Security Policy mit Nonce, CSRF-Prüfung, Login-Drosselung, HSTS, `Permissions-Policy` (Mikrofon nur für die Spracheingabe), `noindex`.
+- XML-Kontoauszüge mit DOCTYPE oder ENTITY werden abgelehnt (XXE, „Billion Laughs“).
+- Die Demo ist schreibgeschützt; Schreibzugriffe blockiert eine Middleware für jede Route.
+- Jeder Produktions-Build schickt eine Mini-Anfrage an die echte Claude-API und an die Bank-API und bricht ab, wenn Key, Modell oder Schlüssel nicht stimmen.
 
 ## Datenmodell
 
@@ -79,6 +101,7 @@ Das Projekt ist mit Claude Code als primärem Werkzeug entstanden. [`CLAUDE.md`]
 | `db-change` | Schema ändern, Migration erzeugen und auf `DROP` prüfen |
 | `bank-profile` | Neues CSV-Format einer Bank unterstützen |
 | `categorizer-eval` | Prompt oder Modell ändern und vorher/nachher messen |
+| `e-ink-design` | Neue UI im E-Ink-Look bauen |
 | `ship` | Commit, CI, Preview und Produktion prüfen |
 
 Grundsätze: Jeder Fehler bekommt zuerst einen Test, der ihn zeigt. Tests beschreiben das Versprechen an den Nutzer, nicht die Implementierung. Nichts gilt als fertig, was nicht gelaufen und gesehen wurde.
