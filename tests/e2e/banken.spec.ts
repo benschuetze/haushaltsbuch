@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "./fixtures";
-import { resetDb } from "./helpers";
+import { DEMO_URL, resetDb } from "./helpers";
 
 test.beforeEach(resetDb);
 
@@ -78,4 +78,25 @@ test("zu große Auswahl wird vor dem Absenden abgefangen, statt an Vercels Grenz
   ]);
   await expect(page.getByRole("alert")).toHaveText("Zusammen größer als 4 MB. Bitte in mehreren Runden hochladen.");
   await expect(page.getByRole("button", { name: "Importieren" })).toBeDisabled();
+});
+
+test("Demo ohne Bankzugang verspricht keinen automatischen Abruf, sagt, was die Kacheln sind", async ({ page }) => {
+  await page.goto(`${DEMO_URL}/banken`);
+  const intro = page.getByTestId("banks-intro");
+  await expect(intro).toContainText("Hier ist keine Bank angebunden");
+  await expect(intro).not.toContainText("jeden Morgen");
+});
+
+test("mit Bankzugang: automatischer Abruf, Anmeldung bei der Bank", async ({ page }) => {
+  await page.goto("/banken");
+  await expect(page.getByTestId("banks-intro")).toContainText("jeden Morgen automatisch ab");
+});
+
+test("Datenschutz nennt, was wirklich gespeichert wird: keine Bank-Zugangsdaten, nur die Sitzungskennung", async ({
+  page,
+}) => {
+  await page.goto("/datenschutz");
+  await expect(page.getByRole("main")).not.toContainText("Zugangsdaten zur Bank werden verschlüsselt gespeichert");
+  await expect(page.getByRole("main")).toContainText("Bank-Passwort und PIN sieht die App nie");
+  await expect(page.getByRole("main")).toContainText("Die öffentliche Demo hat keine Bankanbindung");
 });

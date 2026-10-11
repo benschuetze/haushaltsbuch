@@ -176,9 +176,11 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Banken</h1>
-        <p className="text-sm text-muted-foreground">
-          Verbundene Konten ruft die App jeden Morgen automatisch ab. Die Anmeldung läuft direkt bei deiner Bank; die
-          App sieht dein Bank-Passwort nie und hat nur Lesezugriff.
+        {/* Says what is true for this instance: the demo has no bank access, so no daily fetch to promise. */}
+        <p className="text-sm text-muted-foreground" data-testid="banks-intro">
+          {configured && !demo
+            ? "Verbundene Konten ruft die App jeden Morgen automatisch ab. Die Anmeldung läuft direkt bei deiner Bank; die App sieht dein Bank-Passwort nie und hat nur Lesezugriff."
+            : "Hier ist keine Bank angebunden. Die Kacheln zeigen den Ablauf mit Mockdaten, echte Umsätze kommen über den Import."}
         </p>
       </div>
       {notice ? (

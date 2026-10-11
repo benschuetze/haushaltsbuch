@@ -33,7 +33,8 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
         <li>
           Kontoumsätze (Datum, Betrag, Gegenpartei, Verwendungszweck) aus hochgeladenen Kontoauszügen oder, nach
           ausdrücklicher Freigabe bei der Bank, über den Kontoinformationsdienst Enable Banking Oy (Espoo, Finnland;
-          beaufsichtigt von der finnischen Finanzaufsicht FIN-FSA).
+          beaufsichtigt von der finnischen Finanzaufsicht FIN-FSA). Die öffentliche Demo hat keine Bankanbindung und
+          enthält nur erfundene Daten.
         </li>
         <li>Eigene Einstellungen: Kategorien, Regeln, Budgets.</li>
         <li>
@@ -42,7 +43,11 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
       </ul>
       <h2 className="text-lg font-semibold">Wo die Daten liegen</h2>
       <ul className="list-disc space-y-1 pl-5">
-        <li>Datenbank: Neon (Region Frankfurt). Zugangsdaten zur Bank werden verschlüsselt gespeichert.</li>
+        <li>
+          Datenbank: Neon (Region Frankfurt). Von der Bankanbindung speichert die App nur die Sitzungskennung des
+          Kontoinformationsdienstes, verschlüsselt (AES-256-GCM). Bank-Passwort und PIN sieht die App nie; die Anmeldung
+          läuft direkt bei der Bank.
+        </li>
         <li>Anwendung: Vercel (Region Frankfurt).</li>
         <li>
           Kategorisierung: Gegenpartei, Verwendungszweck, Betrag und Datum einzelner Buchungen gehen an Anthropic (USA)
@@ -63,9 +68,9 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
       <h2 className="text-lg font-semibold">Speicherdauer und Rechte</h2>
       <p>
         Daten bleiben gespeichert, bis sie gelöscht werden. Der Zugriff auf Bankkonten endet spätestens nach 180 Tagen
-        und kann jederzeit in der App („Banken“ → „Trennen“) oder bei der Bank widerrufen werden. Es bestehen die Rechte
-        auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO)
-        sowie das Beschwerderecht bei einer Datenschutzaufsichtsbehörde.
+        und kann jederzeit in der App (unter „Banken“ beim verbundenen Konto „Trennen“) oder bei der Bank widerrufen
+        werden. Es bestehen die Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und
+        Widerspruch (Art. 15–21 DSGVO) sowie das Beschwerderecht bei einer Datenschutzaufsichtsbehörde.
       </p>
     </article>
   );
