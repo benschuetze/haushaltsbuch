@@ -1,4 +1,5 @@
 import { type Booking, detectRecurring, isAggregator, merchantKey, merchantOf } from "~/lib/insights/recurring";
+import { bankDay } from "./bank-day";
 import { type GoalInput, type GoalStatus, goalStatus } from "./goals";
 
 /**
@@ -118,7 +119,8 @@ export function availableToSpend(bookings: AvailableBooking[], today: string, go
       missingIncome = { name: salary.name, date: next, amountCents: salary.amountCents };
       next = addMonths(next, 1);
     }
-    nextIncome = { name: salary.name, date: next, amountCents: salary.amountCents };
+    // Due on a Sunday or a holiday, it arrives on the next bank day; the period runs until then.
+    nextIncome = { name: salary.name, date: bankDay(next), amountCents: salary.amountCents };
   } else {
     periodStart = `${today.slice(0, 7)}-01`;
   }
@@ -143,16 +145,17 @@ export function availableToSpend(bookings: AvailableBooking[], today: string, go
     today,
   ).filter((r) => r.active && r.stable);
   for (const r of recurring) {
-    let due = STEP[r.cadence](r.lastDate);
-    while (due <= periodEnd) {
+    let nominal = STEP[r.cadence](r.lastDate);
+    // A debit due on a weekend or holiday is executed on the next bank day: that decides the period it falls in.
+    for (let due = bankDay(nominal); due <= periodEnd; due = bankDay(nominal)) {
       if (due > today || (due >= periodStart && r.lastDate < periodStart)) {
         upcoming.push({ name: r.merchant, date: due > today ? due : today, amountCents: Math.abs(r.lastAmountCents) });
       }
-      due = STEP[r.cadence](due);
+      nominal = STEP[r.cadence](nominal);
     }
   }
   for (const t of monthlyTransfers(bookings, today)) {
-    const due = addMonths(t.bookingDate, 1);
+    const due = bankDay(addMonths(t.bookingDate, 1));
     if (t.bookingDate < periodStart && due <= periodEnd) {
       upcoming.push({ name: merchantOf(t), date: due > today ? due : today, amountCents: -t.amountCents });
     }
