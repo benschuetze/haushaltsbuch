@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import { Scissors } from "lucide-react";
 import { useState } from "react";
 import { data, Form } from "react-router";
@@ -6,22 +7,45 @@ import { Amount } from "~/components/amount";
 import { CancelDialog, type CancelTarget } from "~/components/cancel-dialog";
 import { Button } from "~/components/ui/button";
 import { isDemo } from "~/lib/auth.server";
-import { getDb } from "~/lib/db/client";
+import { type Db, getDb } from "~/lib/db/client";
+import { transactions } from "~/lib/db/schema";
 import { formatDate } from "~/lib/format";
 import { subscriptionOverview } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
 import { markCancelled, undoCancellation } from "~/lib/subscriptions";
+import { referencesFrom } from "~/lib/subscriptions/cancel-letter";
 import { cancelLinkFor } from "~/lib/subscriptions/cancel-links";
 import type { CancellationStatus } from "~/lib/subscriptions/status";
 import type { Route } from "./+types/abos";
 
 export const meta: Route.MetaFunction = () => [{ title: "Abos · Haushaltsbuch" }];
 
+/**
+ * Numbers the latest booking labels (customer, contract, member number, mandate reference) for a cancellation
+ * letter. Read from that one booking, never guessed; only where no cancel page is known.
+ */
+async function letterHints(db: Db, r: { lastDate: string; lastAmountCents: number }) {
+  const [last] = await db
+    .select({ purpose: transactions.purpose, raw: transactions.raw, bookingDate: transactions.bookingDate })
+    .from(transactions)
+    .where(and(eq(transactions.bookingDate, r.lastDate), eq(transactions.amountCents, r.lastAmountCents)))
+    .limit(1);
+  if (!last) return null;
+  return { ...referencesFrom(last.purpose, (last.raw ?? {}) as Record<string, unknown>), fromDate: last.bookingDate };
+}
+
 export async function loader() {
-  const overview = await subscriptionOverview(getDb());
+  const db = getDb();
+  const overview = await subscriptionOverview(db);
+  const recurring = await Promise.all(
+    overview.recurring.map(async (r) => {
+      const cancelLink = cancelLinkFor(r.merchant);
+      return { ...r, cancelLink, letter: cancelLink.direct ? null : await letterHints(db, r) };
+    }),
+  );
   return {
     demo: isDemo(),
-    recurring: overview.recurring.map((r) => ({ ...r, cancelLink: cancelLinkFor(r.merchant) })),
+    recurring,
     cancellations: overview.cancellations.map((c) => ({ ...c, cancelLink: cancelLinkFor(c.merchant) })),
   };
 }
@@ -86,7 +110,9 @@ function List({ items, label, onCancel }: { items: Item[]; label: string; onCanc
                 size="sm"
                 variant="outline"
                 aria-label={`${r.merchant} kündigen`}
-                onClick={() => onCancel({ merchant: r.merchant, ...r.cancelLink, yearlyCents: r.yearlyCents })}
+                onClick={() =>
+                  onCancel({ merchant: r.merchant, ...r.cancelLink, yearlyCents: r.yearlyCents, letter: r.letter })
+                }
               >
                 <Scissors aria-hidden="true" />
                 Kündigen
