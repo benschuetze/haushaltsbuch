@@ -59,7 +59,7 @@ export function monthStory(input: StoryInput): StoryCard[] {
       id: "vergleich",
       kicker: "Im Vergleich zum Vormonat",
       title: diff <= 0 ? `${formatCents(-diff)} weniger` : `${formatCents(diff)} mehr`,
-      note: diff <= 0 ? "Weiter so." : "Schau mal in die größten Posten oben.",
+      note: diff <= 0 ? "" : "Schau mal in die größten Posten oben.",
       tone: diff <= 0 ? "good" : "bad",
     });
   }
@@ -78,7 +78,7 @@ export function monthStory(input: StoryInput): StoryCard[] {
           id: "gespart",
           kicker: "Zur Seite gelegt",
           title: formatCents(input.savedCents),
-          note: "Geld, das für später da ist. Stark.",
+          note: "Geld, das für später da ist.",
           tone: "good",
         }
       : {

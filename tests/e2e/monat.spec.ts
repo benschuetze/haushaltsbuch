@@ -38,3 +38,9 @@ test("Vergleich mit dem Vormonat in Worten statt mit Vorzeichen", async ({ page 
   await expect(page.getByTestId("expenses")).toContainText("107,15 € weniger ausgegeben als im August");
   await expect(page.getByTestId("income")).toContainText("250,00 € mehr eingenommen als im August");
 });
+
+test("kein Link in einen Monat, der noch nicht begonnen hat", async ({ page }) => {
+  const now = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date()).slice(0, 7);
+  await page.goto(`/monat/${now}`);
+  await expect(page.getByRole("navigation", { name: "Monat wechseln" }).getByRole("link")).toHaveCount(1);
+});

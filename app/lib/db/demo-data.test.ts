@@ -12,12 +12,15 @@ describe("öffentliche Demo", () => {
     const { db } = await createTestDb();
     expect(await importDemoData(db, createMockModel())).toBeGreaterThan(150);
     await refreshInsights(db, october);
-    const titles = (await openInsights(db, 100)).map((i) => i.title);
+    const insightsList = await openInsights(db, 100);
+    const titles = insightsList.map((i) => i.title);
 
     expect(titles).toContain("Spotify AB ist teurer geworden");
     expect(titles).toContain("2× Video-Streaming");
-    expect(titles).toContain("Abo erkannt: FitX Deutschland GmbH");
-    expect(titles).toContain("Abo erkannt: Netflix International B.V.");
+    const abos = insightsList.find((i) => i.kind === "subscription_found");
+    expect(abos?.title).toMatch(/^\d+ Abos erkannt$/);
+    expect(abos?.body).toContain("FitX Deutschland GmbH");
+    expect(abos?.body).toContain("Netflix International B.V.");
 
     // Netflix is paid via PayPal: one subscription, not a second one hiding behind "PayPal Europe".
     const { recurring } = await subscriptionOverview(db, october);

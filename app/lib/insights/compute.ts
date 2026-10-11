@@ -130,16 +130,18 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
   };
   const subscriptions = all.filter((r) => r.active && r.kind === "subscription" && !isCancelled(r));
 
-  for (const r of subscriptions) {
-    // Still charging after a cancellation: the red warning above already says it, with its own button.
-    if (stillCharging.has(merchantKey(r.merchant))) continue;
+  // One hint for all of them: six "Abo erkannt" lines drowned the hints that need action. Cancelling one
+  // by one happens on /abos.
+  const listed = subscriptions.filter((r) => !stillCharging.has(merchantKey(r.merchant)));
+  if (listed.length > 0) {
+    const yearly = listed.reduce((s, r) => s + r.yearlyCents, 0);
     drafts.push({
-      key: `abo:${merchantKey(r.merchant)}`,
+      key: "abos",
       kind: "subscription_found",
-      title: `Abo erkannt: ${r.merchant}`,
-      body: `${euro(r.lastAmountCents)} ${CADENCE[r.cadence]}, ${euro(r.yearlyCents)} im Jahr. Noch in Gebrauch?`,
+      title: listed.length === 1 ? `1 Abo erkannt: ${listed[0]?.merchant}` : `${listed.length} Abos erkannt`,
+      body: `${listed.map((r) => r.merchant).join(", ")}. Zusammen ${euro(-Math.round(yearly / 12))} im Monat, ${euro(-yearly)} im Jahr. Noch alle in Gebrauch? Unter „Abos“ lässt sich jedes einzeln kündigen.`,
       savingsCentsPerYear: null,
-      subject: r.merchant,
+      subject: listed.length === 1 ? (listed[0]?.merchant ?? null) : null,
       month,
     });
   }
@@ -154,7 +156,8 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
       kind: "price_increase",
       title: `${r.merchant} ist teurer geworden`,
       body: `Von ${euro(before)} auf ${euro(now)}, das sind ${euro(perYear)} mehr im Jahr. Kündigen oder günstigeren Tarif prüfen?`,
-      savingsCentsPerYear: Math.round(perYear),
+      // Extra cost, not money one could save: it does not count towards the savings total.
+      savingsCentsPerYear: null,
       subject: r.merchant,
       month,
     });

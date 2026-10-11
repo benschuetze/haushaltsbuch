@@ -88,3 +88,16 @@ test("Demo: in der Liste lassen sich Kategorie ändern und bestätigen ausprobie
   await dialog.getByRole("button", { name: "Weiter" }).click();
   await expect(dialog).toHaveCount(0);
 });
+
+test("unter 60 % Sicherheit gibt es keinen vorgewählten Vorschlag, nur einen Hinweis", async ({ page }) => {
+  await importDemo(page);
+  // The model guessed Haushalt for dm with only 40 %.
+  await sql(`
+    update transactions set category_id = (select id from categories where name = 'Haushalt'),
+      category_source = 'ai', ai_confidence = 0.4, needs_review = true
+    where counterparty = 'dm-drogerie markt';`);
+  await page.goto("/pruefen");
+  await expect(page.getByTestId("review-counterparty")).toHaveText("dm-drogerie markt");
+  await expect(page.getByRole("button", { name: /^Passt:/ })).toHaveCount(0);
+  await expect(page.getByText("Die KI ist unsicher (40 %, vielleicht Haushalt). Bitte selbst wählen.")).toBeVisible();
+});

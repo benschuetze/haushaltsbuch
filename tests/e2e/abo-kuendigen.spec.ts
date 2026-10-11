@@ -20,6 +20,12 @@ test("aus der Glocke kündigen: Pop-up öffnet die Kündigungsseite, danach ist 
   page,
 }) => {
   await importDemo(page);
+  // Spotify got more expensive in October: a hint about one provider, so the bell offers to cancel it.
+  await sql(`
+    insert into transactions (account_id, import_id, booking_date, amount_cents, counterparty, purpose, raw, dedupe_hash)
+    select account_id, import_id, '2026-10-07', -1299, 'Spotify AB', 'Spotify Premium', '{}'::jsonb, 'spotify-price'
+    from transactions limit 1;
+    delete from meta where key = 'insights_refreshed_at';`);
   await page.goto("/");
   await page.getByTestId("notifications").locator("summary").click();
   await page.getByRole("button", { name: "Spotify AB kündigen" }).click();
