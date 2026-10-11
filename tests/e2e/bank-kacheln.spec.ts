@@ -42,7 +42,7 @@ test("PayPal: echte Umsätze per Datei, mit Export-Link, direkt im Pop-up import
     "https://www.paypal.com/reports/dlog",
   );
   await expect(dialog.getByRole("button", { name: "Importieren" })).toBeDisabled();
-  await dialog.getByLabel("CSV-Datei auswählen").setInputFiles("beispieldaten/banken/paypal.csv");
+  await dialog.getByLabel(/^Datei auswählen/).setInputFiles("beispieldaten/banken/paypal.csv");
   await dialog.getByRole("button", { name: "Importieren" }).click();
 
   await expect(page).toHaveURL(/\/import$/);

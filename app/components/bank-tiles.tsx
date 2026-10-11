@@ -303,13 +303,13 @@ function FileImport({ tile, demo, busy }: { tile: TileView; demo: boolean; busy:
         className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 text-center text-sm transition hover:border-foreground/30 hover:bg-accent/50"
       >
         <FileUp className="size-6 text-muted-foreground" aria-hidden="true" />
-        {file ?? "CSV-Datei auswählen"}
+        {file ?? "Datei auswählen (CSV, CAMT, MT940)"}
       </label>
       <input
         id="tile-file"
         name="file"
         type="file"
-        accept=".csv,text/csv"
+        accept=".csv,text/csv,.xml,application/xml,text/xml,.sta,.mt940,.txt"
         required
         className="sr-only"
         onChange={(e) => setFile(e.target.files?.[0]?.name ?? null)}
