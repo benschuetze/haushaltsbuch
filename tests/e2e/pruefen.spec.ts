@@ -42,7 +42,9 @@ test("Buchungen, die beim Import ohne Kategorie blieben, lassen sich nachträgli
   await expect(page.getByText("noch keine Kategorie")).toHaveCount(0);
 });
 
-test("Demo: Prüfen lässt sich ausprobieren, speichert aber nichts", async ({ page }) => {
+test("Demo: Prüfen lässt sich ausprobieren, die Rückmeldung ist sofort im Bild, gespeichert wird nichts", async ({
+  page,
+}) => {
   // In tests the demo server reads the same database.
   await importDemo(page);
   await page.goto(`${DEMO_URL}/pruefen`);
@@ -50,22 +52,36 @@ test("Demo: Prüfen lässt sich ausprobieren, speichert aber nichts", async ({ p
   const first = await page.getByTestId("review-counterparty").textContent();
   const remaining = await page.getByTestId("review-remaining").textContent();
 
-  const accept = page.getByRole("button", { name: /^Passt:/ });
-  await expect(accept).toBeEnabled();
-  await accept.click();
-  await expect(page.getByRole("status")).toContainText(`Demo: „${first}“ wäre jetzt`);
-  await expect(page.getByTestId("review-counterparty")).not.toHaveText(first ?? "");
-
-  // A category from the grid works too.
-  const second = await page.getByTestId("review-counterparty").textContent();
+  // A category far down the grid: the answer must still be on screen, not above it.
   await page
     .getByRole("group", { name: /woanders hin|Wohin gehört/ })
     .getByRole("button", { name: "Mobilität" })
     .click();
-  await expect(page.getByRole("status")).toContainText(`„${second}“ wäre jetzt Mobilität`);
+  const dialog = page.getByRole("dialog", { name: "Nur Demo" });
+  await expect(dialog).toBeInViewport();
+  await expect(dialog).toContainText(`„${first}“ wäre jetzt Mobilität`);
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId("review-remaining")).not.toHaveText(remaining ?? "");
+
+  await page.getByRole("button", { name: /^Passt:/ }).click();
+  await expect(page.getByRole("dialog", { name: "Nur Demo" })).toBeInViewport();
 
   // Nothing was saved: the same bookings are still open.
   await page.goto(`${DEMO_URL}/pruefen`);
   await expect(page.getByTestId("review-counterparty")).toHaveText(first ?? "");
   await expect(page.getByTestId("review-remaining")).toHaveText(remaining ?? "");
+});
+
+test("Demo: in der Liste lassen sich Kategorie ändern und bestätigen ausprobieren", async ({ page }) => {
+  await importDemo(page);
+  await page.goto(`${DEMO_URL}/transaktionen?pruefen=1`);
+  const row = page.getByRole("list", { name: "Buchungen" }).getByRole("listitem").first();
+  await expect(row.getByRole("button", { name: "Bestätigen" })).toBeEnabled();
+  await row.getByRole("button", { name: "Bestätigen" }).click();
+  const dialog = page.getByRole("dialog", { name: "Nur Demo" });
+  await expect(dialog).toBeInViewport();
+  await expect(dialog).toContainText("Gespeichert wird hier nichts");
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+  await expect(dialog).toHaveCount(0);
 });

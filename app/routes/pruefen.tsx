@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { data, Form, Link, useNavigate, useNavigation, useSearchParams, useSubmit } from "react-router";
 import { z } from "zod";
 import { Amount } from "~/components/amount";
+import { DemoNotice } from "~/components/demo-notice";
 import { Button } from "~/components/ui/button";
 import { isDemo } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
@@ -169,7 +170,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
   const submit = useSubmit();
   const navigate = useNavigate();
   // The demo cannot save, but trying it out should feel the same: say what would happen, then show the next card.
-  const [demoNote, setDemoNote] = useState<string | null>(null);
+  const [demoNote, setDemoNote] = useState<{ message: string; next: string } | null>(null);
 
   if (!tx) {
     return (
@@ -189,8 +190,10 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
   const nextSkip = [skip, tx.id].filter(Boolean).join(",");
   const tryInDemo = (categoryId: string) => {
     const name = categories.find((c) => c.id === categoryId)?.name ?? "zugeordnet";
-    setDemoNote(`Demo: „${tx.counterparty}“ wäre jetzt ${name}. Gespeichert wird hier nichts.`);
-    navigate(`/pruefen?skip=${nextSkip}`);
+    setDemoNote({
+      message: `„${tx.counterparty}“ wäre jetzt ${name}, und künftige Buchungen davon auch. Gespeichert wird hier nichts.`,
+      next: `/pruefen?skip=${nextSkip}`,
+    });
   };
   const demoSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -209,14 +212,20 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         </p>
       ) : null}
       {demoNote ? (
-        <p role="status" className="text-sm font-medium">
-          {demoNote}
-        </p>
+        <DemoNotice
+          key={demoNote.next}
+          message={demoNote.message}
+          onClose={() => {
+            const next = demoNote.next;
+            setDemoNote(null);
+            navigate(next);
+          }}
+        />
       ) : null}
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-2xl font-semibold">Prüfen</h1>
         <p className="text-sm text-muted-foreground" data-testid="review-remaining">
-          noch {remaining}
+          noch {demo ? Math.max(0, remaining - (skip?.split(",").length ?? 0)) : remaining}
         </p>
       </div>
 
