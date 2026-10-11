@@ -12,6 +12,34 @@ const MAX_HISTORY = 10;
  * The chat. Its open state can be held by the layout, so the phone's tab bar ("Fragen") and the floating
  * button on wider screens open the same conversation.
  */
+/**
+ * The visible area above the on-screen keyboard. iOS keeps the layout viewport when the keyboard opens and
+ * scrolls the page instead, so a plain "inset-0" sheet would end up behind the keyboard or half off screen.
+ * While open, the page underneath does not scroll.
+ */
+function useKeyboardSafeViewport(active: boolean): { top: number | undefined; height: number | undefined } {
+  const [box, setBox] = useState<{ top: number | undefined; height: number | undefined }>({
+    top: undefined,
+    height: undefined,
+  });
+  useEffect(() => {
+    if (!active) return;
+    const vv = window.visualViewport;
+    const update = () => setBox(vv ? { top: vv.offsetTop, height: vv.height } : { top: 0, height: window.innerHeight });
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    const previous = document.documentElement.style.overflow;
+    if (window.matchMedia("(max-width: 639px)").matches) document.documentElement.style.overflow = "hidden";
+    return () => {
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      document.documentElement.style.overflow = previous;
+    };
+  }, [active]);
+  return box;
+}
+
 export function Assistant({
   open: controlledOpen,
   onOpenChange,
@@ -69,13 +97,17 @@ export function Assistant({
     fetcher.submit({ messages: JSON.stringify(next.slice(-MAX_HISTORY)) }, { method: "post", action: "/assistent" });
   }
 
+  const viewport = useKeyboardSafeViewport(open);
+
   return (
     <>
       {open ? (
         <div
           role="dialog"
           aria-label="Assistent"
-          className="fixed inset-x-4 bottom-24 z-30 flex h-[min(34rem,calc(100dvh-8rem))] flex-col rounded-xl border bg-background shadow-2xl sm:inset-x-auto sm:right-4 sm:w-[24rem]"
+          // Phones: a full screen sheet sized to the part above the keyboard. Desktop: a panel bottom right.
+          style={{ top: viewport.top, height: viewport.height }}
+          className="fixed inset-x-0 z-40 flex flex-col bg-background sm:inset-x-auto sm:top-auto! sm:right-4 sm:bottom-24 sm:h-[min(34rem,calc(100dvh-8rem))]! sm:w-[24rem] sm:rounded-xl sm:border sm:shadow-2xl"
         >
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h2 className="font-semibold">Assistent</h2>

@@ -15,7 +15,7 @@ const PAGES = [
   { path: "/import", heading: "Kontoauszug importieren", action: { role: "button" as const, name: "Importieren" } },
   { path: "/regeln", heading: "Regeln", action: { role: "button" as const, name: "Lieferando ist Restaurant" } },
   { path: "/konten", heading: "Konten", action: { role: "button" as const, name: "Umbenennen" } },
-  { path: "/budgets", heading: "Budgets", action: { role: "button" as const, name: "Kategorie anlegen" } },
+  { path: "/budgets", heading: "Budgets", action: { role: "button" as const, name: "Budget hinzufügen" } },
   { path: "/abos", heading: "Abos und feste Kosten", action: { role: "button" as const, name: /kündigen$/ } },
   { path: "/hinweise", heading: "Hinweise", action: { role: "link" as const, name: "Übersicht" } },
   { path: "/pruefen", heading: "Prüfen", action: { role: "link" as const, name: "Überspringen" } },
@@ -72,13 +72,4 @@ test("Navigation lädt die Zielseite schon beim Zeigen vor, Hinweise aber nicht 
     await expect(page.locator('link[rel="prefetch"][href*="/transaktionen.data"]')).toHaveCount(1);
   }
   await expect(page.locator('link[rel="prefetch"][href*="/hinweise"]')).toHaveCount(0);
-});
-
-test("die sofort sichtbaren Schriften werden vorab geladen", async ({ page }) => {
-  await page.goto("/");
-  const preloads = page.locator('link[rel="preload"][as="font"][type="font/woff2"]');
-  await expect(preloads).toHaveCount(4);
-  for (const href of await preloads.evaluateAll((links) => links.map((l) => l.getAttribute("href")))) {
-    expect((await page.request.get(href ?? "")).ok()).toBe(true);
-  }
 });

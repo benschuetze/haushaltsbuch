@@ -59,6 +59,7 @@ test("Budget anpassen, Überschreitung erscheint als Hinweis in der Glocke, Erle
 
 test("eigene Kategorie mit Budget anlegen", async ({ page }) => {
   await page.goto("/budgets");
+  await page.getByRole("button", { name: "Budget hinzufügen" }).click();
   await page.getByLabel("Name").fill("Urlaub");
   await page.getByLabel("Budget pro Monat (€, optional)").fill("250");
   await page.getByRole("button", { name: "Kategorie anlegen" }).click();
@@ -92,4 +93,20 @@ test("das Glocken-Menü liegt vollständig im Bildschirm, auch auf dem Handy", a
   expect(box, "Menü hat keine Fläche").not.toBeNull();
   expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+});
+
+test("Budget hinzufügen geht von ganz oben, ohne zu scrollen", async ({ page }) => {
+  await page.goto("/budgets");
+  const add = page.getByRole("button", { name: "Budget hinzufügen" });
+  await expect(add).toBeInViewport();
+  await add.click();
+  const category = page.getByLabel("Kategorie", { exact: true });
+  await expect(category).toBeFocused();
+  await expect(category).toBeInViewport();
+  const option = await category.locator("option:not([disabled])").first().textContent();
+  await category.selectOption({ label: option ?? "" });
+  await page.getByLabel("Betrag pro Monat (€)").fill("80");
+  await page.getByRole("button", { name: "Hinzufügen", exact: true }).click();
+  await expect(page.getByTestId("budget").filter({ hasText: option ?? "" })).toContainText("von 80,00 €");
+  await expect(add).toHaveAttribute("aria-expanded", "false");
 });

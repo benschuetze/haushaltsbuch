@@ -25,23 +25,6 @@ import { cn } from "~/lib/utils";
 import type { Route } from "./+types/root";
 import { useNonce } from "./nonce";
 import "./app.css";
-import ebGaramondBold from "@fontsource/eb-garamond/files/eb-garamond-latin-700-normal.woff2?url";
-import interRegular from "@fontsource/inter/files/inter-latin-400-normal.woff2?url";
-import interSemibold from "@fontsource/inter/files/inter-latin-600-normal.woff2?url";
-import monoBold from "@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2?url";
-
-/**
- * The fonts visible on first paint (text, bold, the big number, headings). Without preload the browser finds them
- * only after the CSS has arrived, one round trip later, and the text briefly jumps from the fallback font.
- */
-export const links: Route.LinksFunction = () =>
-  [interRegular, interSemibold, monoBold, ebGaramondBold].map((href) => ({
-    rel: "preload",
-    href,
-    as: "font",
-    type: "font/woff2",
-    crossOrigin: "anonymous" as const,
-  }));
 
 export const middleware: Route.MiddlewareFunction[] = [
   async ({ request }, next) => {
