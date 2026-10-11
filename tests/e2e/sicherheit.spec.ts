@@ -1,5 +1,5 @@
 import { expect, test } from "./fixtures";
-import { resetDb } from "./helpers";
+import { importDemo, resetDb } from "./helpers";
 
 test.beforeEach(resetDb);
 
@@ -62,4 +62,28 @@ test.describe("ohne Anmeldung", () => {
     await expect(page.getByRole("alert")).toHaveText("Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.");
     await expect(page).toHaveURL(/\/login/);
   });
+});
+
+test("strenge CSP blockiert auf keiner Seite etwas, das die App selbst braucht", async ({ page }) => {
+  await importDemo(page);
+  const blocked: string[] = [];
+  page.on("console", (m) => /Content Security Policy|Refused to/i.test(m.text()) && blocked.push(m.text()));
+  page.on("pageerror", (e) => blocked.push(e.message));
+  for (const path of [
+    "/",
+    "/transaktionen",
+    "/pruefen",
+    "/abos",
+    "/banken",
+    "/budgets",
+    "/ziele",
+    "/regeln",
+    "/import",
+    "/rueckblick",
+    "/konten",
+  ]) {
+    await page.goto(path);
+  }
+  await page.getByRole("button", { name: "Assistent öffnen" }).last().click();
+  expect(blocked).toEqual([]);
 });

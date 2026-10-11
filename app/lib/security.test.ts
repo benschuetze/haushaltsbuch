@@ -53,6 +53,17 @@ describe("Header", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).not.toContain("unsafe-inline");
   });
+  it("CSP lässt Daten nur zum eigenen Server: keine fremden Verbindungen, Bilder, Schriften oder Frames", () => {
+    const csp = contentSecurityPolicy("abc");
+    // Injected markup could otherwise send data out through an image URL or a fetch to another host.
+    expect(csp).toContain("connect-src 'self'");
+    expect(csp).toContain("img-src 'self' data:");
+    expect(csp).toContain("font-src 'self'");
+    expect(csp).toContain("frame-src 'none'");
+    expect(csp).toContain("worker-src 'self'");
+    expect(csp).toContain("manifest-src 'self'");
+    expect(csp).toContain("media-src 'self'");
+  });
 });
 
 describe("Logs ohne Kontodaten", () => {

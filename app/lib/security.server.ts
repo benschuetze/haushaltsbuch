@@ -15,6 +15,15 @@ export function contentSecurityPolicy(nonce: string): string {
     "base-uri 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
+    // Everything the app loads comes from itself. Locking each kind down means injected markup cannot send
+    // data to another host. No default-src: it would also block React's inline style attributes.
+    "connect-src 'self'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "media-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "frame-src 'none'",
   ].join("; ");
 }
 

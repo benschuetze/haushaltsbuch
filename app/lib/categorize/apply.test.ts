@@ -1,12 +1,20 @@
 import { readFileSync } from "node:fs";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
+import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { accounts, categories, rules, transactions } from "~/lib/db/schema";
 import { importCsv } from "~/lib/import/run";
 import { createTestDb } from "../../../tests/helpers/db";
 import { scriptedModel } from "../../../tests/helpers/models";
-import { categorizeOpen, categorizeTransactions, confirmTransaction, reapplyRules, setManualCategory } from "./apply";
+import {
+  categorizeOpen,
+  categorizeTransactions,
+  confirmTransaction,
+  LLM_DAILY_ITEMS,
+  reapplyRules,
+  setManualCategory,
+} from "./apply";
 
 const demoCsv = new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv"));
 let db: Db;
@@ -136,6 +144,21 @@ describe("Kategorisierung in der Datenbank", () => {
     await reapplyRules(db);
     const [after] = await db.select().from(transactions).where(eq(transactions.id, rewe.id));
     expect(after).toMatchObject({ categoryId: cat.Lebensmittel, categorySource: "manual", needsReview: false });
+  });
+});
+
+describe("Kosten-Deckel", () => {
+  it("über dem Tagesbudget gehen Buchungen ohne Modellaufruf in „prüfen“ statt das Guthaben zu leeren", async () => {
+    // Almost all of today's budget is already used: only 3 bookings may still go to the model.
+    await takeFromDailyBudget(db, "llm_items", LLM_DAILY_ITEMS - 3, LLM_DAILY_ITEMS);
+    const { model, calls } = modelSaying("Sonstiges");
+    const result = await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
+    const asked = [...JSON.stringify(calls.map((c) => c.prompt)).matchAll(/\\"ref\\":/g)].length;
+    expect(asked).toBe(3);
+    expect(result.byAi).toBe(3);
+    const open = await db.select().from(transactions).where(eq(transactions.needsReview, true));
+    expect(open.length).toBe(result.needsReview);
+    expect(result.needsReview).toBeGreaterThan(0);
   });
 });
 

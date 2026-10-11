@@ -4,7 +4,7 @@ import type { Db } from "~/lib/db/client";
 import { accounts, bankAccounts, bankAuthStates, bankConnections, transactions } from "~/lib/db/schema";
 import { createTestDb } from "../../../tests/helpers/db";
 import { createFakeBank, testKeys } from "../../../tests/helpers/fake-bank";
-import { bankConfig, EnableBankingClient, signJwt } from "./enable-banking.server";
+import { bankConfig, bankRedirectAllowed, EnableBankingClient, signJwt } from "./enable-banking.server";
 import {
   completeConnection,
   consumeAuthState,
@@ -201,5 +201,18 @@ describe("echte API-Antworten", () => {
     expect(connection.validUntil.toISOString()).toBe("2027-04-07T10:19:29.444Z");
     const [link] = await db.select().from(bankAccounts);
     expect(link).toMatchObject({ accountUid: "acc-null", ibanTail: null });
+  });
+});
+
+describe("Weiterleitung zur Bank", () => {
+  it.each([
+    ["https://auth.bank.example/start?x=1", true],
+    ["http://127.0.0.1:5199/bank/callback", true],
+    ["http://bank.example/login", false],
+    ["javascript:alert(1)", false],
+    ["data:text/html,hi", false],
+    ["kein link", false],
+  ])("%s → %s", (url, allowed) => {
+    expect(bankRedirectAllowed(url)).toBe(allowed);
   });
 });

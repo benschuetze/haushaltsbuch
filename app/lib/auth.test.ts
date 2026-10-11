@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { createCookieSessionStorage } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { guard, isLoggedIn, loginConfigured, passwordMatches, safeRedirect } from "./auth.server";
+import { guard, isLoggedIn, logIn, loginConfigured, passwordMatches, safeRedirect } from "./auth.server";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -61,6 +61,11 @@ describe("safeRedirect", () => {
     ["//evil.example", "/"],
     ["/\\evil.example", "/"],
     ["https://evil.example", "/"],
+    // Browsers drop tabs and newlines from URLs: "/<tab>/evil.example" would become "//evil.example".
+    ["/\t/evil.example", "/"],
+    ["/\n/evil.example", "/"],
+    ["/\r\n/evil.example", "/"],
+    ["/ok?x=1#y", "/ok?x=1#y"],
     [null, "/"],
   ])("%s → %s", (input, out) => {
     expect(safeRedirect(input)).toBe(out);
@@ -89,12 +94,50 @@ describe("Session-Secret", () => {
     expect(loginConfigured()).toBe(false);
   });
 
-  it("mit gesetztem Secret gilt ein damit signiertes Cookie als angemeldet", async () => {
+  it("ein Cookie mit gültiger Signatur, aber ohne Ausstellungszeit und Passwort-Bezug gilt nicht", async () => {
     const secret = randomUUID() + randomUUID();
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("SESSION_SECRET", secret);
+    vi.stubEnv("APP_PASSWORD", randomUUID());
     const cookie = await forgedCookie(secret);
-    expect(await isLoggedIn(new Request("http://x/", { headers: { Cookie: cookie } }))).toBe(true);
+    expect(await isLoggedIn(new Request("http://x/", { headers: { Cookie: cookie } }))).toBe(false);
+  });
+});
+
+describe("Sitzungen", () => {
+  async function loginCookie(): Promise<string> {
+    const response = await logIn("/");
+    return (response.headers.get("Set-Cookie") ?? "").split(";")[0] as string;
+  }
+  const loggedIn = (cookie: string) => isLoggedIn(new Request("http://x/", { headers: { Cookie: cookie } }));
+
+  function configure() {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SESSION_SECRET", randomUUID() + randomUUID());
+    vi.stubEnv("APP_PASSWORD", randomUUID());
+  }
+  afterEach(() => vi.useRealTimers());
+
+  it("nach dem Anmelden gilt die Sitzung", async () => {
+    configure();
+    expect(await loggedIn(await loginCookie())).toBe(true);
+  });
+
+  it("nach 7 Tagen ist sie ungültig, auch wenn ein Gerät das Cookie weiter schickt", async () => {
+    configure();
+    vi.useFakeTimers({ now: new Date("2026-10-01T10:00:00Z") });
+    const cookie = await loginCookie();
+    vi.setSystemTime(new Date("2026-10-08T09:00:00Z"));
+    expect(await loggedIn(cookie)).toBe(true);
+    vi.setSystemTime(new Date("2026-10-08T11:00:00Z"));
+    expect(await loggedIn(cookie)).toBe(false);
+  });
+
+  it("ein Passwortwechsel meldet alle bestehenden Sitzungen ab", async () => {
+    configure();
+    const cookie = await loginCookie();
+    vi.stubEnv("APP_PASSWORD", randomUUID());
+    expect(await loggedIn(cookie)).toBe(false);
   });
 });
 

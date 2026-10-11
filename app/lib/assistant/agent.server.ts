@@ -1,8 +1,7 @@
 import { generateText, isStepCount, type LanguageModel, type ModelMessage } from "ai";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
-import { meta } from "~/lib/db/schema";
 import { safeError } from "~/lib/security.server";
 import { createAssistantTools } from "./tools.server";
 
@@ -41,15 +40,7 @@ export const SYSTEM = `Du bist der Assistent im Haushaltsbuch einer Privatperson
 - Keine Anlage-, Steuer- oder Rechtsberatung; allgemeine Spartipps sind in Ordnung.`;
 
 async function withinDailyLimit(db: Db, now: Date): Promise<boolean> {
-  const key = `assistant_calls_${now.toISOString().slice(0, 10)}`;
-  const [row] = await db.select().from(meta).where(eq(meta.key, key));
-  const used = Number(row?.value ?? 0);
-  if (used >= dailyLimit()) return false;
-  await db
-    .insert(meta)
-    .values({ key, value: String(used + 1) })
-    .onConflictDoUpdate({ target: meta.key, set: { value: String(used + 1) } });
-  return true;
+  return (await takeFromDailyBudget(db, "assistant_calls", 1, dailyLimit(), now)) === 1;
 }
 
 export type AssistantReply = { answer: string; tools: string[] };

@@ -48,7 +48,24 @@ const aspspSchema = z.object({
 });
 export type Aspsp = z.infer<typeof aspspSchema>;
 
-const authSchema = z.object({ url: z.string().url(), authorization_id: z.string().optional() });
+/**
+ * The user is sent to this URL, so only https, whatever the API returns: never javascript: or plain http.
+ * Plain http only to the own machine, where the end-to-end tests run their fake bank.
+ */
+export function bankRedirectAllowed(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    if (url.protocol === "https:") return true;
+    return url.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+const authSchema = z.object({
+  url: z.string().refine(bankRedirectAllowed, "Bank-URL muss https sein"),
+  authorization_id: z.string().optional(),
+});
 
 // Banks fill these very differently; anything optional may also arrive as null (seen in the sandbox).
 const sessionSchema = z.object({
