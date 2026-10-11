@@ -10,9 +10,9 @@ function result(page: Page, filename: string) {
 
 test("mehrere Auszüge auf einmal: Bank, Format und Konto erkennt die App selbst", async ({ page }) => {
   await page.goto("/import");
-  await expect(page.getByLabel("Konto")).toHaveValue("");
+  await expect(page.getByLabel("Konto", { exact: true })).toHaveValue("");
   await page
-    .getByLabel("CSV-Dateien")
+    .getByLabel("Kontoauszüge")
     .setInputFiles([
       "beispieldaten/banken/sparkasse.csv",
       "beispieldaten/banken/ing.csv",
@@ -41,7 +41,7 @@ test("mehrere Auszüge auf einmal: Bank, Format und Konto erkennt die App selbst
   await expect(kontoflow.getByTestId("import-inserted")).toHaveText("3");
 
   // Second round: everything is known now, nothing is learned or created again.
-  await page.getByLabel("CSV-Dateien").setInputFiles(["beispieldaten/banken/neu/n26-csv-transactions.csv"]);
+  await page.getByLabel("Kontoauszüge").setInputFiles(["beispieldaten/banken/neu/n26-csv-transactions.csv"]);
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(result(page, "n26-csv-transactions.csv").getByTestId("import-account")).toHaveText("Konto „N26“ · N26");
   await expect(result(page, "n26-csv-transactions.csv").getByTestId("import-duplicates")).toHaveText("6");
@@ -49,7 +49,7 @@ test("mehrere Auszüge auf einmal: Bank, Format und Konto erkennt die App selbst
 
 test("eine unlesbare Datei stoppt die anderen nicht", async ({ page }) => {
   await page.goto("/import");
-  await page.getByLabel("CSV-Dateien").setInputFiles([
+  await page.getByLabel("Kontoauszüge").setInputFiles([
     { name: "kaputt.csv", mimeType: "text/csv", buffer: Buffer.from("nur;zwei\n1;2") },
     // Playwright cannot mix paths and buffers in one call, so the DKB file goes in as a buffer too.
     { name: "dkb.csv", mimeType: "text/csv", buffer: readFileSync("beispieldaten/banken/dkb.csv") },
@@ -63,8 +63,8 @@ test("eine unlesbare Datei stoppt die anderen nicht", async ({ page }) => {
 
 test("Konto von Hand gewählt, aber falsche Bank: Hinweis statt Import", async ({ page }) => {
   await page.goto("/import");
-  await page.getByLabel("Konto").selectOption({ label: "Girokonto (Demo) (Standard (Demo-Format))" });
-  await page.getByLabel("CSV-Dateien").setInputFiles("beispieldaten/banken/ing.csv");
+  await page.getByLabel("Konto", { exact: true }).selectOption({ label: "Girokonto (Demo) (Standard (Demo-Format))" });
+  await page.getByLabel("Kontoauszüge").setInputFiles("beispieldaten/banken/ing.csv");
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByRole("alert")).toContainText("sieht nach ING aus");
 });
@@ -72,7 +72,7 @@ test("Konto von Hand gewählt, aber falsche Bank: Hinweis statt Import", async (
 test("zu große Auswahl wird vor dem Absenden abgefangen, statt an Vercels Grenze zu scheitern", async ({ page }) => {
   await page.goto("/import");
   const big = Buffer.alloc(3 * 1024 * 1024, "a");
-  await page.getByLabel("CSV-Dateien").setInputFiles([
+  await page.getByLabel("Kontoauszüge").setInputFiles([
     { name: "a.csv", mimeType: "text/csv", buffer: big },
     { name: "b.csv", mimeType: "text/csv", buffer: big },
   ]);

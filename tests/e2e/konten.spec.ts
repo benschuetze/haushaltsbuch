@@ -6,7 +6,7 @@ test.beforeEach(resetDb);
 test("automatisch angelegtes Konto umbenennen, Name muss eindeutig sein", async ({ page }) => {
   await page.goto("/import");
   await page
-    .getByLabel("CSV-Dateien")
+    .getByLabel("Kontoauszüge")
     .setInputFiles("beispieldaten/banken/neu/Kontoumsaetze_100_1234567_00_20261008.csv");
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByTestId("import-account")).toContainText("Konto „Neue Bank ··0003“ neu angelegt");
@@ -24,5 +24,5 @@ test("automatisch angelegtes Konto umbenennen, Name muss eindeutig sein", async 
 
   // The new name is what the import page offers from now on.
   await page.goto("/import");
-  await expect(page.getByLabel("Konto")).toContainText("Deutsche Bank Giro");
+  await expect(page.getByLabel("Konto", { exact: true })).toContainText("Deutsche Bank Giro");
 });
