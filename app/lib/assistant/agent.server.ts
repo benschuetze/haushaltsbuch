@@ -1,4 +1,4 @@
-import { generateText, isStepCount, type LanguageModel } from "ai";
+import { generateText, isStepCount, type LanguageModel, type ModelMessage } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "~/lib/db/client";
@@ -30,6 +30,7 @@ export const SYSTEM = `Du bist der Assistent im Haushaltsbuch einer Privatperson
 - „Wann kann ich mir X leisten?“ oder große Anschaffungen: wann_leisten. Wenn leisten „nein“ ergibt, ruf auch wann_leisten auf und nenn den Monat. Fragen zu Sparzielen: sparziele. „Wie lief meine Woche?“: woche.
 - Wenn gehaltNochNichtGebucht gesetzt ist, sag kurz dazu, dass das Gehalt noch nicht in den Buchungen ist und die Zahl deshalb vorsichtig ist.
 - Bei leisten: locker = klares Ja; geht = Ja, mit dem Betrag pro Tag danach; knapp = ehrlich sagen, dass es eng wird; nein = Nein, mit dem fehlenden Betrag. Nie moralisieren.
+- Antworte knapp: höchstens 120 Wörter.
 - Nutze die Werkzeuge, um echte Zahlen nachzusehen. Erfinde nie Buchungen, Beträge oder Abos.
 - Bei Fragen nach Abos, versteckten Kosten oder Verträgen: abos_und_fixkosten aufrufen und auch Zahlungen nennen, die nicht als Abo kategorisiert sind.
 - Wenn ein Monat nicht genannt ist, nimm den neuesten aus „monate“.
@@ -63,6 +64,15 @@ export function toneFrom(value: unknown): Tone {
   return value === "frech" ? "frech" : "freundlich";
 }
 
+/** Thinking blocks are signed for the request that produced them; sent again, the API rejects the whole call. */
+function withoutThinking(messages: ModelMessage[]): ModelMessage[] {
+  return messages.map((m) =>
+    m.role === "assistant" && Array.isArray(m.content)
+      ? { ...m, content: m.content.filter((part) => part.type !== "reasoning") }
+      : m,
+  );
+}
+
 export async function askAssistant(
   db: Db,
   model: LanguageModel,
@@ -74,17 +84,37 @@ export async function askAssistant(
     return { answer: `Für heute ist das Limit von ${dailyLimit()} Fragen erreicht. Morgen geht es weiter.`, tools: [] };
   }
   try {
+    const system = `${SYSTEM}\n- ${TONE[tone]}`;
+    const messages = history.map((m) => ({ role: m.role, content: m.content }));
     const result = await generateText({
       model,
-      system: `${SYSTEM}\n- ${TONE[tone]}`,
-      messages: history.map((m) => ({ role: m.role, content: m.content })),
+      system,
+      messages,
       tools: createAssistantTools(db, now),
       stopWhen: isStepCount(6),
-      maxOutputTokens: 800,
+      maxOutputTokens: 1500,
       maxRetries: 1,
     });
     const tools = result.steps.flatMap((s) => s.toolCalls.map((c) => c.toolName));
-    return { answer: result.text.trim() || "Dazu habe ich keine Antwort gefunden.", tools };
+    let answer = result.text.trim();
+    // The budget can run out mid-way through yet another tool call: the text is then empty or cut off.
+    // One more call without tools, on the tool results that did complete, turns them into an answer.
+    if (!answer || result.finishReason === "length") {
+      const done = result.steps.filter((s) => s.finishReason === "tool-calls").at(-1);
+      const summary = await generateText({
+        model,
+        system,
+        messages: [
+          ...messages,
+          ...withoutThinking(done?.response.messages ?? []),
+          { role: "user", content: "Antworte jetzt kurz mit dem, was du nachgesehen hast, ohne weitere Werkzeuge." },
+        ],
+        maxOutputTokens: 600,
+        maxRetries: 1,
+      });
+      answer = summary.text.trim() || answer;
+    }
+    return { answer: answer || "Dazu habe ich keine Antwort gefunden.", tools };
   } catch (error) {
     console.error(`Assistent fehlgeschlagen: ${safeError(error)}`);
     return { answer: "Gerade kann ich nicht antworten. Bitte später noch einmal versuchen.", tools: [] };

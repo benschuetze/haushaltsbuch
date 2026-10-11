@@ -127,6 +127,46 @@ describe("Assistent", () => {
     vi.unstubAllEnvs();
   });
 
+  it("abgeschnittene Antwort nach Werkzeugaufrufen: kurze Zusammenfassung statt „keine Antwort“", async () => {
+    const usage = {
+      inputTokens: { total: 0, noCache: 0, cacheRead: undefined, cacheWrite: undefined },
+      outputTokens: { total: 0, text: 0, reasoning: undefined },
+    };
+    const calls: { tools: boolean; prompt: string }[] = [];
+    const model = new MockLanguageModelV4({
+      doGenerate: async ({ prompt, tools }) => {
+        calls.push({ tools: Boolean(tools?.length), prompt: JSON.stringify(prompt) });
+        if (calls.length === 1)
+          return {
+            content: [
+              { type: "reasoning", text: "erst Abos ansehen" },
+              { type: "tool-call", toolCallId: "c1", toolName: "abos_und_fixkosten", input: "{}" },
+            ],
+            finishReason: { unified: "tool-calls", raw: undefined },
+            usage,
+            warnings: [],
+          };
+        if (calls.length === 2)
+          // Budget used up by a tool call that never finished: no text at all.
+          return { content: [], finishReason: { unified: "length", raw: undefined }, usage, warnings: [] };
+        return {
+          content: [{ type: "text", text: "Fang bei den Abos an." }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage,
+          warnings: [],
+        };
+      },
+    });
+    const reply = await askAssistant(db, model, [{ role: "user", content: "Wo kann ich 100 € sparen?" }]);
+    expect(reply.answer).toBe("Fang bei den Abos an.");
+    expect(reply.tools).toEqual(["abos_und_fixkosten"]);
+    // The summary sees what the tools returned, and may not call any more.
+    expect(calls[2]?.tools).toBe(false);
+    expect(calls[2]?.prompt).toContain("abos_und_fixkosten");
+    // Thinking blocks are signed for the original request; the API rejects them when sent again.
+    expect(calls[2]?.prompt).not.toContain("erst Abos ansehen");
+  });
+
   it("API-Fehler: verständliche Antwort statt Absturz", async () => {
     const reply = await ask("Budget?", failingModel());
     expect(reply.answer).toBe("Gerade kann ich nicht antworten. Bitte später noch einmal versuchen.");
