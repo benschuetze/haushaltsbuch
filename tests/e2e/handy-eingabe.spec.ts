@@ -20,7 +20,7 @@ test("Handy: kein Eingabefeld unter 16 px, sonst zoomt iOS beim Tippen hinein", 
   test.skip(!isMobile, "betrifft nur Handys");
   await importDemo(page);
   const small: string[] = [];
-  for (const path of ["/", "/transaktionen", "/budgets", "/ziele", "/regeln", "/banken", "/import", "/konten"]) {
+  for (const path of ["/", "/transaktionen", "/budgets", "/ziele", "/regeln", "/banken", "/import"]) {
     await page.goto(path);
     small.push(...(await smallFields(page)));
   }

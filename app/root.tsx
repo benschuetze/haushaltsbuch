@@ -82,7 +82,6 @@ const NAV = [
   { to: "/import", label: "Import", end: false },
   { to: "/regeln", label: "Regeln", end: false },
   { to: "/banken", label: "Banken", end: false },
-  { to: "/konten", label: "Konten", end: false },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
