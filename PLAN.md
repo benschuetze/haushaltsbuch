@@ -75,7 +75,7 @@ Produktion spricht über `drizzle-orm/neon-http` mit der Datenbank: schnell im S
 |---|---|
 | `/` | Aktueller Monat: Summe Einnahmen, Ausgaben, Top-Kategorien, Anzahl „prüfen“ |
 | `/import` | Konto wählen, CSV hochladen, Ergebnis: neu, Duplikate, per Regel, per KI, zu prüfen |
-| `/transaktionen` | Liste mit Filter (Monat, Kategorie, prüfen, unkategorisiert), Kategorie inline ändern |
+| `/buchungen` | Liste mit Filter (Monat, Kategorie, prüfen, unkategorisiert), Kategorie inline ändern |
 | `/monat/:yyyy-mm` | Übersicht je Kategorie mit Balken, Vergleich Vormonat |
 | `/regeln` | Regeln ansehen, bearbeiten, löschen, Priorität ändern |
 
