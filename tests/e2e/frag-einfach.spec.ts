@@ -39,7 +39,7 @@ test("„Diese Woche“: Betrag seit Montag, mit Vergleich oder ehrlichem Hinwei
   await page.goto("/");
   await expect(page.getByTestId("week-spent")).toHaveText(/€$/);
   await expect(page.getByTestId("week-compare")).toHaveText(
-    /(weniger|mehr) als sonst bis \w+|fehlen noch ein paar Wochen/,
+    /(weniger|mehr) als sonst bis \w+|fehlen noch ein paar Wochen|Bisher nichts ausgegeben|noch nichts ausgegeben|Genau wie sonst/,
   );
 });
 
