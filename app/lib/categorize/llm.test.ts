@@ -91,3 +91,23 @@ describe("redactIbans", () => {
     expect(redactIbans("Rechnung 2026-0815")).toBe("Rechnung 2026-0815");
   });
 });
+
+describe("Kategorien im Prompt", () => {
+  it("Standardkategorien kommen mit Beschreibung, eigene nur mit Namen", async () => {
+    const { model, calls } = scriptedModel(answer([]));
+    await categorizeWithLlm(
+      model,
+      [
+        { id: "a", name: "Hobbys", kind: "expense" },
+        { id: "b", name: "Einkommen", kind: "income" },
+        { id: "c", name: "Garten", kind: "expense" },
+      ],
+      [item("x")],
+    );
+    const sent = promptText(calls[0] as (typeof calls)[number]);
+    expect(sent).toContain("- Hobbys: Sport und Kurse");
+    expect(sent).toContain("- Einkommen: nur Eingänge");
+    // The prompt arrives JSON-encoded, so the line break is the two characters \ and n.
+    expect(sent).toContain("- Garten\\n");
+  });
+});

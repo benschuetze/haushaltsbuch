@@ -2,6 +2,12 @@ import { generateText, type LanguageModel, Output } from "ai";
 import { z } from "zod";
 import { safeError } from "~/lib/security.server";
 
+/**
+ * Measured, not guessed (pnpm eval, 203 bookings, 2026-10-12, see evals/ergebnis.md): at 0.7 one silent error is
+ * left (running shoes as "Kleidung" instead of "Hobbys", defensible either way) and 9.9 % go to review. 0.8 would
+ * remove that one case for 13.3 % review, 0.9 for 20.7 %. Answers at 0.7–0.9 were right 95.5 % of the time,
+ * at 0.9 and above 100 %. Re-check with pnpm eval whenever the prompt or the model changes.
+ */
 export const REVIEW_THRESHOLD = 0.7;
 export const BATCH_SIZE = 25;
 
@@ -34,13 +40,40 @@ const responseSchema = z.object({
 
 export const SYSTEM_PROMPT = `Du ordnest Kontobewegungen eines Privathaushalts in Deutschland Kategorien zu.
 Regeln:
-- Verwende ausschließlich einen Kategorienamen aus der übergebenen Liste, exakt so geschrieben.
+- Verwende ausschließlich einen Kategorienamen aus der übergebenen Liste, exakt so geschrieben (nur den Namen vor dem Doppelpunkt).
 - Positive Beträge sind Eingänge, negative sind Ausgaben.
 - "Umbuchung" nur für Geld zwischen eigenen Konten (Sparrate, Tagesgeld, Depot-Überträge).
 - Bei PayPal oder Sammelzahlern entscheidet der Händler im Verwendungszweck.
 - Wenn die Zuordnung unklar ist (z. B. Versandhändler mit gemischtem Sortiment, Bargeld, Überweisungen an Privatpersonen), nimm "Sonstiges" und eine Konfidenz unter 0.5.
 - confidence ist eine Zahl zwischen 0 und 1: wie sicher du bist.
 - Gib für jede Buchung genau ein Ergebnis mit ihrer ref zurück.`;
+
+/**
+ * What each default category covers. With names alone the model has to guess where the borders are (a climbing
+ * gym: hobby or leisure? child benefit: income or child costs?); the first eval run lost most points there.
+ * Categories the user creates are sent with their name only.
+ */
+export const CATEGORY_HINTS: Record<string, string> = {
+  Wohnen: "Miete, Nebenkosten, Strom, Gas, Wasser, Grundsteuer, Kabelanschluss nur wenn Teil der Miete",
+  Lebensmittel: "Supermarkt, Discounter, Bäckerei, Metzgerei, Wochenmarkt, Lebensmittel-Lieferung",
+  "Kind & Kita": "Kita- und Schulbeiträge, Babysitter, Kinderkurse, Spielzeug, Kinderkleidung, Klassenfahrt",
+  Mobilität: "Tanken, Bus und Bahn, Taxi und Fahrdienste, E-Scooter, Werkstatt, Parken, Kfz-Steuer",
+  Versicherungen: "Beiträge zu Versicherungen und Krankenkasse",
+  "Abos & Software": "Streaming, Software, Cloud, Mobilfunk, Internet, Fitnessstudio-Mitgliedschaft",
+  Hobbys:
+    "Sport und Kurse (Kletterhalle, Tanzschule, Musikschule), Sportausrüstung, Instrumente, Bastelbedarf, Spiele, Bücher",
+  Gesundheit: "Apotheke, Arzt, Zahnarzt, Physiotherapie, Optiker, Zuzahlungen",
+  Freizeit: "Kino, Konzerte, Museen, Ausflüge, Freizeitparks, Bowling, Reisen und Hotels",
+  Kleidung: "Kleidung und Schuhe für Erwachsene",
+  Haushalt: "Drogerie, Baumarkt, Möbel, Haushalts- und Elektrogeräte, Waschsalon",
+  "Restaurant & Lieferdienst": "Restaurants, Cafés, Imbiss, Kantine, Essens-Lieferdienste",
+  Haustier: "Tierfutter, Tierarzt, Hundesteuer, Hundeschule",
+  Gebühren: "Kontoentgelte, Zinsen, Rundfunkbeitrag, Behörden- und Ausweisgebühren",
+  Einkommen:
+    "nur Eingänge: Gehalt, Rente, Kindergeld, Elterngeld, Erstattungen, Verkäufe (Kleinanzeigen, Vinted), Honorare",
+  Umbuchung: "Geld zwischen eigenen Konten: Tagesgeld, Depot, Ausgleich der Kreditkarte",
+  Sonstiges: "alles, was in keine andere Kategorie passt oder unklar ist",
+};
 
 // Real purposes often carry IBANs ("Kto/IBAN: DE…"). They never help categorising and must not leave the app.
 const IBAN_IN_TEXT = /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,4})?\b/g;
@@ -59,7 +92,10 @@ export function buildPrompt(categories: LlmCategory[], items: LlmInput[]): strin
       date: item.bookingDate,
     }),
   );
-  return `Kategorien:\n${categories.map((c) => `- ${c.name}`).join("\n")}\n\nBuchungen (eine pro Zeile, JSON):\n${lines.join("\n")}`;
+  const list = categories.map((c) =>
+    CATEGORY_HINTS[c.name] ? `- ${c.name}: ${CATEGORY_HINTS[c.name]}` : `- ${c.name}`,
+  );
+  return `Kategorien:\n${list.join("\n")}\n\nBuchungen (eine pro Zeile, JSON):\n${lines.join("\n")}`;
 }
 
 const reviewOnly: LlmVerdict = { categoryId: null, confidence: 0, needsReview: true };
@@ -74,6 +110,8 @@ export async function categorizeWithLlm(
   items: LlmInput[],
   onError: (error: unknown) => void = (error) =>
     console.error(`LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“: ${safeError(error)}`),
+  /** Tokens per batch; the eval uses it to report what a booking costs. */
+  onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void,
 ): Promise<Map<string, LlmVerdict>> {
   const verdicts = new Map<string, LlmVerdict>();
   const byName = new Map(categories.map((c) => [c.name.toLocaleLowerCase("de"), c.id]));
@@ -82,7 +120,7 @@ export async function categorizeWithLlm(
     const batch = items.slice(start, start + BATCH_SIZE);
     let results: z.infer<typeof responseSchema>["results"] = [];
     try {
-      const { output } = await generateText({
+      const { output, usage } = await generateText({
         model,
         system: SYSTEM_PROMPT,
         prompt: buildPrompt(categories, batch),
@@ -92,6 +130,7 @@ export async function categorizeWithLlm(
         maxOutputTokens: 3000,
       });
       results = output.results;
+      onUsage?.({ inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 });
     } catch (error) {
       onError(error);
     }

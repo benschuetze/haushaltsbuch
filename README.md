@@ -70,6 +70,22 @@ Alles läuft in einer React-Router-App auf Vercel: Loader und Actions sind der S
 - **Grenzen geprüft:** Formulare, CSV-Zeilen, Bank-API-Antworten und jede einzelne LLM-Antwort laufen durch Zod. Was nicht passt, wird mit Grund abgelehnt oder landet in „prüfen“.
 - **Ende zu Ende:** React Router erzeugt Typen pro Route (`+types/…`), Loader-Daten sind in der Komponente typisiert. `tsc --noEmit` im strikten Modus ist Teil von `pnpm check` und der CI.
 
+## Wie gut ist die Kategorisierung?
+
+Gemessen mit `pnpm eval` am 12.10.2026, Modell `claude-haiku-5-5`, 203 erfundene und von Hand beschriftete Buchungen ([`evals/kategorisierung.json`](evals/kategorisierung.json)). 91 davon entscheidet die eingebaute Händlerliste ohne Modell, 112 gehen an das Modell.
+
+| Kennzahl | erster Lauf | mit Kategorie-Beschreibungen |
+|---|---|---|
+| Trefferquote gesamt | 93,6 % | 98,5 % |
+| Trefferquote nur Modell | 88,4 % | 97,3 % |
+| Anteil „prüfen“ | 13,8 % | 9,9 % |
+| Falsch mit Konfidenz ≥ 0,7 (stille Fehler) | 7 | 1 |
+| Tokens pro Buchung ans Modell | 158 | 200 |
+
+Im ersten Lauf sah das Modell nur Kategorienamen und verlor die meisten Punkte an Grenzen: Kletterhalle und Tanzschule als „Freizeit“ statt „Hobbys“, Kindergeld als „Kind & Kita“ statt „Einkommen“. Seitdem bekommt jede Standardkategorie eine Zeile Beschreibung. **Einschränkung:** Diese Beschreibungen sind nach dem ersten Lauf auf demselben Set entstanden. Die zweite Zahl ist deshalb optimistischer als eine Messung auf neuen Daten; neue Fälle kommen ins Set, bevor der Prompt wieder angepasst wird.
+
+**Schwelle 0,7:** Bei 0,7 bleibt ein stiller Fehler (Laufschuhe als „Kleidung“, vertretbar) und 9,9 % gehen nach „prüfen“; 0,8 hätte ihn für 13,3 % „prüfen“ vermieden, 0,9 für 20,7 %. Antworten mit Konfidenz 0,7–0,9 stimmten zu 95,5 %, ab 0,9 zu 100 %. Die vollständige Auswertung je Kategorie, Kalibrierung und Verwechslungen steht in [`evals/ergebnis.md`](evals/ergebnis.md), der erste Lauf in [`evals/ergebnis-erster-lauf.md`](evals/ergebnis-erster-lauf.md).
+
 ## Kategorisierung einer Buchung
 
 ```
