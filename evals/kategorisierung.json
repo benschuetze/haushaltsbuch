@@ -1,202 +1,1441 @@
 {
-  "description": "Erfundene Buchungen mit erwarteter Kategorie. Amazon und Bargeld sind bewusst mehrdeutig: erwartet wird Sonstiges oder needs_review.",
-  "ambiguous": ["Amazon EU S.a.r.l.", "Bargeldauszahlung", "Max Mustermann"],
+  "description": "Erfundene Buchungen mit erwarteter Kategorie, von Hand beschriftet. Mehrdeutige Fälle (Bargeld, Versandhändler mit allem, private Überweisungen) stehen unter ambiguous: dort ist auch „prüfen“ richtig.",
+  "ambiguous": [
+    "AMZN Mktp DE",
+    "Amazon EU S.a.r.l.",
+    "Amazon Payments Europe",
+    "Bargeldauszahlung",
+    "Deutsche Post AG",
+    "Geldautomat Volksbank",
+    "Hermes Paketshop",
+    "Lisa Beispiel",
+    "Max Mustermann",
+    "Nachbar Tom",
+    "Otto (GmbH & Co KG)",
+    "SQ *BLUMEN LIEBE",
+    "eBay"
+  ],
   "cases": [
     {
-      "id": "e01",
+      "id": "e001",
       "counterparty": "REWE Markt",
       "purpose": "Kartenzahlung girocard",
       "amount_cents": -4510,
       "expected": "Lebensmittel"
     },
     {
-      "id": "e02",
+      "id": "e002",
       "counterparty": "ALDI SUED",
       "purpose": "Kartenzahlung girocard",
       "amount_cents": -2230,
       "expected": "Lebensmittel"
     },
     {
-      "id": "e03",
+      "id": "e003",
       "counterparty": "dm-drogerie markt",
       "purpose": "Kartenzahlung girocard",
       "amount_cents": -1599,
       "expected": "Haushalt"
     },
     {
-      "id": "e04",
+      "id": "e004",
       "counterparty": "Hausverwaltung Sonnenhof",
       "purpose": "Miete 10/2026 Whg 3",
       "amount_cents": -89000,
       "expected": "Wohnen"
     },
     {
-      "id": "e05",
+      "id": "e005",
       "counterparty": "Stadtwerke Beispielstadt",
       "purpose": "Abschlag Strom Gas",
       "amount_cents": -11800,
       "expected": "Wohnen"
     },
     {
-      "id": "e06",
+      "id": "e006",
       "counterparty": "Kita Regenbogen e.V.",
       "purpose": "Elternbeitrag Verpflegung",
       "amount_cents": -7450,
       "expected": "Kind & Kita"
     },
     {
-      "id": "e07",
+      "id": "e007",
       "counterparty": "Musterversicherung AG",
       "purpose": "Haftpflicht Hausrat Beitrag",
       "amount_cents": -2190,
       "expected": "Versicherungen"
     },
     {
-      "id": "e08",
+      "id": "e008",
       "counterparty": "Spotify AB",
       "purpose": "Spotify Premium",
       "amount_cents": -1099,
       "expected": "Abos & Software"
     },
     {
-      "id": "e09",
+      "id": "e009",
       "counterparty": "Netflix International",
       "purpose": "Netflix Monatsabo",
       "amount_cents": -1399,
       "expected": "Abos & Software"
     },
     {
-      "id": "e10",
+      "id": "e010",
       "counterparty": "PayPal Europe",
       "purpose": "PP.4471.PP . Thomann GmbH, Ihr Einkauf bei Thomann",
       "amount_cents": -8900,
       "expected": "Hobbys"
     },
     {
-      "id": "e11",
+      "id": "e011",
       "counterparty": "PayPal Europe",
       "purpose": "PP.4471.PP . Zalando SE",
       "amount_cents": -5495,
       "expected": "Kleidung"
     },
     {
-      "id": "e12",
+      "id": "e012",
       "counterparty": "PayPal Europe",
       "purpose": "PP.4471.PP . Ihr Einkauf bei Kaufland",
       "amount_cents": -3120,
       "expected": "Lebensmittel"
     },
     {
-      "id": "e13",
+      "id": "e013",
       "counterparty": "Arbeitgeber Muster GmbH",
       "purpose": "Gehalt 10/2026",
       "amount_cents": 361240,
       "expected": "Einkommen"
     },
     {
-      "id": "e14",
+      "id": "e014",
       "counterparty": "Familienkasse",
       "purpose": "Kindergeld",
       "amount_cents": 25900,
       "expected": "Einkommen"
     },
     {
-      "id": "e15",
+      "id": "e015",
       "counterparty": "Club Hafen",
       "purpose": "Gage DJ-Set",
       "amount_cents": 25000,
       "expected": "Einkommen"
     },
     {
-      "id": "e16",
+      "id": "e016",
       "counterparty": "Eigenes Tagesgeld",
       "purpose": "Sparrate",
       "amount_cents": -30000,
       "expected": "Umbuchung"
     },
     {
-      "id": "e17",
+      "id": "e017",
       "counterparty": "Max Mustermann",
       "purpose": "Danke fuers Auslegen Pizza",
       "amount_cents": 1500,
       "expected": "Sonstiges"
     },
     {
-      "id": "e18",
+      "id": "e018",
       "counterparty": "Aral Station",
       "purpose": "Kartenzahlung Tankstelle",
       "amount_cents": -6140,
       "expected": "Mobilität"
     },
     {
-      "id": "e19",
+      "id": "e019",
       "counterparty": "Deutsche Bahn",
       "purpose": "DB Fernverkehr Ticket",
       "amount_cents": -2990,
       "expected": "Mobilität"
     },
     {
-      "id": "e20",
+      "id": "e020",
       "counterparty": "Apotheke am Markt",
       "purpose": "Kartenzahlung",
       "amount_cents": -850,
       "expected": "Gesundheit"
     },
     {
-      "id": "e21",
+      "id": "e021",
       "counterparty": "Zoo Beispielstadt",
       "purpose": "Kartenzahlung Eintritt",
       "amount_cents": -2400,
       "expected": "Freizeit"
     },
     {
-      "id": "e22",
+      "id": "e022",
       "counterparty": "Amazon EU S.a.r.l.",
       "purpose": "Bestellung 302-1234567",
       "amount_cents": -2749,
       "expected": "Sonstiges"
     },
     {
-      "id": "e23",
+      "id": "e023",
       "counterparty": "Bandcamp Inc",
       "purpose": "Kartenzahlung bandcamp.com",
       "amount_cents": -900,
       "expected": "Hobbys"
     },
     {
-      "id": "e24",
+      "id": "e024",
       "counterparty": "IKEA Deutschland",
       "purpose": "Kartenzahlung",
       "amount_cents": -6400,
       "expected": "Haushalt"
     },
     {
-      "id": "e25",
+      "id": "e025",
       "counterparty": "Kinderarztpraxis Dr. Beispiel",
       "purpose": "Rechnung IGeL",
       "amount_cents": -3500,
       "expected": "Gesundheit"
     },
     {
-      "id": "e26",
+      "id": "e026",
       "counterparty": "Spielwaren Huber",
       "purpose": "Kartenzahlung",
       "amount_cents": -1999,
       "expected": "Kind & Kita"
     },
     {
-      "id": "e27",
+      "id": "e027",
       "counterparty": "Bargeldauszahlung",
       "purpose": "GA Sparkasse Automat",
       "amount_cents": -10000,
       "expected": "Sonstiges"
     },
     {
-      "id": "e28",
+      "id": "e028",
       "counterparty": "Finanzamt Beispielstadt",
       "purpose": "Erstattung ESt 2025",
       "amount_cents": 41200,
       "expected": "Einkommen"
+    },
+    {
+      "id": "e029",
+      "counterparty": "EDEKA Center Beispielstadt",
+      "purpose": "Kartenzahlung girocard 14.09.",
+      "amount_cents": -6375,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e030",
+      "counterparty": "LIDL DIENSTL GMBH",
+      "purpose": "VISA Debit Lidl sagt Danke",
+      "amount_cents": -1849,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e031",
+      "counterparty": "NETTO MARKEN-DISCOUNT",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2214,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e032",
+      "counterparty": "PENNY MARKT GMBH",
+      "purpose": "Kartenzahlung girocard",
+      "amount_cents": -1130,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e033",
+      "counterparty": "Kaufland Beispielstadt",
+      "purpose": "girocard 0815",
+      "amount_cents": -8745,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e034",
+      "counterparty": "Bäckerei Krume",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -640,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e035",
+      "counterparty": "Alnatura Produktions",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -3290,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e036",
+      "counterparty": "Wochenmarkt Gemüse Yilmaz",
+      "purpose": "SumUp *Wochenmarkt",
+      "amount_cents": -1250,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e037",
+      "counterparty": "Metzgerei Brandl",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1895,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e038",
+      "counterparty": "tegut... gute Lebensmittel",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2766,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e039",
+      "counterparty": "Flink SE",
+      "purpose": "Lieferung Einkauf",
+      "amount_cents": -3412,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e040",
+      "counterparty": "REWE Markt GmbH",
+      "purpose": "Abholservice Bestellung 88213",
+      "amount_cents": -9120,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e041",
+      "counterparty": "Lieferando.de",
+      "purpose": "Bestellung Pizzeria Napoli",
+      "amount_cents": -2350,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e042",
+      "counterparty": "Wolt Germany",
+      "purpose": "Wolt order 7HK2",
+      "amount_cents": -1890,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e043",
+      "counterparty": "McDonalds 1234",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1145,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e044",
+      "counterparty": "Starbucks Coffee",
+      "purpose": "Apple Pay",
+      "amount_cents": -545,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e045",
+      "counterparty": "Trattoria da Luigi",
+      "purpose": "SumUp *Trattoria",
+      "amount_cents": -4680,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e046",
+      "counterparty": "Burger King Filiale 22",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1290,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e047",
+      "counterparty": "Mensa Studierendenwerk",
+      "purpose": "Kartenzahlung Mensa",
+      "amount_cents": -420,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e048",
+      "counterparty": "Sushi Circle",
+      "purpose": "Kartenzahlung Abendessen",
+      "amount_cents": -3870,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e049",
+      "counterparty": "Uber Eats",
+      "purpose": "Uber Eats Bestellung",
+      "amount_cents": -2730,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e050",
+      "counterparty": "Café Kaffeesatz",
+      "purpose": "SumUp *Kaffeesatz",
+      "amount_cents": -760,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e051",
+      "counterparty": "Hausverwaltung Lindenhof GmbH",
+      "purpose": "Miete Nov 2026 Whg 12 OG2",
+      "amount_cents": -112000,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e052",
+      "counterparty": "Vattenfall Europe Sales",
+      "purpose": "Abschlag Strom Vertragskonto 4711",
+      "amount_cents": -7400,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e053",
+      "counterparty": "E.ON Energie Deutschland",
+      "purpose": "Abschlag Gas 11/2026",
+      "amount_cents": -9300,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e054",
+      "counterparty": "Stadtwerke Musterstadt",
+      "purpose": "Wasser Abwasser Abschlag",
+      "amount_cents": -3600,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e055",
+      "counterparty": "Wohnungsbaugenossenschaft Eintracht",
+      "purpose": "Nutzungsgebühr Wohnung 4",
+      "amount_cents": -78000,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e056",
+      "counterparty": "Max Vermieter",
+      "purpose": "Miete Oktober Erdgeschoss links",
+      "amount_cents": -95000,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e057",
+      "counterparty": "Grundbesitzabgaben Stadtkasse",
+      "purpose": "Grundsteuer Müll Straßenreinigung",
+      "amount_cents": -18450,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e058",
+      "counterparty": "Kabel Deutschland Vodafone",
+      "purpose": "Kabelanschluss Wohnung",
+      "amount_cents": -1999,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e059",
+      "counterparty": "Shell Deutschland",
+      "purpose": "Kartenzahlung Tankstelle",
+      "amount_cents": -7215,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e060",
+      "counterparty": "ESSO Station 4411",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -5980,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e061",
+      "counterparty": "DB Vertrieb GmbH",
+      "purpose": "Deutschlandticket November",
+      "amount_cents": -5800,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e062",
+      "counterparty": "BVG Berliner Verkehrsbetriebe",
+      "purpose": "Einzelfahrschein App",
+      "amount_cents": -350,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e063",
+      "counterparty": "FlixBus",
+      "purpose": "Ticket Berlin Hamburg",
+      "amount_cents": -1999,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e064",
+      "counterparty": "Uber BV",
+      "purpose": "Fahrt 12.09.",
+      "amount_cents": -1640,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e065",
+      "counterparty": "TIER Mobility",
+      "purpose": "E-Scooter Fahrt",
+      "amount_cents": -380,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e066",
+      "counterparty": "ATU Auto-Teile-Unger",
+      "purpose": "Inspektion Rechnung 5512",
+      "amount_cents": -28940,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e067",
+      "counterparty": "Parkhaus Zentrum APCOA",
+      "purpose": "Parkgebühr",
+      "amount_cents": -600,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e068",
+      "counterparty": "Kfz-Steuer Hauptzollamt",
+      "purpose": "Kraftfahrzeugsteuer B-XY",
+      "amount_cents": -11200,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e069",
+      "counterparty": "Allianz Versicherungs-AG",
+      "purpose": "Kfz-Versicherung Beitrag 2027",
+      "amount_cents": -48230,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e070",
+      "counterparty": "HUK-COBURG",
+      "purpose": "Beitrag Hausrat Vertr 77-1",
+      "amount_cents": -1450,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e071",
+      "counterparty": "ERGO Versicherung AG",
+      "purpose": "Zahnzusatz Beitrag",
+      "amount_cents": -2390,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e072",
+      "counterparty": "Debeka Krankenversicherungsverein",
+      "purpose": "Beitrag Oktober",
+      "amount_cents": -21460,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e073",
+      "counterparty": "AXA Versicherung AG",
+      "purpose": "Rechtsschutz Jahresbeitrag",
+      "amount_cents": -26800,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e074",
+      "counterparty": "Gothaer Lebensversicherung",
+      "purpose": "Risikoleben Beitrag",
+      "amount_cents": -1890,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e075",
+      "counterparty": "Barmenia Versicherungen",
+      "purpose": "Auslandskrankenversicherung",
+      "amount_cents": -1150,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e076",
+      "counterparty": "Disney Plus",
+      "purpose": "Disney+ Monatsabo",
+      "amount_cents": -999,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e077",
+      "counterparty": "Amazon Prime",
+      "purpose": "Prime Mitgliedschaft",
+      "amount_cents": -899,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e078",
+      "counterparty": "APPLE.COM/BILL",
+      "purpose": "iCloud+ 200 GB",
+      "amount_cents": -299,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e079",
+      "counterparty": "Microsoft Ireland",
+      "purpose": "Microsoft 365 Family",
+      "amount_cents": -1299,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e080",
+      "counterparty": "Adobe Systems Software",
+      "purpose": "Creative Cloud Foto Abo",
+      "amount_cents": -1189,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e081",
+      "counterparty": "Telekom Deutschland GmbH",
+      "purpose": "Mobilfunk Rechnung 10/2026",
+      "amount_cents": -3995,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e082",
+      "counterparty": "Vodafone GmbH",
+      "purpose": "Rechnung Kundennr 99887",
+      "amount_cents": -2999,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e083",
+      "counterparty": "o2 Telefonica",
+      "purpose": "Handyvertrag Oktober",
+      "amount_cents": -1999,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e084",
+      "counterparty": "1&1 Telecom",
+      "purpose": "DSL Rechnung",
+      "amount_cents": -3999,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e085",
+      "counterparty": "Audible GmbH",
+      "purpose": "Audible Abo",
+      "amount_cents": -995,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e086",
+      "counterparty": "YouTube Premium Google",
+      "purpose": "YouTube Premium Familie",
+      "amount_cents": -2399,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e087",
+      "counterparty": "Dropbox",
+      "purpose": "Dropbox Plus jährlich",
+      "amount_cents": -11988,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e088",
+      "counterparty": "OpenAI",
+      "purpose": "ChatGPT Plus subscription",
+      "amount_cents": -2300,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e089",
+      "counterparty": "FitX Deutschland",
+      "purpose": "Mitgliedsbeitrag Oktober",
+      "amount_cents": -2499,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e090",
+      "counterparty": "Urban Sports Club",
+      "purpose": "Mitgliedschaft M",
+      "amount_cents": -5900,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e091",
+      "counterparty": "Thomann GmbH",
+      "purpose": "Bestellung Gitarrensaiten",
+      "amount_cents": -2490,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e092",
+      "counterparty": "Steam Valve",
+      "purpose": "Steam Purchase",
+      "amount_cents": -1999,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e093",
+      "counterparty": "Nintendo of Europe",
+      "purpose": "eShop Guthaben",
+      "amount_cents": -2500,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e094",
+      "counterparty": "Bastelladen Papierkram",
+      "purpose": "Kartenzahlung Wolle Stricknadeln",
+      "amount_cents": -3150,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e095",
+      "counterparty": "Musikschule Klangwerk",
+      "purpose": "Unterricht Gitarre Okt",
+      "amount_cents": -7800,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e096",
+      "counterparty": "Fotoladen Blende 8",
+      "purpose": "Kartenzahlung Objektivdeckel Film",
+      "amount_cents": -4590,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e097",
+      "counterparty": "Kletterhalle Boulderwelt",
+      "purpose": "10er Karte",
+      "amount_cents": -11000,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e098",
+      "counterparty": "Tanzschule Takt",
+      "purpose": "Kursgebühr Salsa",
+      "amount_cents": -6900,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e099",
+      "counterparty": "DocMorris",
+      "purpose": "Bestellung Medikamente",
+      "amount_cents": -2185,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e100",
+      "counterparty": "Shop Apotheke",
+      "purpose": "Rechnung 77812",
+      "amount_cents": -1460,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e101",
+      "counterparty": "Zahnarztpraxis Dr. Lächeln",
+      "purpose": "Rechnung Prophylaxe",
+      "amount_cents": -9500,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e102",
+      "counterparty": "Physiotherapie Bewegt",
+      "purpose": "Zuzahlung Rezept",
+      "amount_cents": -4040,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e103",
+      "counterparty": "Optiker Klarblick",
+      "purpose": "Kartenzahlung Kontaktlinsen",
+      "amount_cents": -6990,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e104",
+      "counterparty": "Hausarztpraxis Dr. Muster",
+      "purpose": "Attest Gebühr",
+      "amount_cents": -1500,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e105",
+      "counterparty": "Rosen-Apotheke",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1235,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e106",
+      "counterparty": "CinemaxX Entertainment",
+      "purpose": "Kinokarten 2x",
+      "amount_cents": -2680,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e107",
+      "counterparty": "Eventim",
+      "purpose": "Konzertkarten Tour 2027",
+      "amount_cents": -12950,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e108",
+      "counterparty": "Freibad Am See",
+      "purpose": "Saisonkarte",
+      "amount_cents": -6500,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e109",
+      "counterparty": "Museum für Naturkunde",
+      "purpose": "Eintritt Familie",
+      "amount_cents": -2200,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e110",
+      "counterparty": "Escape Room Rätselhaus",
+      "purpose": "Buchung Samstag",
+      "amount_cents": -9600,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e111",
+      "counterparty": "Bowlingcenter Strike",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -3400,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e112",
+      "counterparty": "Freizeitpark Abenteuerland",
+      "purpose": "Tickets Online",
+      "amount_cents": -15800,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e113",
+      "counterparty": "Booking.com",
+      "purpose": "Hotel Wochenende Ostsee",
+      "amount_cents": -24800,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e114",
+      "counterparty": "H&M Hennes & Mauritz",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -4797,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e115",
+      "counterparty": "ZARA Deutschland",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -5995,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e116",
+      "counterparty": "Primark Stores",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2350,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e117",
+      "counterparty": "C&A Mode",
+      "purpose": "Kartenzahlung Kinderjacke",
+      "amount_cents": -3999,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e118",
+      "counterparty": "ABOUT YOU SE",
+      "purpose": "Bestellung 552190",
+      "amount_cents": -8990,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e119",
+      "counterparty": "Deichmann Schuhe",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -4995,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e120",
+      "counterparty": "Snipes Sneaker",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -11999,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e121",
+      "counterparty": "Rossmann",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1386,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e122",
+      "counterparty": "OBI Baumarkt",
+      "purpose": "Kartenzahlung Farbe Pinsel",
+      "amount_cents": -4380,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e123",
+      "counterparty": "BAUHAUS",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2675,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e124",
+      "counterparty": "Hornbach Baumarkt",
+      "purpose": "Kartenzahlung Schrauben",
+      "amount_cents": -1870,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e125",
+      "counterparty": "MediaMarkt",
+      "purpose": "Kartenzahlung Wasserkocher",
+      "amount_cents": -3999,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e126",
+      "counterparty": "Müller Drogerie",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2140,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e127",
+      "counterparty": "Waschsalon Sauber",
+      "purpose": "Waschmaschine Trockner",
+      "amount_cents": -800,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e128",
+      "counterparty": "toom Baumarkt",
+      "purpose": "Kartenzahlung Blumenerde",
+      "amount_cents": -1599,
+      "expected": "Haushalt"
+    },
+    {
+      "id": "e129",
+      "counterparty": "Kita Sonnenschein gGmbH",
+      "purpose": "Elternbeitrag November",
+      "amount_cents": -21000,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e130",
+      "counterparty": "Grundschule am Park Förderverein",
+      "purpose": "Klassenfahrt Anzahlung",
+      "amount_cents": -8000,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e131",
+      "counterparty": "Mytoys",
+      "purpose": "Bestellung Lego",
+      "amount_cents": -3999,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e132",
+      "counterparty": "Babysitter Lea M.",
+      "purpose": "Babysitten 3x",
+      "amount_cents": -4500,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e133",
+      "counterparty": "Jako-o",
+      "purpose": "Kinderkleidung Bestellung",
+      "amount_cents": -5690,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e134",
+      "counterparty": "Musikgarten Kids",
+      "purpose": "Kurs Krabbelgruppe",
+      "amount_cents": -4800,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e135",
+      "counterparty": "Stadt Beispielstadt Schulamt",
+      "purpose": "Mittagessen Schule Oktober",
+      "amount_cents": -6600,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e136",
+      "counterparty": "Fressnapf",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -3490,
+      "expected": "Haustier"
+    },
+    {
+      "id": "e137",
+      "counterparty": "zooplus SE",
+      "purpose": "Bestellung Katzenfutter",
+      "amount_cents": -4299,
+      "expected": "Haustier"
+    },
+    {
+      "id": "e138",
+      "counterparty": "Tierarztpraxis Pfote",
+      "purpose": "Impfung Hund",
+      "amount_cents": -8900,
+      "expected": "Haustier"
+    },
+    {
+      "id": "e139",
+      "counterparty": "Hundesteuer Stadtkasse",
+      "purpose": "Hundesteuer 2027",
+      "amount_cents": -12000,
+      "expected": "Haustier"
+    },
+    {
+      "id": "e140",
+      "counterparty": "Hundeschule Bello",
+      "purpose": "Kurs Welpen",
+      "amount_cents": -9000,
+      "expected": "Haustier"
+    },
+    {
+      "id": "e141",
+      "counterparty": "ARD ZDF Deutschlandradio Beitragsservice",
+      "purpose": "Rundfunkbeitrag Okt-Dez",
+      "amount_cents": -5508,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e142",
+      "counterparty": "Sparkasse Beispielstadt",
+      "purpose": "Entgelt Kontoführung 10/2026",
+      "amount_cents": -895,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e143",
+      "counterparty": "ING",
+      "purpose": "Auslandseinsatzentgelt",
+      "amount_cents": -175,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e144",
+      "counterparty": "Bürgeramt Stadtkasse",
+      "purpose": "Gebühr Personalausweis",
+      "amount_cents": -3700,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e145",
+      "counterparty": "Volksbank",
+      "purpose": "Entgelt Ersatzkarte",
+      "amount_cents": -1500,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e146",
+      "counterparty": "DKB AG",
+      "purpose": "Sollzinsen Q3",
+      "amount_cents": -412,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e147",
+      "counterparty": "Beispiel Software GmbH",
+      "purpose": "Lohn/Gehalt 10/2026",
+      "amount_cents": 412375,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e148",
+      "counterparty": "Bundesagentur für Arbeit",
+      "purpose": "Elterngeld Okt",
+      "amount_cents": 180000,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e149",
+      "counterparty": "Deutsche Rentenversicherung",
+      "purpose": "Rente 11/2026",
+      "amount_cents": 142050,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e150",
+      "counterparty": "Kleinanzeigen Käufer Jan B.",
+      "purpose": "Kinderwagen gebraucht",
+      "amount_cents": 12000,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e151",
+      "counterparty": "Techniker Krankenkasse",
+      "purpose": "Erstattung Bonusprogramm",
+      "amount_cents": 5000,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e152",
+      "counterparty": "Arbeitgeber Muster GmbH",
+      "purpose": "Urlaubsgeld",
+      "amount_cents": 85000,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e153",
+      "counterparty": "Freelance Kunde Studio Grau",
+      "purpose": "Rechnung 2026-031 Webdesign",
+      "amount_cents": 95200,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e154",
+      "counterparty": "Vinted",
+      "purpose": "Auszahlung Verkäufe",
+      "amount_cents": 3450,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e155",
+      "counterparty": "Eigenes Tagesgeld",
+      "purpose": "Übertrag",
+      "amount_cents": 50000,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e156",
+      "counterparty": "Kreditkartenabrechnung",
+      "purpose": "Ausgleich Kreditkarte 09/2026",
+      "amount_cents": -48712,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e157",
+      "counterparty": "Eigenes Depot",
+      "purpose": "Sparplan ETF",
+      "amount_cents": -15000,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e158",
+      "counterparty": "Gemeinschaftskonto",
+      "purpose": "Haushaltsgeld Oktober",
+      "amount_cents": -40000,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e159",
+      "counterparty": "Trade Republic Bank",
+      "purpose": "Einzahlung",
+      "amount_cents": -20000,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e160",
+      "counterparty": "American Express",
+      "purpose": "Abbuchung Kartenkonto",
+      "amount_cents": -31290,
+      "expected": "Umbuchung"
+    },
+    {
+      "id": "e161",
+      "counterparty": "Geldautomat Volksbank",
+      "purpose": "Bargeldauszahlung",
+      "amount_cents": -20000,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e162",
+      "counterparty": "Lisa Beispiel",
+      "purpose": "Geschenk Hochzeit",
+      "amount_cents": -10000,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e163",
+      "counterparty": "Deutsches Rotes Kreuz",
+      "purpose": "Spende",
+      "amount_cents": -3000,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e164",
+      "counterparty": "Otto (GmbH & Co KG)",
+      "purpose": "Bestellung 99102",
+      "amount_cents": -6995,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e165",
+      "counterparty": "eBay",
+      "purpose": "Kauf Artikel 1234",
+      "amount_cents": -2450,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e166",
+      "counterparty": "Amazon Payments Europe",
+      "purpose": "Amazon.de Bestellung",
+      "amount_cents": -1899,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e167",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . Lieferando.de, Ihr Einkauf bei Lieferando",
+      "amount_cents": -2190,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e168",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . Steam, Ihr Einkauf bei Valve",
+      "amount_cents": -1499,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e169",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . DB Fernverkehr AG",
+      "amount_cents": -4590,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e170",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . Fressnapf Tiernahrungs GmbH",
+      "amount_cents": -2899,
+      "expected": "Haustier"
+    },
+    {
+      "id": "e171",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . H&M Online",
+      "amount_cents": -3998,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e172",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . Spotify AB",
+      "amount_cents": -1099,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e173",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . Eventim AG",
+      "amount_cents": -8900,
+      "expected": "Freizeit"
+    },
+    {
+      "id": "e174",
+      "counterparty": "PayPal Europe",
+      "purpose": "PP.8812.PP . DocMorris N.V.",
+      "amount_cents": -1785,
+      "expected": "Gesundheit"
+    },
+    {
+      "id": "e175",
+      "counterparty": "SEPA Lastschrift",
+      "purpose": "EREF+ 77812 MREF+ M-2231 CRED+ DE98ZZZ09999999999 SVWZ+ Netflix",
+      "amount_cents": -1399,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e176",
+      "counterparty": "SumUp *Pizzeria Bella",
+      "purpose": "SumUp Kartenzahlung",
+      "amount_cents": -2650,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e177",
+      "counterparty": "SQ *BLUMEN LIEBE",
+      "purpose": "Square Kartenzahlung Blumenstrauß",
+      "amount_cents": -2400,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e178",
+      "counterparty": "VISA BACKWERK",
+      "purpose": "VISA Debit Kartenzahlung",
+      "amount_cents": -485,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e179",
+      "counterparty": "GOOGLE *YouTube",
+      "purpose": "Google Payment",
+      "amount_cents": -1299,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e180",
+      "counterparty": "AMZN Mktp DE",
+      "purpose": "Amazon Marketplace Bestellung",
+      "amount_cents": -1549,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e181",
+      "counterparty": "Stadtsparkasse Beispielstadt",
+      "purpose": "Abschluss Entgelt 09/2026",
+      "amount_cents": -1200,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e182",
+      "counterparty": "Kita Purzelbaum",
+      "purpose": "Essensgeld",
+      "amount_cents": -5200,
+      "expected": "Kind & Kita"
+    },
+    {
+      "id": "e183",
+      "counterparty": "TK Techniker Krankenkasse",
+      "purpose": "Beitrag freiwillig Versicherte",
+      "amount_cents": -21800,
+      "expected": "Versicherungen"
+    },
+    {
+      "id": "e184",
+      "counterparty": "Lohnsteuerhilfeverein",
+      "purpose": "Mitgliedsbeitrag",
+      "amount_cents": -9900,
+      "expected": "Gebühren"
+    },
+    {
+      "id": "e185",
+      "counterparty": "Bundeskasse Familienkasse",
+      "purpose": "KG 0815 Kindergeld Okt",
+      "amount_cents": 25500,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e186",
+      "counterparty": "Finanzamt Musterstadt",
+      "purpose": "Erstattung Einkommensteuer",
+      "amount_cents": 18740,
+      "expected": "Einkommen"
+    },
+    {
+      "id": "e187",
+      "counterparty": "Mobilcom Debitel",
+      "purpose": "Rechnung Mobilfunk",
+      "amount_cents": -1499,
+      "expected": "Abos & Software"
+    },
+    {
+      "id": "e188",
+      "counterparty": "Netto Marken-Discount",
+      "purpose": "girocard Pfandbon Rückzahlung",
+      "amount_cents": -310,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e189",
+      "counterparty": "JET Tankstelle",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -6810,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e190",
+      "counterparty": "Bolt Operations",
+      "purpose": "Ride",
+      "amount_cents": -1120,
+      "expected": "Mobilität"
+    },
+    {
+      "id": "e191",
+      "counterparty": "Deutsche Post AG",
+      "purpose": "Briefmarken",
+      "amount_cents": -1700,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e192",
+      "counterparty": "Hermes Paketshop",
+      "purpose": "Paketversand",
+      "amount_cents": -599,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e193",
+      "counterparty": "Domino's Pizza",
+      "purpose": "Bestellung online",
+      "amount_cents": -2390,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e194",
+      "counterparty": "Denns BioMarkt",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2645,
+      "expected": "Lebensmittel"
+    },
+    {
+      "id": "e195",
+      "counterparty": "Decathlon",
+      "purpose": "Kartenzahlung Laufschuhe",
+      "amount_cents": -7999,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e196",
+      "counterparty": "Thalia Bücher",
+      "purpose": "Kartenzahlung Roman",
+      "amount_cents": -2200,
+      "expected": "Hobbys"
+    },
+    {
+      "id": "e197",
+      "counterparty": "Vapiano",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -2780,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e198",
+      "counterparty": "KFC Restaurant",
+      "purpose": "Kartenzahlung",
+      "amount_cents": -1290,
+      "expected": "Restaurant & Lieferdienst"
+    },
+    {
+      "id": "e199",
+      "counterparty": "Primark",
+      "purpose": "Kartenzahlung Socken",
+      "amount_cents": -600,
+      "expected": "Kleidung"
+    },
+    {
+      "id": "e200",
+      "counterparty": "EnBW Energie",
+      "purpose": "Abschlag Strom",
+      "amount_cents": -6800,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e201",
+      "counterparty": "Hausverwaltung Sonnenhof",
+      "purpose": "Nebenkostenabrechnung 2025 Nachzahlung",
+      "amount_cents": -23400,
+      "expected": "Wohnen"
+    },
+    {
+      "id": "e202",
+      "counterparty": "Max Mustermann",
+      "purpose": "Anteil Urlaub Ferienhaus",
+      "amount_cents": -35000,
+      "expected": "Sonstiges"
+    },
+    {
+      "id": "e203",
+      "counterparty": "Nachbar Tom",
+      "purpose": "Rückzahlung geliehenes Geld",
+      "amount_cents": 5000,
+      "expected": "Sonstiges"
     }
   ]
 }
