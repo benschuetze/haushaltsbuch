@@ -1,9 +1,10 @@
 import type { LanguageModel } from "ai";
-import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { categories, rules, transactions } from "~/lib/db/schema";
 import { linkOwnTransfers } from "~/lib/import/transfers";
+import { type LlmExample, pickExamples } from "./examples";
 import { knownMerchantCategory } from "./known-merchants";
 import { categorizeWithLlm, PROMPT_VERSION } from "./llm";
 import { firstMatchingRule } from "./rules";
@@ -36,6 +37,22 @@ async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void
     from (values ${values}) as v(id, category_id, source, confidence, needs_review, prompt_version, model)
     where t.id = v.id and t.category_source is distinct from 'manual'
   `);
+}
+
+/** What the household filed or confirmed by hand, newest first: the model's examples, see pickExamples. */
+async function confirmedExamples(db: Db): Promise<LlmExample[]> {
+  return db
+    .select({
+      counterparty: transactions.counterparty,
+      purpose: transactions.purpose,
+      amountCents: transactions.amountCents,
+      category: categories.name,
+    })
+    .from(transactions)
+    .innerJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(eq(transactions.categorySource, "manual"))
+    .orderBy(desc(transactions.bookingDate))
+    .limit(300);
 }
 
 /** Built-in merchant list resolved to this database's category ids; a renamed or deleted category is skipped. */
@@ -97,6 +114,7 @@ export async function categorizeTransactions(
   if (forLlm.length > 0) {
     const granted = model ? await takeFromDailyBudget(db, "llm_items", forLlm.length, LLM_DAILY_ITEMS) : 0;
     const modelId = model ? (typeof model === "string" ? model : model.modelId) : null;
+    const pool = model ? await confirmedExamples(db) : [];
     const verdicts = model
       ? await categorizeWithLlm(
           model,
@@ -108,6 +126,9 @@ export async function categorizeTransactions(
             amountCents: tx.amountCents,
             bookingDate: tx.bookingDate,
           })),
+          undefined,
+          undefined,
+          (batch) => pickExamples(pool, batch),
         )
       : new Map();
     for (const tx of forLlm) {

@@ -1,12 +1,13 @@
 import { generateText, type LanguageModel, Output } from "ai";
 import { z } from "zod";
 import { safeError } from "~/lib/security.server";
+import type { LlmExample } from "./examples";
 
 /**
- * Measured, not guessed (pnpm eval, 203 bookings, 2026-10-12, see evals/ergebnis.md): at 0.7 one silent error is
- * left (running shoes as "Kleidung" instead of "Hobbys", defensible either way) and 9.9 % go to review. 0.8 would
- * remove that one case for 13.3 % review, 0.9 for 20.7 %. Answers at 0.7–0.9 were right 95.5 % of the time,
- * at 0.9 and above 100 %. Re-check with pnpm eval whenever the prompt or the model changes.
+ * Measured, not guessed (pnpm eval, 203 bookings, 2026-10-12, see evals/ergebnis.md): without examples one silent
+ * error is left at 0.7 (running shoes as "Kleidung" instead of "Hobbys", defensible either way) and 9.4 % go to
+ * review; 0.8 would remove it for 12.3 %, 0.9 for 19.2 %. Answers at 0.7–0.9 were right 95 % of the time, at 0.9
+ * and above 100 %. Re-check with pnpm eval whenever the prompt or the model changes.
  */
 export const REVIEW_THRESHOLD = 0.7;
 export const BATCH_SIZE = 25;
@@ -14,7 +15,7 @@ export const BATCH_SIZE = 25;
  * Stored with every AI decision. Bump it whenever SYSTEM_PROMPT, CATEGORY_HINTS or the threshold change; a test
  * compares a fingerprint of all three and fails until the version moves along.
  */
-export const PROMPT_VERSION = "2026-10-12.1";
+export const PROMPT_VERSION = "2026-10-12.2";
 
 /** Exactly what may leave the app. No IBAN, no account number, no raw CSV row. */
 export type LlmInput = {
@@ -67,7 +68,8 @@ Regeln:
 - Bei PayPal oder Sammelzahlern entscheidet der Händler im Verwendungszweck.
 - Wenn die Zuordnung unklar ist (z. B. Versandhändler mit gemischtem Sortiment, Bargeld, Überweisungen an Privatpersonen), nimm "Sonstiges" und eine Konfidenz unter 0.5.
 - confidence ist eine Zahl zwischen 0 und 1: wie sicher du bist.
-- Gib für jede Buchung genau ein Ergebnis mit ihrer ref zurück.`;
+- Gib für jede Buchung genau ein Ergebnis mit ihrer ref zurück.
+- Wenn Beispiele mitkommen, zeigen sie, wie dieser Haushalt ähnliche Buchungen selbst eingeordnet hat. Folge ihnen bei wirklich ähnlichen Buchungen.`;
 
 /**
  * What each default category covers. With names alone the model has to guess where the borders are (a climbing
@@ -103,7 +105,7 @@ export function redactIbans(text: string): string {
   return text.replace(IBAN_IN_TEXT, "[IBAN]");
 }
 
-export function buildPrompt(categories: LlmCategory[], items: LlmInput[]): string {
+export function buildPrompt(categories: LlmCategory[], items: LlmInput[], examples: LlmExample[] = []): string {
   const lines = items.map((item, i) =>
     JSON.stringify({
       ref: `t${i + 1}`,
@@ -116,7 +118,19 @@ export function buildPrompt(categories: LlmCategory[], items: LlmInput[]): strin
   const list = categories.map((c) =>
     CATEGORY_HINTS[c.name] ? `- ${c.name}: ${CATEGORY_HINTS[c.name]}` : `- ${c.name}`,
   );
-  return `Kategorien:\n${list.join("\n")}\n\nBuchungen (eine pro Zeile, JSON):\n${lines.join("\n")}`;
+  // Same four fields as the bookings themselves, IBANs blacked out: examples follow the same privacy rules.
+  const shown = examples.map((e) =>
+    JSON.stringify({
+      counterparty: redactIbans(e.counterparty),
+      purpose: redactIbans(e.purpose),
+      amount: (e.amountCents / 100).toFixed(2),
+      category: e.category,
+    }),
+  );
+  const guide = shown.length
+    ? `\n\nSo hat dieser Haushalt ähnliche Buchungen selbst eingeordnet (eine pro Zeile, JSON):\n${shown.join("\n")}`
+    : "";
+  return `Kategorien:\n${list.join("\n")}${guide}\n\nBuchungen (eine pro Zeile, JSON):\n${lines.join("\n")}`;
 }
 
 const reviewOnly: LlmVerdict = { categoryId: null, confidence: 0, needsReview: true };
@@ -133,6 +147,8 @@ export async function categorizeWithLlm(
     console.error(`LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“: ${safeError(error)}`),
   /** Tokens per batch; the eval uses it to report what a booking costs. */
   onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void,
+  /** Confirmed bookings like the ones in a batch, see pickExamples. */
+  examplesFor?: (batch: LlmInput[]) => LlmExample[],
 ): Promise<Map<string, LlmVerdict>> {
   const verdicts = new Map<string, LlmVerdict>();
   const byName = new Map(categories.map((c) => [c.name.toLocaleLowerCase("de"), c.id]));
@@ -148,7 +164,7 @@ export async function categorizeWithLlm(
       const { output, usage } = await generateText({
         model,
         system: SYSTEM_PROMPT,
-        prompt: buildPrompt(categories, batch),
+        prompt: buildPrompt(categories, batch, examplesFor?.(batch) ?? []),
         output: Output.object({ schema: responseSchema }),
         maxRetries: 2,
         // 25 short answers fit easily; the cap only stops a runaway response from eating credits.
