@@ -203,6 +203,23 @@ describe("computeInsights", () => {
     expect(spikes.map((s) => s.title)).toEqual(["Mehr als sonst für Freizeit"]);
   });
 
+  it("eine einzelne Ausgabe in drei Monaten ist kein Schnitt: kein Ausreißer-Hinweis", () => {
+    const rows = [
+      ...["03", "04", "05", "06"].map((m) => b(`2026-${m}-02`, -6000, "REWE", "Lebensmittel")),
+      b("2026-03-20", -3150, "Lieferando", "Restaurant & Lieferdienst"),
+      b("2026-06-05", -12940, "Lieferando", "Restaurant & Lieferdienst"),
+    ];
+    const spikes = computeInsights({ ...base, bookings: rows }).filter((d) => d.kind === "spending_spike");
+    expect(spikes).toEqual([]);
+  });
+
+  it("weit über dem Schnitt: Euro-Unterschied statt dreistelliger Prozentzahl", () => {
+    const rows = ["03", "04", "05"].map((m) => b(`2026-${m}-10`, -10000, "Kino", "Freizeit"));
+    rows.push(b("2026-06-10", -40000, "Festival", "Freizeit"));
+    const [spike] = computeInsights({ ...base, bookings: rows }).filter((d) => d.kind === "spending_spike");
+    expect(spike?.body).toBe("400 € in diesem Monat, sonst im Schnitt 100 €: 300 € mehr.");
+  });
+
   it("Bankgebühren werden aufs Jahr hochgerechnet", () => {
     const drafts = computeInsights({
       ...base,
