@@ -10,6 +10,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
   useRouteLoaderData,
 } from "react-router";
 import { Assistant } from "~/components/assistant";
@@ -88,6 +89,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const root = useRouteLoaderData<typeof loader>("root");
   const nonce = useNonce();
   const [chatOpen, setChatOpen] = useState(false);
+  // The start page has its own question box; a second way into the same assistant there only competes with it.
+  const onHome = useLocation().pathname === "/";
   // Marks the moment React has taken over the server-rendered page; E2E tests wait for it before typing.
   useEffect(() => {
     document.documentElement.dataset.hydrated = "true";
@@ -110,7 +113,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="min-h-dvh">
         {root?.demo ? (
           <p className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-950">
-            Demo mit erfundenen Beispieldaten. Nur lesen, Änderungen sind abgeschaltet.
+            Demo mit erfundenen Beispieldaten. Nur lesen, Änderungen sind abgeschaltet.{" "}
+            <a
+              href="https://github.com/benschuetze/haushaltsbuch"
+              className="font-medium underline underline-offset-2"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Code und Architektur auf GitHub
+            </a>
           </p>
         ) : null}
         {root?.loggedIn ? (
@@ -168,9 +179,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Nutzungsbedingungen
           </a>
         </footer>
-        {root?.assistant ? <Assistant open={chatOpen} onOpenChange={setChatOpen} /> : null}
+        {root?.assistant ? <Assistant open={chatOpen} onOpenChange={setChatOpen} launcher={!onHome} /> : null}
         {root?.loggedIn ? (
-          <TabBar chatOpen={chatOpen} onChat={() => setChatOpen((o) => !o)} assistant={Boolean(root.assistant)} />
+          <TabBar
+            chatOpen={chatOpen}
+            onChat={() => (onHome ? document.getElementById("ask-today-input")?.focus() : setChatOpen((o) => !o))}
+            assistant={Boolean(root.assistant)}
+            askInPage={onHome}
+          />
         ) : null}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />

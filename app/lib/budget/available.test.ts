@@ -55,6 +55,34 @@ describe("Tagesbudget: wie viel ist heute drin?", () => {
     expect(a.perDayCents).toBe(6958);
   });
 
+  it("die Sparrate ist weg, sobald sie gebucht ist: das Tagesbudget springt danach nicht hoch", () => {
+    const before = availableToSpend(HOUSEHOLD, "2026-10-16");
+    const booked = availableToSpend(
+      [...HOUSEHOLD, b("2026-10-15", "Eigenes Tagesgeld", -30000, "transfer", "Umbuchung")],
+      "2026-10-16",
+    );
+    expect(booked.freeCents).toBe(before.freeCents);
+    expect(booked.upcoming.map((u) => u.name)).not.toContain("Eigenes Tagesgeld");
+  });
+
+  it("ein Ziel, das vom Sparauftrag gespeist wird, plant die Rate einmal ein, vor und nach der Buchung", () => {
+    const reserve = { id: "g", name: "Rücklage", targetCents: 360000, dueMonth: null, monthlyCents: 30000 };
+    const without = availableToSpend(HOUSEHOLD, "2026-10-12");
+    // Before the transfer: the goal reserves 300 €, the order itself is not reserved on top.
+    const before = availableToSpend(HOUSEHOLD, "2026-10-12", [
+      { ...reserve, fundedBy: "eigenes tagesgeld", deposits: [] },
+    ]);
+    expect(before.freeCents).toBe(without.freeCents);
+    expect(before.upcoming.map((u) => u.name)).toEqual(["Netflix", "Sparziel Rücklage"]);
+    // After: the transfer is the deposit; nothing left to reserve, the 300 € are gone once.
+    const booked = [...HOUSEHOLD, b("2026-10-15", "Eigenes Tagesgeld", -30000, "transfer", "Umbuchung")];
+    const after = availableToSpend(booked, "2026-10-16", [
+      { ...reserve, fundedBy: "eigenes tagesgeld", deposits: [{ amountCents: 30000, depositedOn: "2026-10-15" }] },
+    ]);
+    expect(after.freeCents).toBe(availableToSpend(booked, "2026-10-16").freeCents);
+    expect(after.upcoming.map((u) => u.name)).toEqual(["Netflix"]);
+  });
+
   it("PayPal-Abbuchung und schwankende Beträge (Tanken) werden nicht als fällig vorhergesagt", () => {
     const extra = [
       ...HOUSEHOLD,

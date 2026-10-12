@@ -32,6 +32,10 @@ test.describe("Demo-Modus", () => {
     await page.goto("/transaktionen");
     await expect(page.getByRole("heading", { name: "Buchungen" })).toBeVisible();
     await expect(page.getByText("Demo mit erfundenen Beispieldaten")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Code und Architektur auf GitHub" })).toHaveAttribute(
+      "href",
+      "https://github.com/benschuetze/haushaltsbuch",
+    );
   });
 
   test("jeder schreibende Request wird mit 403 abgelehnt", async ({ request }) => {

@@ -22,6 +22,8 @@ export type Available = {
   missingIncome: Due | null;
   incomeCents: number;
   spentCents: number;
+  /** This period's savings transfers that already went out: planned money, gone like a paid bill. */
+  savedCents: number;
   upcoming: Due[];
   upcomingCents: number;
   /** Savings goals with what this period still puts aside for them (already part of upcoming). */
@@ -98,10 +100,13 @@ function monthlyTransfers(bookings: AvailableBooking[], today: string) {
     const key = merchantKey(merchantOf(b));
     groups.set(key, [...(groups.get(key) ?? []), b]);
   }
-  return [...groups.values()]
-    .filter((items) => items.length >= 2)
-    .map((items) => items.sort((a, b) => a.bookingDate.localeCompare(b.bookingDate)).at(-1) as AvailableBooking)
-    .filter((last) => daysBetween(last.bookingDate, today) <= 40);
+  return [...groups.entries()]
+    .filter(([, items]) => items.length >= 2)
+    .map(([key, items]) => ({
+      key,
+      last: items.sort((a, b) => a.bookingDate.localeCompare(b.bookingDate)).at(-1) as AvailableBooking,
+    }))
+    .filter(({ last }) => daysBetween(last.bookingDate, today) <= 40);
 }
 
 export function availableToSpend(bookings: AvailableBooking[], today: string, goalInputs: GoalInput[] = []): Available {
@@ -138,6 +143,18 @@ export function availableToSpend(bookings: AvailableBooking[], today: string, go
     .filter((b) => b.amountCents < 0 && b.categoryKind !== "transfer")
     .reduce((s, b) => s - b.amountCents, 0);
 
+  const transfers = monthlyTransfers(bookings, today);
+  const planned = new Set(transfers.map((t) => t.key));
+  // Without this, the savings transfer would count as due until it is booked and then as nothing at all:
+  // the daily amount would jump up by the rate on the day the money leaves.
+  const savedCents = inPeriod
+    .filter((b) => b.amountCents < 0 && b.categoryKind === "transfer" && planned.has(merchantKey(merchantOf(b))))
+    .reduce((s, b) => s - b.amountCents, 0);
+
+  // A goal fed by a standing order reserves the rate itself (minus what the order already paid in).
+  const goals = goalInputs.map((g) => goalStatus(g, today, periodStart));
+  const feedsGoal = new Set(goals.filter((g) => g.fundedBy && !g.done).map((g) => g.fundedBy));
+
   const upcoming: Due[] = [];
   // Only what can be planned with: a stable amount. Fuel or a regular shop vary and stay in "spent".
   const recurring = detectRecurring(
@@ -154,20 +171,20 @@ export function availableToSpend(bookings: AvailableBooking[], today: string, go
       nominal = STEP[r.cadence](nominal);
     }
   }
-  for (const t of monthlyTransfers(bookings, today)) {
+  for (const { key, last: t } of transfers) {
+    if (feedsGoal.has(key)) continue;
     const due = bankDay(addMonths(t.bookingDate, 1));
     if (t.bookingDate < periodStart && due <= periodEnd) {
       upcoming.push({ name: merchantOf(t), date: due > today ? due : today, amountCents: -t.amountCents });
     }
   }
-  const goals = goalInputs.map((g) => goalStatus(g, today, periodStart));
   for (const g of goals) {
     if (g.stillToReserveCents > 0)
       upcoming.push({ name: `Sparziel ${g.name}`, date: today, amountCents: g.stillToReserveCents });
   }
   upcoming.sort((a, b) => a.date.localeCompare(b.date));
   const upcomingCents = upcoming.reduce((s, u) => s + u.amountCents, 0);
-  const freeCents = incomeCents - spentCents - upcomingCents;
+  const freeCents = incomeCents - spentCents - savedCents - upcomingCents;
   return {
     today,
     periodStart,
@@ -177,6 +194,7 @@ export function availableToSpend(bookings: AvailableBooking[], today: string, go
     missingIncome,
     incomeCents,
     spentCents,
+    savedCents,
     upcoming,
     upcomingCents,
     goals,

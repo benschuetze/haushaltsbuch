@@ -57,6 +57,13 @@
       "when": 1791557614541,
       "tag": "0007_conscious_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791783531908,
+      "tag": "0008_wide_rictor",
+      "breakpoints": true
     }
   ]
 }

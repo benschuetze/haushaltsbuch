@@ -68,3 +68,33 @@ test("Zieldatum als Monatsauswahl, kein leerer Datums-Platzhalter", async ({ pag
   await expect(due.locator("option").first()).toHaveText("ohne festes Datum");
   await expect(due.locator("option").nth(1)).toHaveText(/^\w+ \d{4}$/);
 });
+
+test("Sparauftrag wird zum Ziel: Vorschlag übernehmen, Tagesbudget bleibt gleich, Vorschlag verschwindet", async ({
+  page,
+}) => {
+  await importDemo(page);
+  const free = async () => {
+    await page.goto("/");
+    await page.getByText("Wie gerechnet?").click();
+    return cents((await page.getByText(/^Ergibt /).innerText()).split(",").slice(0, 2).join(","));
+  };
+  const before = await free();
+
+  await page.goto("/ziele");
+  const plan = page.getByTestId("savings-plan");
+  await expect(plan).toContainText("300,00 €");
+  await expect(plan).toContainText("Eigenes Tagesgeld");
+  await plan.getByRole("button", { name: "Als Ziel übernehmen" }).click();
+  await expect(page.getByLabel("Wofür?")).toBeFocused();
+  await expect(page.getByLabel("Betrag (€)")).toHaveValue("3600");
+  await page.getByLabel("Wofür?").fill("Notgroschen");
+  await page.getByRole("button", { name: "Anlegen" }).click();
+  await expect(page.getByRole("status")).toContainText("Sparziel „Notgroschen“ angelegt");
+  await expect(page.getByTestId("goal").filter({ hasText: "Notgroschen" })).toContainText(
+    "300,00 € im Monat per Dauerauftrag",
+  );
+  await expect(page.getByTestId("savings-plan")).toHaveCount(0);
+
+  // The order was already planned in; as a goal it is planned in once, not twice.
+  expect(await free()).toBe(before);
+});

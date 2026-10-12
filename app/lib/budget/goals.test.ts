@@ -8,6 +8,7 @@ const mallorca = (deposits: GoalInput["deposits"] = []): GoalInput => ({
   targetCents: 80000,
   dueMonth: "2027-01",
   monthlyCents: null,
+  fundedBy: null,
   deposits,
 });
 
