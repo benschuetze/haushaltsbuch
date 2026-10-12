@@ -28,15 +28,31 @@ export type LlmVerdict = {
   needsReview: boolean;
 };
 
-const responseSchema = z.object({
-  results: z.array(
-    z.object({
-      ref: z.string(),
-      category: z.string(),
-      confidence: z.number(),
-    }),
-  ),
-});
+/**
+ * The allowed names go to the model as an enum, so it is steered to pick one of them. An answer outside the list
+ * must not void the whole batch, though: .catch turns it into "" and only that booking goes to review.
+ */
+function responseSchemaFor(names: [string, ...string[]]) {
+  return z.object({
+    results: z.array(
+      z.object({
+        ref: z.string(),
+        // "lebensmittel" is still Lebensmittel: spelling is normalised before the list is checked.
+        category: z.preprocess(
+          (v) =>
+            typeof v === "string"
+              ? (names.find((n) => n.toLocaleLowerCase("de") === v.trim().toLocaleLowerCase("de")) ?? v)
+              : v,
+          z.enum(names).catch(""),
+        ),
+        confidence: z.number(),
+      }),
+    ),
+  });
+}
+
+/** Batches in flight at once: faster imports without a burst that trips the API's rate limit. */
+export const PARALLEL_BATCHES = 3;
 
 export const SYSTEM_PROMPT = `Du ordnest Kontobewegungen eines Privathaushalts in Deutschland Kategorien zu.
 Regeln:
@@ -116,8 +132,12 @@ export async function categorizeWithLlm(
   const verdicts = new Map<string, LlmVerdict>();
   const byName = new Map(categories.map((c) => [c.name.toLocaleLowerCase("de"), c.id]));
 
-  for (let start = 0; start < items.length; start += BATCH_SIZE) {
-    const batch = items.slice(start, start + BATCH_SIZE);
+  const names = categories.map((c) => c.name) as [string, ...string[]];
+  const responseSchema = responseSchemaFor(names);
+  const batches: LlmInput[][] = [];
+  for (let start = 0; start < items.length; start += BATCH_SIZE) batches.push(items.slice(start, start + BATCH_SIZE));
+
+  async function run(batch: LlmInput[]): Promise<void> {
     let results: z.infer<typeof responseSchema>["results"] = [];
     try {
       const { output, usage } = await generateText({
@@ -146,5 +166,14 @@ export async function categorizeWithLlm(
       verdicts.set(item.id, { categoryId, confidence, needsReview: confidence < REVIEW_THRESHOLD });
     });
   }
+
+  let next = 0;
+  const worker = async () => {
+    while (next < batches.length) {
+      const batch = batches[next++] as LlmInput[];
+      await run(batch);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL_BATCHES, batches.length) }, worker));
   return verdicts;
 }
