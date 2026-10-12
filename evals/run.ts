@@ -4,12 +4,14 @@
  */
 import "dotenv/config";
 import { readFileSync } from "node:fs";
-import { categorizeWithLlm } from "../app/lib/categorize/llm";
+import { knownMerchantCategory } from "../app/lib/categorize/known-merchants";
+import { categorizeWithLlm, type LlmVerdict } from "../app/lib/categorize/llm";
 import { DEFAULT_MODEL, getModel } from "../app/lib/categorize/model";
 import { DEFAULT_CATEGORIES } from "../app/lib/db/seed";
 import { type EvalCase, score } from "./score";
 
-const MAX_WRONG_CONFIDENT = 2;
+// Errors the user never sees: at most 2 % of the set.
+const MAX_WRONG_CONFIDENT_SHARE = 0.02;
 
 const set = JSON.parse(readFileSync("evals/kategorisierung.json", "utf8")) as {
   ambiguous: string[];
@@ -23,10 +25,17 @@ if (!model || process.env.AI_MOCK === "1") {
 
 // Category ids only matter inside this run, so the names double as ids.
 const categories = DEFAULT_CATEGORIES.map((c) => ({ id: c.name, name: c.name, kind: c.kind }));
+// The same order as the app: the free merchant list first, the model only for what is left.
+const free = new Map<string, LlmVerdict>();
+for (const c of set.cases) {
+  const name = knownMerchantCategory(c.counterparty, c.amount_cents);
+  if (name) free.set(c.id, { categoryId: name, confidence: 1, needsReview: false });
+}
+const toModel = set.cases.filter((c) => !free.has(c.id));
 const verdicts = await categorizeWithLlm(
   model,
   categories,
-  set.cases.map((c) => ({
+  toModel.map((c) => ({
     id: c.id,
     counterparty: c.counterparty,
     purpose: c.purpose,
@@ -34,12 +43,17 @@ const verdicts = await categorizeWithLlm(
     bookingDate: "2026-09-15",
   })),
 );
+for (const [id, v] of free) verdicts.set(id, v);
 const report = score(set.cases, set.ambiguous, verdicts, (id) => id);
+const modelReport = score(toModel, set.ambiguous, verdicts, (id) => id);
 
 const pct = (n: number) => `${(n * 100).toFixed(1)} %`;
 console.log(`Modell: ${process.env.AI_MODEL || DEFAULT_MODEL}`);
 console.log("| Kennzahl | Wert |\n|---|---|");
-console.log(`| Trefferquote | ${pct(report.accuracy)} |`);
+console.log(`| Fälle | ${set.cases.length} |`);
+console.log(`| Ohne Modell erledigt (Händlerliste) | ${pct(free.size / set.cases.length)} |`);
+console.log(`| Trefferquote gesamt | ${pct(report.accuracy)} |`);
+console.log(`| Trefferquote nur Modell (${toModel.length} Fälle) | ${pct(modelReport.accuracy)} |`);
 console.log(`| Anteil needs_review | ${pct(report.reviewShare)} |`);
 console.log(`| Falsch mit Konfidenz ≥ 0,7 | ${report.wrongConfident.length} |`);
 
@@ -53,7 +67,8 @@ if (misses.length > 0) {
   }
 }
 
-if (report.wrongConfident.length > MAX_WRONG_CONFIDENT) {
-  console.error(`\nZu viele sichere Fehler (${report.wrongConfident.length} > ${MAX_WRONG_CONFIDENT}).`);
+const maxWrong = Math.floor(set.cases.length * MAX_WRONG_CONFIDENT_SHARE);
+if (report.wrongConfident.length > maxWrong) {
+  console.error(`\nZu viele sichere Fehler (${report.wrongConfident.length} > ${maxWrong}).`);
   process.exit(1);
 }

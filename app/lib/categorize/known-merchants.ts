@@ -63,7 +63,11 @@ export const KNOWN_MERCHANTS: { category: string; examples: string; pattern: Reg
   { category: "Gebühren", examples: "Rundfunkbeitrag", pattern: /\b(rundfunk|ard zdf)\b/i },
 ];
 
-/** The category name for a well-known merchant, or null to leave it to the model. */
-export function knownMerchantCategory(counterparty: string): string | null {
+/**
+ * The category name for a well-known merchant, or null to leave it to the model. Only for money going out: every
+ * category here is an expense, and "Deutsche Rentenversicherung" paying a pension is income, not insurance.
+ */
+export function knownMerchantCategory(counterparty: string, amountCents: number): string | null {
+  if (amountCents >= 0) return null;
   return KNOWN_MERCHANTS.find((m) => m.pattern.test(counterparty))?.category ?? null;
 }

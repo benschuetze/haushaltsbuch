@@ -5,7 +5,7 @@ description: Use before and after changing the LLM categorization prompt, the mo
 
 # Kategorisierung ändern und messen
 
-Das Eval-Set `evals/kategorisierung.json` enthält erfundene Buchungen mit erwarteter Kategorie.
+Das Eval-Set `evals/kategorisierung.json` enthält gut 200 erfundene, von Hand beschriftete Buchungen. `pnpm eval` misst den echten Ablauf: erst die eingebaute Händlerliste (kostenlos), dann das Modell für den Rest, und meldet beide Trefferquoten getrennt. Fehler der Händlerliste fängt schon `pnpm test` (`evals/known-merchants.eval.test.ts`), ohne Modell und ohne Kosten. Neue Fälle immer erfinden und von Hand beschriften, nie mit dem Modell erzeugen.
 
 1. Vor der Änderung: `pnpm eval` ausführen und Ergebnis notieren (Trefferquote, Anteil „prüfen“, falsch mit hoher Konfidenz).
 2. Änderung in `app/lib/categorize/llm.ts` bzw. Kategorienliste vornehmen.

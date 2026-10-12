@@ -35,10 +35,12 @@ async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void
 }
 
 /** Built-in merchant list resolved to this database's category ids; a renamed or deleted category is skipped. */
-function knownCategoryIds(all: { id: string; name: string }[]): (counterparty: string) => string | null {
+function knownCategoryIds(
+  all: { id: string; name: string }[],
+): (tx: { counterparty: string; amountCents: number }) => string | null {
   const byName = new Map(all.map((c) => [c.name, c.id]));
-  return (counterparty) => {
-    const name = knownMerchantCategory(counterparty);
+  return (tx) => {
+    const name = knownMerchantCategory(tx.counterparty, tx.amountCents);
     return name ? (byName.get(name) ?? null) : null;
   };
 }
@@ -79,7 +81,7 @@ export async function categorizeTransactions(
   const known = knownCategoryIds(allCategories);
   for (const tx of txs) {
     // Own rules first, then the built-in merchant list; the model only sees what neither knows.
-    const categoryId = firstMatchingRule(allRules, tx)?.categoryId ?? known(tx.counterparty);
+    const categoryId = firstMatchingRule(allRules, tx)?.categoryId ?? known(tx);
     if (categoryId) {
       assignments.push({ id: tx.id, categoryId, source: "rule", confidence: null, needsReview: false });
       stats.byRule++;
@@ -159,11 +161,22 @@ export async function reapplyRules(db: Db): Promise<number> {
   ]);
   const assignments: Assignment[] = [];
   const known = knownCategoryIds(allCategories);
+  const expense = new Set(allCategories.filter((c) => c.kind === "expense").map((c) => c.id));
   for (const tx of txs) {
     // Also fixes what the model (or an older version without the merchant list) got wrong before.
-    const categoryId = firstMatchingRule(allRules, tx)?.categoryId ?? known(tx.counterparty);
+    const categoryId = firstMatchingRule(allRules, tx)?.categoryId ?? known(tx);
     if (categoryId && (tx.categoryId !== categoryId || tx.categorySource !== "rule" || tx.needsReview)) {
       assignments.push({ id: tx.id, categoryId, source: "rule", confidence: null, needsReview: false });
+    } else if (
+      !categoryId &&
+      tx.categorySource === "rule" &&
+      tx.amountCents >= 0 &&
+      tx.categoryId &&
+      expense.has(tx.categoryId)
+    ) {
+      // Money coming in, filed as an expense by a rule that no longer matches (an older merchant list took the
+      // pension for insurance): not a guess to keep, a question for the user.
+      assignments.push({ id: tx.id, categoryId: null, source: null, confidence: null, needsReview: true });
     }
   }
   await writeAssignments(db, assignments);

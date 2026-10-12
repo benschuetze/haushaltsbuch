@@ -555,7 +555,8 @@ export default function Regeln({ loaderData, actionData }: Route.ComponentProps)
           Eingebaute Regeln
         </h2>
         <p className="text-sm text-muted-foreground">
-          Greifen nach deinen eigenen Regeln und vor der KI. Eine eigene Regel geht immer vor, eine von Hand gesetzte
+          Greifen nach deinen eigenen Regeln und vor der KI, und nur bei Ausgaben: Eine Erstattung von REWE oder die
+          Rente der Rentenversicherung ordnet die KI ein. Eine eigene Regel geht immer vor, eine von Hand gesetzte
           Kategorie sowieso.
         </p>
         <ul className="divide-y rounded-lg border" data-testid="builtin-rules">

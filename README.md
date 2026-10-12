@@ -117,7 +117,7 @@ pnpm dev               # http://localhost:5173
 |---|---|
 | `pnpm test` | Unit- und Datenbanktests mit PGlite im Speicher, ohne Netz und ohne LLM |
 | `pnpm test:e2e` | Playwright auf Desktop (Chromium) und iPhone (WebKit), mit Barrierefreiheits-Check (axe) |
-| `pnpm eval` | Eval-Set gegen das echte Modell: Trefferquote, Anteil „prüfen“, sichere Fehler |
+| `pnpm eval` | 203 erfundene, von Hand beschriftete Buchungen durch den echten Ablauf (Händlerliste, dann Modell): Trefferquote gesamt und nur Modell, Anteil „prüfen“, sichere Fehler. Die kostenlose Stufe prüft schon `pnpm test` |
 
 Die Erwartungswerte für die Demo-Daten stehen in [`beispieldaten/erwartet.json`](beispieldaten/erwartet.json). Sie sind von Hand nachgerechnet und nicht mit dem App-Code erzeugt.
 
