@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockModel } from "~/lib/categorize/mock-model";
 import type { Db } from "~/lib/db/client";
-import { accounts, categories, imports, transactions } from "~/lib/db/schema";
+import { accounts, budgets, categories, imports, transactions } from "~/lib/db/schema";
 import { importCsv } from "~/lib/import/run";
 import { spendingToday } from "~/lib/insights";
 import { formatCents } from "~/lib/money";
@@ -199,6 +199,24 @@ describe("Frag einfach: Geld für heute", () => {
     const reply = await askOn("Kann ich mir 80 € fürs Feiern leisten?");
     expect(reply.tools).toEqual(["leisten"]);
     expect(reply.answer).toMatch(/^(Ja, locker|Ja, geht|Knapp|Eher nicht)\./);
+  });
+
+  it("„leisten“ nennt ein schon überschrittenes Budget der passenden Kategorie, das Urteil bleibt", async () => {
+    const [leisure] = await db.select().from(categories).where(eq(categories.name, "Freizeit"));
+    if (!leisure) throw new Error("Freizeit fehlt");
+    await db.delete(budgets).where(eq(budgets.categoryId, leisure.id));
+    // The gym (29,90 € on 3 September) alone is over this.
+    await db.insert(budgets).values({ categoryId: leisure.id, amountCents: 2000 });
+    const reply = await askOn("Kann ich mir 80 € fürs Feiern leisten?");
+    expect(reply.answer).toMatch(/^(Ja, locker|Ja, geht|Knapp|Eher nicht)\./);
+    expect(reply.answer).toContain("Dein Budget für Freizeit ist diesen Monat schon überschritten");
+  });
+
+  it("ohne Budget für die Kategorie bleibt die Antwort beim Tagesbudget", async () => {
+    const [leisure] = await db.select().from(categories).where(eq(categories.name, "Freizeit"));
+    await db.delete(budgets).where(eq(budgets.categoryId, leisure?.id ?? ""));
+    const reply = await askOn("Kann ich mir 80 € fürs Feiern leisten?");
+    expect(reply.answer).not.toContain("Budget für");
   });
 
   it("„Wann kommt mein Gehalt?“ nennt Datum und Betrag", async () => {

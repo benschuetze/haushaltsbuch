@@ -45,10 +45,19 @@ export function createAssistantTools(db: Db, now = new Date()) {
       inputSchema: z.object({
         betragEuro: z.number().positive().max(1_000_000).describe("Betrag ohne Vorzeichen"),
         wofuer: z.string().max(60).optional(),
+        kategorie: z
+          .string()
+          .max(60)
+          .optional()
+          .describe("Passende Ausgabenkategorie, wenn eindeutig, z. B. „Restaurant & Lieferdienst“ oder „Freizeit“"),
       }),
-      execute: async ({ betragEuro, wofuer }) => {
-        const a = await spendingToday(db, now);
+      execute: async ({ betragEuro, wofuer, kategorie }) => {
+        const [a, budgetsNow] = await Promise.all([spendingToday(db, now), budgetStatus(db, now)]);
         const r = canAfford(a, Math.round(betragEuro * 100));
+        // Only a category that actually has a budget counts; a made-up name from the model is simply ignored.
+        const wanted = kategorie?.trim().toLocaleLowerCase("de");
+        const b = wanted ? budgetsNow.items.find((i) => i.categoryName.toLocaleLowerCase("de") === wanted) : undefined;
+        const after = b ? b.spentCents + Math.round(betragEuro * 100) : 0;
         return {
           urteil: r.verdict,
           wofuer: wofuer ?? null,
@@ -58,6 +67,21 @@ export function createAssistantTools(db: Db, now = new Date()) {
           proTagDanach: euro(r.perDayAfterCents),
           tageBisGehalt: a.daysLeft,
           naechstesGehaltAm: a.nextIncome?.date ?? null,
+          budget: b
+            ? {
+                kategorie: b.categoryName,
+                budget: euro(b.budgetCents),
+                ausgegeben: euro(b.spentCents),
+                stand:
+                  b.spentCents > b.budgetCents
+                    ? "schon_ueberschritten"
+                    : after > b.budgetCents
+                      ? "wird_ueberschritten"
+                      : after >= b.budgetCents * 0.9
+                        ? "knapp"
+                        : "im_rahmen",
+              }
+            : null,
         };
       },
     }),

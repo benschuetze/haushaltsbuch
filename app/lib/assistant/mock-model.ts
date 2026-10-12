@@ -55,16 +55,24 @@ function phrase(toolName: string, value: Row): string {
   }
   if (toolName === "leisten") {
     const until = value.naechstesGehaltAm ? `bis zum Gehalt am ${day(value.naechstesGehaltAm)}` : "bis Monatsende";
-    switch (value.urteil) {
-      case "locker":
-        return `Ja, locker. ${value.betrag} passen in dein Tagesbudget von ${value.tagesbudgetVorher}.`;
-      case "geht":
-        return `Ja, geht. Danach bleiben ${until} noch ${value.proTagDanach} pro Tag statt ${value.tagesbudgetVorher}.`;
-      case "knapp":
-        return `Knapp. Danach bleiben ${until} nur noch ${value.proTagDanach} pro Tag.`;
-      default:
-        return `Eher nicht. Dann fehlen ${until} ${String(value.freiBisGehaltDanach).replace("−", "")}.`;
-    }
+    const verdict =
+      value.urteil === "locker"
+        ? `Ja, locker. ${value.betrag} passen in dein Tagesbudget von ${value.tagesbudgetVorher}.`
+        : value.urteil === "geht"
+          ? `Ja, geht. Danach bleiben ${until} noch ${value.proTagDanach} pro Tag statt ${value.tagesbudgetVorher}.`
+          : value.urteil === "knapp"
+            ? `Knapp. Danach bleiben ${until} nur noch ${value.proTagDanach} pro Tag.`
+            : `Eher nicht. Dann fehlen ${until} ${String(value.freiBisGehaltDanach).replace("−", "")}.`;
+    const b = value.budget as Row | null;
+    const note =
+      !b || b.stand === "im_rahmen"
+        ? ""
+        : b.stand === "schon_ueberschritten"
+          ? ` Dein Budget für ${b.kategorie} ist diesen Monat schon überschritten: ${b.ausgegeben} von ${b.budget}.`
+          : b.stand === "wird_ueberschritten"
+            ? ` Damit wäre dein Budget für ${b.kategorie} überschritten (bisher ${b.ausgegeben} von ${b.budget}).`
+            : ` Dein Budget für ${b.kategorie} wird damit knapp (bisher ${b.ausgegeben} von ${b.budget}).`;
+    return verdict + note;
   }
   if (toolName === "wann_leisten") {
     if (value.abMonat === null)
@@ -168,7 +176,13 @@ export function createMockAssistantModel(): MockLanguageModelV4 {
       if (/sparziel|ziele|sparen für/.test(text)) return call("sparziele", {});
       if (/woche/.test(text) && !/diese woche noch ab/.test(text)) return call("woche", {});
       if (amount && /leisten|kann ich mir|kaufen|drin/.test(text)) {
-        return call("leisten", { betragEuro: Number(amount.replace(",", ".")) });
+        // The real model picks the category from the purpose; the mock knows the two examples the UI offers.
+        const kategorie = /feiern|party|kino|konzert/.test(text)
+          ? "Freizeit"
+          : /pizza|essen|lieferando|restaurant|sushi/.test(text)
+            ? "Restaurant & Lieferdienst"
+            : undefined;
+        return call("leisten", { betragEuro: Number(amount.replace(",", ".")), ...(kategorie ? { kategorie } : {}) });
       }
       if (/gehalt|wann kommt|geht noch ab|abgeht|diese woche/.test(text)) return call("naechste_zahlungen", {});
       if (/heute|ausgeben|drin|verfügbar|übrig|frei/.test(text)) return call("heute_verfuegbar", {});
