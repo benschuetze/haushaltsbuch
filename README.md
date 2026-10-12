@@ -5,7 +5,6 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 | | |
 |---|---|
 | **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, nur lesend. Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
-| **App** | [haushaltsbuch-woad-tau.vercel.app](https://haushaltsbuch-woad-tau.vercel.app): Produktion mit Login, echtem Claude-Modell und Bankanbindung |
 | **Code** | [github.com/benschuetze/haushaltsbuch](https://github.com/benschuetze/haushaltsbuch) |
 
 ## Was die App kann
@@ -131,6 +130,16 @@ Die wichtigste Zahl im Eval ist „falsch mit Konfidenz ≥ 0,7“. Diese Fehler
 - Die Logos unter `public/logos/` sind die App-Icons der Institute von ihren offiziellen Websites (als PNG neu kodiert) und Marken der jeweiligen Inhaber. Sie dienen nur dazu, das Institut zu erkennen.
 - Ob eine Abo-Kündigung geklappt hat, liest die App aus späteren Buchungen, nicht von der Seite des Anbieters: Die lässt sich weder einbetten noch auslesen.
 - Das Modell sieht keine Historie: Eine Buchung, die es letzten Monat richtig hatte, kann es diesen Monat anders einordnen. Regeln machen das stabil.
+
+## Was für mehrere Mandanten nötig wäre
+
+Heute ist jede Instanz ein Haushalt mit einem Passwort. Für viele Haushalte in einer Datenbank:
+
+- **Spalte `household_id`** auf allen fachlichen Tabellen (`accounts`, `imports`, `transactions`, `categories`, `rules`, `budgets`, `insights`, `savings_goals`, `bank_connections`, `bank_formats` …). Eindeutigkeiten gelten dann pro Haushalt: Kategoriename, Kontoschlüssel und der Dedupe-Hash bekommen `household_id` in den Unique-Index, sonst blockiert ein gleicher Import im Nachbarhaushalt die eigene Buchung.
+- **Haushalt nur aus der Session**, nie aus URL, Formular oder Query-Parameter. Jede Funktion in `app/lib` bekommt die ID als Pflichtparameter, damit eine vergessene Einschränkung schon beim Typecheck auffällt.
+- **Postgres Row Level Security** als zweite Ebene: Die Verbindung setzt pro Anfrage `app.household_id`, Policies filtern jede Tabelle danach. Ein Bug im App-Code gibt dann trotzdem keine fremden Buchungen heraus.
+- **Tests, die gezielt fremde IDs anfragen**: Buchung, Regel, Bankverbindung eines anderen Haushalts per ID abrufen, ändern und löschen, jeweils 404 erwartet.
+- **Benutzerkonten statt eines gemeinsamen Passworts**: E-Mail-Login mit Passwort-Hash (oder Passkeys), mehrere Personen pro Haushalt, Sitzungen pro Person widerrufbar. Die Tageslimits für das Modell zählen dann pro Haushalt.
 
 ## Arbeitsweise mit Claude Code
 
