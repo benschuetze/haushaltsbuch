@@ -109,7 +109,14 @@ export function safeRedirect(to: string | null | undefined): string {
 }
 
 // Reachable without login. The cron endpoint checks its own secret; the legal pages must be public.
-const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/bank/sync", "/datenschutz", "/nutzungsbedingungen"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/favicon.ico",
+  "/bank/sync",
+  "/datenschutz",
+  "/nutzungsbedingungen",
+  "/impressum",
+]);
 
 /**
  * One gate for every loader and action. Demo: read-only for everyone. Private instance: nothing without login.

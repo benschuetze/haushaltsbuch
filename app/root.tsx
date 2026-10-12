@@ -178,6 +178,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <a href="/nutzungsbedingungen" className="underline underline-offset-2">
             Nutzungsbedingungen
           </a>
+          <a href="/impressum" className="underline underline-offset-2">
+            Impressum
+          </a>
         </footer>
         {root?.assistant ? <Assistant open={chatOpen} onOpenChange={setChatOpen} launcher={!onHome} /> : null}
         {root?.loggedIn ? (

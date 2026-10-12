@@ -1,12 +1,11 @@
+import { operatorInfo } from "~/lib/operator.server";
 import type { Route } from "./+types/datenschutz";
 
 export const meta: Route.MetaFunction = () => [{ title: "Datenschutz · Haushaltsbuch" }];
 
 export function loader() {
-  return {
-    contact: process.env.PRIVACY_CONTACT_EMAIL?.trim() || null,
-    operator: process.env.PRIVACY_OPERATOR?.trim() || null,
-  };
+  const o = operatorInfo();
+  return { contact: o.email, operator: o.name ? [o.name, ...o.address].join(", ") : null };
 }
 
 export default function Datenschutz({ loaderData }: Route.ComponentProps) {
