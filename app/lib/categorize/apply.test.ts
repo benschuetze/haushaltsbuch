@@ -226,4 +226,18 @@ describe("offene Buchungen nachträglich zuordnen", () => {
     expect(again.open).toBe(0);
     expect(calls.length).toBe(Math.ceil(stats.open / 25));
   });
+
+  it("ein Eingang, den früher die Händlerliste als Ausgabe einsortiert hat, kommt nach „prüfen“", async () => {
+    // An older version filed a pension under "Versicherungen" because of the word in the name.
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model: null });
+    const [salary] = await txBy("Arbeitgeber Muster GmbH");
+    if (!salary) throw new Error("Gehalt fehlt");
+    await db
+      .update(transactions)
+      .set({ counterparty: "Deutsche Rentenversicherung", categoryId: cat.Versicherungen, categorySource: "rule" })
+      .where(eq(transactions.id, salary.id));
+    await reapplyRules(db);
+    const [after] = await db.select().from(transactions).where(eq(transactions.id, salary.id));
+    expect(after).toMatchObject({ categoryId: null, needsReview: true });
+  });
 });
