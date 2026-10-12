@@ -5,7 +5,7 @@ import type { Db } from "~/lib/db/client";
 import { categories, rules, transactions } from "~/lib/db/schema";
 import { linkOwnTransfers } from "~/lib/import/transfers";
 import { knownMerchantCategory } from "./known-merchants";
-import { categorizeWithLlm } from "./llm";
+import { categorizeWithLlm, PROMPT_VERSION } from "./llm";
 import { firstMatchingRule } from "./rules";
 
 type Assignment = {
@@ -14,6 +14,9 @@ type Assignment = {
   source: "rule" | "ai" | null;
   confidence: number | null;
   needsReview: boolean;
+  /** Set only for AI decisions; a rule or a reset clears them. */
+  promptVersion?: string | null;
+  model?: string | null;
 };
 
 /** One UPDATE for all rows. The WHERE clause guards manual categories at the database level, not just in app code. */
@@ -22,14 +25,15 @@ async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void
   const values = sql.join(
     assignments.map(
       (a) =>
-        sql`(${a.id}::uuid, ${a.categoryId}::uuid, ${a.source}::category_source, ${a.confidence}::real, ${a.needsReview}::boolean)`,
+        sql`(${a.id}::uuid, ${a.categoryId}::uuid, ${a.source}::category_source, ${a.confidence}::real, ${a.needsReview}::boolean, ${a.promptVersion ?? null}::text, ${a.model ?? null}::text)`,
     ),
     sql`, `,
   );
   await db.execute(sql`
     update ${transactions} as t
-    set category_id = v.category_id, category_source = v.source, ai_confidence = v.confidence, needs_review = v.needs_review
-    from (values ${values}) as v(id, category_id, source, confidence, needs_review)
+    set category_id = v.category_id, category_source = v.source, ai_confidence = v.confidence, needs_review = v.needs_review,
+      ai_prompt_version = v.prompt_version, ai_model = v.model
+    from (values ${values}) as v(id, category_id, source, confidence, needs_review, prompt_version, model)
     where t.id = v.id and t.category_source is distinct from 'manual'
   `);
 }
@@ -92,6 +96,7 @@ export async function categorizeTransactions(
 
   if (forLlm.length > 0) {
     const granted = model ? await takeFromDailyBudget(db, "llm_items", forLlm.length, LLM_DAILY_ITEMS) : 0;
+    const modelId = model ? (typeof model === "string" ? model : model.modelId) : null;
     const verdicts = model
       ? await categorizeWithLlm(
           model,
@@ -114,6 +119,8 @@ export async function categorizeTransactions(
           source: "ai",
           confidence: v.confidence,
           needsReview: v.needsReview,
+          promptVersion: PROMPT_VERSION,
+          model: modelId,
         });
       } else {
         assignments.push({ id: tx.id, categoryId: null, source: null, confidence: null, needsReview: true });

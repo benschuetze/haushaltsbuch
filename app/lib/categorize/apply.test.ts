@@ -15,6 +15,7 @@ import {
   reapplyRules,
   setManualCategory,
 } from "./apply";
+import { PROMPT_VERSION } from "./llm";
 
 const demoCsv = new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv"));
 let db: Db;
@@ -239,5 +240,14 @@ describe("offene Buchungen nachträglich zuordnen", () => {
     await reapplyRules(db);
     const [after] = await db.select().from(transactions).where(eq(transactions.id, salary.id));
     expect(after).toMatchObject({ categoryId: null, needsReview: true });
+  });
+
+  it("jede KI-Entscheidung trägt Prompt-Version und Modell, Regel-Treffer nicht", async () => {
+    const { model } = modelSaying("Freizeit", 0.9);
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
+    const [club] = await txBy("Club Hafen");
+    expect(club).toMatchObject({ categorySource: "ai", aiPromptVersion: PROMPT_VERSION, aiModel: "mock-model-id" });
+    const [rewe] = await txBy("REWE Markt");
+    expect(rewe).toMatchObject({ categorySource: "rule", aiPromptVersion: null, aiModel: null });
   });
 });

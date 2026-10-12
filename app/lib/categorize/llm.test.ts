@@ -1,7 +1,19 @@
+import { createHash } from "node:crypto";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import { failingModel, promptText, scriptedModel } from "../../../tests/helpers/models";
-import { BATCH_SIZE, categorizeWithLlm, type LlmInput, redactIbans } from "./llm";
+import {
+  BATCH_SIZE,
+  CATEGORY_HINTS,
+  categorizeWithLlm,
+  type LlmInput,
+  PROMPT_VERSION,
+  REVIEW_THRESHOLD,
+  redactIbans,
+  SYSTEM_PROMPT,
+} from "./llm";
+
+const KNOWN_PROMPTS = { version: "2026-10-12.1", fingerprint: "2c40bde75076" };
 
 const categories = [
   { id: "cat-food", name: "Lebensmittel", kind: "expense" },
@@ -110,6 +122,19 @@ describe("Kategorien im Prompt", () => {
     expect(sent).toContain("- Einkommen: nur Eingänge");
     // The prompt arrives JSON-encoded, so the line break is the two characters \ and n.
     expect(sent).toContain("- Garten\\n");
+  });
+});
+
+describe("Prompt-Version", () => {
+  it("wer Prompt, Beschreibungen oder Antwortformat ändert, erhöht PROMPT_VERSION", () => {
+    // Fingerprint of everything that shapes the answer. A mismatch means: bump PROMPT_VERSION, then update this.
+    const fingerprint = createHash("sha256")
+      .update(SYSTEM_PROMPT)
+      .update(JSON.stringify(CATEGORY_HINTS))
+      .update(String(REVIEW_THRESHOLD))
+      .digest("hex")
+      .slice(0, 12);
+    expect({ version: PROMPT_VERSION, fingerprint }).toEqual(KNOWN_PROMPTS);
   });
 });
 
