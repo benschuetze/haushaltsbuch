@@ -3,8 +3,8 @@ import { index, type RouteConfig, route } from "@react-router/dev/routes";
 export default [
   index("routes/home.tsx"),
   route("import", "routes/import.tsx"),
-  route("transaktionen", "routes/transaktionen.tsx"),
-  route("buchungen", "routes/buchungen.ts"),
+  route("buchungen", "routes/transaktionen.tsx"),
+  route("transaktionen", "routes/transaktionen-alt.ts"),
   route("monat/:month", "routes/monat.tsx"),
   route("regeln", "routes/regeln.tsx"),
   route("konten", "routes/konten.tsx"),

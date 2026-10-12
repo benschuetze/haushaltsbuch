@@ -120,7 +120,7 @@ export default function Monat({ loaderData }: Route.ComponentProps) {
             <p className="text-sm">
               In {formatMonth(month)} {summary.reviewCount === 1 ? "ist" : "sind"}{" "}
               {countLabel(summary.reviewCount, "Buchung", "Buchungen")} noch nicht geprüft.{" "}
-              <Link to={`/transaktionen?monat=${month}&pruefen=1`} className="underline underline-offset-4">
+              <Link to={`/buchungen?monat=${month}&pruefen=1`} className="underline underline-offset-4">
                 Jetzt prüfen
               </Link>
             </p>
@@ -142,7 +142,7 @@ export default function Monat({ loaderData }: Route.ComponentProps) {
               </p>
             </section>
           ) : null}
-          <Link to={`/transaktionen?monat=${month}`} className="inline-block text-sm underline underline-offset-4">
+          <Link to={`/buchungen?monat=${month}`} className="inline-block text-sm underline underline-offset-4">
             Alle Buchungen im {formatMonth(month)}
           </Link>
         </>

@@ -9,7 +9,7 @@ test("Filter „prüfen“ zeigt nur unsichere Buchungen, Bestätigen nimmt sie 
   await expect(page.getByTestId("import-needs-review")).toHaveText("1");
   await modelUnsureAboutDm();
 
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await page.getByLabel("Nur „prüfen“").check();
   await page.getByRole("button", { name: "Filtern" }).click();
   await expect(page).toHaveURL(/pruefen=1/);
@@ -36,7 +36,7 @@ test("Buchungen, die beim Import ohne Kategorie blieben, lassen sich nachträgli
   await sql(
     "update transactions set category_id = null, category_source = null, ai_confidence = null, needs_review = true where counterparty in ('REWE Markt', 'Lidl')",
   );
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await expect(page.getByText("6 Buchungen haben noch keine Kategorie.")).toBeVisible();
   await page.getByRole("button", { name: "Jetzt zuordnen" }).click();
   // REWE and Lidl are on the built-in merchant list, so no model is needed for them.
@@ -78,7 +78,7 @@ test("Demo: Prüfen lässt sich ausprobieren, die Rückmeldung ist sofort im Bil
 
 test("Demo: in der Liste lassen sich Kategorie ändern und bestätigen ausprobieren", async ({ page }) => {
   await importDemo(page);
-  await page.goto(`${DEMO_URL}/transaktionen?pruefen=1`);
+  await page.goto(`${DEMO_URL}/buchungen?pruefen=1`);
   const row = page.getByRole("list", { name: "Buchungen" }).getByRole("listitem").first();
   await expect(row.getByRole("button", { name: "Bestätigen" })).toBeEnabled();
   await row.getByRole("button", { name: "Bestätigen" }).click();

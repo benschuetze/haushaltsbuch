@@ -6,7 +6,7 @@ test.beforeEach(resetDb);
 test("Nachtmodus folgt dem System, und jede Seite bleibt lesbar", async ({ page }) => {
   await importDemo(page);
   await page.emulateMedia({ colorScheme: "dark" });
-  for (const path of ["/", "/transaktionen", "/budgets", "/ziele", "/abos", "/hinweise", "/pruefen", "/banken"]) {
+  for (const path of ["/", "/buchungen", "/budgets", "/ziele", "/abos", "/hinweise", "/pruefen", "/banken"]) {
     await page.goto(path);
     const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     expect(background, path).toBe("rgb(25, 24, 21)");

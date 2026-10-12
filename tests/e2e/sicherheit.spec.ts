@@ -71,7 +71,7 @@ test("strenge CSP blockiert auf keiner Seite etwas, das die App selbst braucht",
   page.on("pageerror", (e) => blocked.push(e.message));
   for (const path of [
     "/",
-    "/transaktionen",
+    "/buchungen",
     "/pruefen",
     "/abos",
     "/banken",

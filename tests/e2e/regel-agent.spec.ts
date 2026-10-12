@@ -53,7 +53,7 @@ test("ein neuer Wunsch schlägt eine ältere, widersprechende Regel", async ({ p
   await page.getByTestId("rule-proposal").getByRole("button", { name: "Übernehmen" }).click();
   await expect(page.getByTestId("rule")).toHaveCount(2);
 
-  await page.goto("/transaktionen?monat=2026-09");
+  await page.goto("/buchungen?monat=2026-09");
   const spotify = page.getByLabel("Kategorie für Spotify AB am 07.09.2026");
   await expect(spotify.locator("option:checked")).toHaveText("Abos & Verträge");
 });
