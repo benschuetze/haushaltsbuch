@@ -91,6 +91,26 @@ describe("unklare Sätze gehen an die KI, Antwort wird geprüft", () => {
     expect(sent).not.toContain("Hausverwaltung");
   });
 
+  it("eine abgeschnittene, unlesbare Antwort wird einmal neu angefragt", async () => {
+    let call = 0;
+    const { model, calls } = scriptedModel(() =>
+      ++call === 1
+        ? '{"understood": true, "field": "counterparty", "matchType": "cont'
+        : JSON.stringify({
+            understood: true,
+            field: "counterparty",
+            matchType: "contains",
+            patterns: ["rewe"],
+            category: "Lebensmittel",
+          }),
+    );
+    const errors: unknown[] = [];
+    const result = await proposeRule("Den Supermarkt REWE bitte unter Essen", CATS, [], model, (e) => errors.push(e));
+    expect(calls).toHaveLength(2);
+    expect(errors).toEqual([]);
+    expect(result).toMatchObject([{ pattern: "rewe", categoryId: id("Lebensmittel") }]);
+  });
+
   it("erfundene Kategorie oder „nicht verstanden“: kein Vorschlag", async () => {
     const invent = scriptedModel(() =>
       JSON.stringify({
