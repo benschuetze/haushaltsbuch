@@ -61,6 +61,7 @@ Alles läuft in einer React-Router-App auf Vercel: Loader und Actions sind der S
 | Assistent nur mit lesenden Werkzeugen | Ein Sprachmodell soll rechnen lassen, nicht selbst rechnen, und nichts ändern können. Jede Zahl in der Antwort kommt aus einem Werkzeug. |
 | Tageslimits atomar in der Datenbank | Ein `UPDATE … FOR UPDATE` statt Zählen im Speicher: Serverless-Instanzen teilen keinen Speicher, zwei gleichzeitige Anfragen können das Limit nicht überholen. |
 | Unbekannte CSV-Formate lernen statt nur feste Profile | Es gibt Hunderte Banken. Die Zuordnung der Spalten sieht das Modell nur als Spaltennamen und maskierte Muster und wird pro Format gespeichert. |
+| Import ohne Datenbank-Transaktion, dafür wiederholbar | Der Treiber `neon-http` kennt keine interaktiven Transaktionen. Statt eines zweiten Treibers (WebSocket-Pool) nur für Schreibvorgänge ist jeder Schritt wiederholbar: Buchungen sind per Dedupe-Hash idempotent, der Import trägt einen Status (`running`/`done`/`failed`), und der nächste Import holt Buchungen abgebrochener Importe nach. Ein Test bricht nach dem ersten Block ab und prüft, dass danach nichts ohne Kategorie oder „prüfen“ bleibt und nichts doppelt ist. |
 | Erwartungswerte von Hand nachgerechnet | Ein Test, der seine Erwartung aus dem App-Code holt, prüft nichts. [`beispieldaten/erwartet.json`](beispieldaten/erwartet.json) ist unabhängig. |
 
 ## Typsicherheit

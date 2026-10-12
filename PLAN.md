@@ -65,6 +65,10 @@ Regeln:
 
 Standardkategorien: Wohnen, Lebensmittel, Kind & Kita, Mobilität, Versicherungen, Abos & Software, Hobbys, Gesundheit, Freizeit, Kleidung, Haushalt, Einkommen, Umbuchung, Sonstiges.
 
+## Import ohne Transaktion
+
+Produktion spricht über `drizzle-orm/neon-http` mit der Datenbank: schnell im Serverless-Betrieb, aber ohne interaktive Transaktionen. Ein Import besteht aus mehreren Schritten (Import-Datensatz, Buchungen in Blöcken, Umbuchungen verknüpfen, kategorisieren, Hinweise). Entscheidung: kein zweiter Treiber mit WebSocket-Pool nur für den Import, sondern Wiederholbarkeit. Buchungen sind über den Dedupe-Hash idempotent; der Import-Datensatz hat einen Status `running`/`done`/`failed`; jeder neue Import (auch der tägliche Bankabruf) kategorisiert zuerst Buchungen aus fehlgeschlagenen oder seit 15 Minuten hängenden Importen nach, ohne Modell landen sie in „prüfen“. So bleibt nach einem Abbruch höchstens bis zum nächsten Import etwas offen, und ein erneuter Upload derselben Datei legt nichts doppelt an. Ein Wechsel auf den Pool-Treiber bleibt möglich, falls einmal echte Atomarität nötig wird (z. B. Buchung und Saldo gemeinsam).
+
 ## Seiten
 
 | Route | Inhalt |
