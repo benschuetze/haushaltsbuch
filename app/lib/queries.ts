@@ -49,6 +49,9 @@ export type MonthSummary = {
   incomeCents: number;
   expenseCents: number;
   transferCents: number;
+  /** Transfers cancel out in the balance; count and moved volume say what happened. */
+  transferCount: number;
+  transferVolumeCents: number;
   byCategory: CategoryTotal[];
   reviewCount: number;
   transactionCount: number;
@@ -86,6 +89,8 @@ export async function monthSummary(db: Db, month: string, untilDay?: number): Pr
   let incomeCents = 0;
   let expenseCents = 0;
   let transferCents = 0;
+  let transferCount = 0;
+  let transferVolumeCents = 0;
   let reviewCount = 0;
   let transactionCount = 0;
   for (const r of rows) {
@@ -93,6 +98,8 @@ export async function monthSummary(db: Db, month: string, untilDay?: number): Pr
     transactionCount += r.count;
     if (r.kind === "transfer") {
       transferCents += Number(r.total ?? 0);
+      transferCount += r.count;
+      transferVolumeCents -= Number(r.negative);
     } else {
       incomeCents += Number(r.positive);
       expenseCents += Number(r.negative);
@@ -104,6 +111,8 @@ export async function monthSummary(db: Db, month: string, untilDay?: number): Pr
     incomeCents,
     expenseCents,
     transferCents,
+    transferCount,
+    transferVolumeCents,
     reviewCount,
     transactionCount,
     byCategory: rows.map((r) => ({

@@ -31,6 +31,15 @@ test("ungültiger Monat ergibt eine verständliche 404", async ({ page }) => {
   await expect(page.getByText("Monat im Format JJJJ-MM")).toBeVisible();
 });
 
+test("Umbuchungen: Anzahl und bewegter Betrag statt eines Saldos von 0,00 €", async ({ page }) => {
+  await importDemo(page);
+  await page.goto("/monat/2026-09");
+  // erwartet.json: one transfer to savings, 300,00 €.
+  await expect(page.getByTestId("transfers")).toHaveText(
+    `1 Umbuchung zwischen eigenen Konten · ${formatCents(-(expected.months["2026-09"]?.transfer_cents ?? 0))} bewegt`,
+  );
+});
+
 test("Vergleich mit dem Vormonat in Worten statt mit Vorzeichen", async ({ page }) => {
   await importDemo(page);
   await page.goto("/monat/2026-09");
