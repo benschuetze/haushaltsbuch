@@ -59,6 +59,25 @@ export function merchantKey(name: string): string {
     .replace(/\s+/g, " ");
 }
 
+const within5 = (values: number[]) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+  return values.every((v) => Math.abs(v - median) <= median * 0.05);
+};
+
+/**
+ * Plannable: the same amount every time, or one price change and the same amount since then. A raised
+ * subscription is still a fixed cost at its new price; fuel or a shop that differs every time is not.
+ */
+function atMostOneStep(chronological: number[]): boolean {
+  if (within5(chronological)) return true;
+  // At least two equal payments before the change, otherwise two different amounts would count as a "step".
+  for (let cut = 2; cut < chronological.length; cut++) {
+    if (within5(chronological.slice(0, cut)) && within5(chronological.slice(cut))) return true;
+  }
+  return false;
+}
+
 function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 }
@@ -127,7 +146,7 @@ export function detectRecurring(bookings: Booking[], referenceDate: string): Rec
       yearlyCents: Math.abs(last.amountCents) * PER_YEAR[cadence],
       active: daysBetween(last.bookingDate, referenceDate) <= DAYS[cadence] * 1.5,
       kind,
-      stable: amounts.every((a) => Math.abs(a - median) <= median * 0.05),
+      stable: atMostOneStep(items.map((b) => Math.abs(b.amountCents))),
     });
   }
   return result.sort((a, b) => b.yearlyCents - a.yearlyCents);

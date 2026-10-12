@@ -16,6 +16,16 @@ const monthly = (counterparty: string, cents: number[], category: string, startM
   cents.map((c, i) => b(`2026-${String(startMonth + i).padStart(2, "0")}-${day}`, c, counterparty, category));
 
 describe("detectRecurring", () => {
+  it("nach einer Preiserhöhung bleibt ein Abo ein fester, planbarer Betrag; ständig andere Beträge nicht", () => {
+    const rows = [
+      ...monthly("Spotify AB", [-1099, -1099, -1099, -1199], "Abos & Software"),
+      ...monthly("Aral Station", [-5820, -6390, -5510, -6100], "Mobilität"),
+    ];
+    const found = detectRecurring(rows, "2026-06-20");
+    expect(found.find((r) => r.merchant === "Spotify AB")?.stable).toBe(true);
+    expect(found.find((r) => r.merchant === "Aral Station")?.stable ?? false).toBe(false);
+  });
+
   it("erkennt ein Monatsabo mit Jahreskosten und Preiserhöhung", () => {
     const [spotify] = detectRecurring(
       monthly("Spotify AB", [-999, -999, -999, -1099], "Abos & Software"),
