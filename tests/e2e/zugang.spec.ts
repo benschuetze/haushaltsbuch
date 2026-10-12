@@ -7,6 +7,15 @@ test.beforeEach(resetDb);
 test.describe("ohne Login", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
+  test("Impressum ist ohne Login erreichbar und sagt ehrlich, wenn Angaben fehlen", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("link", { name: "Impressum" }).click();
+    await expect(page).toHaveURL(/\/impressum$/);
+    await expect(page.getByRole("heading", { name: "Impressum" })).toBeVisible();
+    // The test instance has no operator configured, as a fresh install would not.
+    await expect(page.getByTestId("imprint-missing")).toBeVisible();
+  });
+
   test("jede Seite leitet auf den Login und danach zurück", async ({ page }) => {
     await page.goto("/regeln");
     await expect(page).toHaveURL(/\/login\?next=%2Fregeln/);

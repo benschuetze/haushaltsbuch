@@ -20,6 +20,7 @@ export default [
   route("assistent", "routes/assistent.ts"),
   route("datenschutz", "routes/datenschutz.tsx"),
   route("nutzungsbedingungen", "routes/nutzungsbedingungen.tsx"),
+  route("impressum", "routes/impressum.tsx"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
   route("favicon.ico", "routes/favicon.ts"),
