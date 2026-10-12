@@ -19,6 +19,11 @@ export const categorySource = pgEnum("category_source", ["rule", "ai", "manual"]
 export const ruleField = pgEnum("rule_field", ["counterparty", "purpose"]);
 export const ruleMatchType = pgEnum("rule_match_type", ["contains", "equals", "regex"]);
 export const formatSource = pgEnum("format_source", ["heuristic", "ai"]);
+/**
+ * running while the bookings are written and categorised; failed when that threw. An import that stays "running"
+ * was cut off without a chance to say so (timeout, lost connection).
+ */
+export const importStatus = pgEnum("import_status", ["running", "done", "failed"]);
 export const connectionStatus = pgEnum("connection_status", ["active", "expired", "revoked", "error"]);
 export const insightKind = pgEnum("insight_kind", [
   "budget_exceeded",
@@ -64,6 +69,8 @@ export const imports = pgTable(
       .references(() => accounts.id),
     filename: text("filename").notNull(),
     rowCount: integer("row_count").notNull(),
+    // Imports from before this column finished or were never noticed; "done" is the honest default for them.
+    status: importStatus("status").notNull().default("done"),
     importedAt: timestamp("imported_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("imports_account_id_idx").on(t.accountId)],

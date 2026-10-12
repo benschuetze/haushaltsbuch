@@ -3,11 +3,11 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createMockModel } from "~/lib/categorize/mock-model";
 import type { Db } from "~/lib/db/client";
-import { accounts, transactions } from "~/lib/db/schema";
+import { accounts, imports, transactions } from "~/lib/db/schema";
 import expected from "../../../beispieldaten/erwartet.json";
 import { createTestDb } from "../../../tests/helpers/db";
 import { failingModel } from "../../../tests/helpers/models";
-import { importCsv } from "./run";
+import { importCsv, storeParsed } from "./run";
 
 const demoCsv = new Uint8Array(readFileSync("beispieldaten/demo-umsaetze.csv"));
 let db: Db;
@@ -87,5 +87,75 @@ describe("vorgemerkte Umsätze", () => {
     expect(result).toMatchObject({ total: 20, inserted: 19, duplicates: 0, rejected: [] });
     expect(result.skipped).toHaveLength(1);
     expect(result.inserted + result.duplicates + result.rejected.length + result.skipped.length).toBe(result.total);
+  });
+});
+
+describe("Import bricht mittendrin ab", () => {
+  // More than one insert block (500 rows), so the abort lands after the first block is already stored.
+  const rows = Array.from({ length: 620 }, (_, i) => ({
+    line: i + 2,
+    bookingDate: `2026-0${(i % 9) + 1}-${String((i % 27) + 1).padStart(2, "0")}`,
+    amountCents: -(100 + i),
+    currency: "EUR",
+    counterparty: `Laden ${i}`,
+    purpose: `Einkauf ${i}`,
+    raw: {},
+  }));
+  const parsed = { rows, rejected: [], skipped: [] };
+
+  /** The database as the import sees it, except that the second block of bookings never arrives. */
+  function abortingAfterFirstBlock(real: Db): Db {
+    let blocks = 0;
+    return new Proxy(real, {
+      get(target, prop, receiver) {
+        if (prop !== "insert") return Reflect.get(target, prop, receiver);
+        return (table: unknown) => {
+          if (table === transactions && ++blocks === 2) throw new Error("Verbindung weg");
+          return target.insert(table as typeof transactions);
+        };
+      },
+    });
+  }
+
+  it("danach bleibt keine Buchung ohne Kategorie und ohne „prüfen“, und nichts wird doppelt angelegt", async () => {
+    const [account] = await db.select().from(accounts);
+    if (!account) throw new Error("Demo-Konto fehlt");
+    await expect(
+      storeParsed(abortingAfterFirstBlock(db), account, parsed, { filename: "gross.csv", model: null }),
+    ).rejects.toThrow("Verbindung weg");
+    const [failed] = await db.select().from(imports);
+    expect(failed?.status).toBe("failed");
+
+    // The user tries again with the same file.
+    const retry = await storeParsed(db, account, parsed, { filename: "gross.csv", model: null });
+    expect(retry).toMatchObject({ inserted: 120, duplicates: 500 });
+
+    const all = await db.select().from(transactions);
+    expect(all).toHaveLength(620);
+    expect(all.filter((t) => t.categoryId === null && !t.needsReview)).toEqual([]);
+    expect((await db.select().from(imports)).map((i) => i.status).sort()).toEqual(["done", "failed"]);
+  });
+
+  it("ein Import, der ohne Fehlermeldung abgerissen ist (Timeout), wird beim nächsten Import nachgeholt", async () => {
+    const [account] = await db.select().from(accounts);
+    if (!account) throw new Error("Demo-Konto fehlt");
+    await storeParsed(db, account, parsed, { filename: "gross.csv", model: null });
+    // What a killed function leaves behind: status still "running", bookings without category or review flag.
+    await db.update(imports).set({ status: "running", importedAt: new Date(Date.now() - 60 * 60 * 1000) });
+    await db.update(transactions).set({ categoryId: null, categorySource: null, needsReview: false });
+
+    // Any next import, here one already known row, picks the leftovers up.
+    const other = await storeParsed(
+      db,
+      account,
+      { ...parsed, rows: parsed.rows.slice(0, 1) },
+      {
+        filename: "noch-einer.csv",
+        model: null,
+      },
+    );
+    expect(other.duplicates).toBe(1);
+    const left = await db.select().from(transactions);
+    expect(left.filter((t) => t.categoryId === null && !t.needsReview)).toEqual([]);
   });
 });
