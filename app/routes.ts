@@ -21,6 +21,7 @@ export default [
   route("datenschutz", "routes/datenschutz.tsx"),
   route("nutzungsbedingungen", "routes/nutzungsbedingungen.tsx"),
   route("impressum", "routes/impressum.tsx"),
+  route("theme", "routes/theme.ts"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
   route("favicon.ico", "routes/favicon.ts"),
