@@ -155,3 +155,13 @@ Das Projekt ist mit Claude Code als primärem Werkzeug entstanden. [`CLAUDE.md`]
 | `ship` | Commit, CI, Preview und Produktion prüfen |
 
 Grundsätze: Jeder Fehler bekommt zuerst einen Test, der ihn zeigt. Tests beschreiben das Versprechen an den Nutzer, nicht die Implementierung. Nichts gilt als fertig, was nicht gelaufen und gesehen wurde.
+
+**Tempo:** Vom ersten Commit (9.10.2026) bis zur Fassung hier vergingen drei Tage, mit gut 50 Pull Requests. Gesteuert wurde über kurze Aufträge, oft vom Handy; jeder PR lief durch `pnpm check` (Typecheck, Lint, Unit- und Datenbanktests, Playwright auf Desktop und iPhone) und die CI, bevor er gemergt wurde. Live-Änderungen wurden danach auf der Demo nachgeprüft.
+
+**Wo der Agent falsch lag:**
+
+| Fehler | Wie es auffiel | Was daraus wurde |
+|---|---|---|
+| Die vom Agenten gebaute Händlerliste ordnete die Rente der „Deutschen Rentenversicherung“ als „Versicherungen“ ein: Das Wort im Namen passte, dass es ein Eingang war, prüfte die Liste nicht. | Ein neuer Test lässt das Eval-Set bei jedem `pnpm test` gegen die Händlerliste laufen; er schlug beim ersten Lauf an. | Händlerliste nur noch für Ausgaben, bereits falsch einsortierte Eingänge gehen nach „prüfen“; die Händlerlisten-Prüfung ist fester Teil von `pnpm test` und im Skill `categorizer-eval` beschrieben. |
+| Auf die Frage „100 € mehr sparen?“ empfahl der Assistent einen Dauerauftrag aufs Tagesgeld, obwohl dort schon 300 € im Monat hingingen. Alle Zahlen stimmten, der Rat nicht. | Beim Nachrechnen der Antworten für das Demo-Video gegen die Datenbank. | Prompt-Regel: vor einem Sparrat die kommenden Zahlungen nachsehen und auf einem laufenden Auftrag aufbauen. Mit dem echten Modell geprüft: Die Antwort nennt jetzt die laufenden 300 € und schlägt 400 € vor. |
+| Auf dem iPhone erschien eine Frage doppelt, und die Ladeanzeige blieb hängen. Die Playwright-Tests auf iPhone (WebKit) waren grün, weil sie nur einmal abschickten. | Beim Ausprobieren auf einem echten iPhone. | Ursache: iOS schickt beim Diktieren plus „Los“-Taste zweimal ab, der zweite Request brach den ersten ab. Der Test schickt jetzt doppelt ab und war ohne Fix rot. Seitdem gilt: Ein gemeldeter UI-Fehler bekommt zuerst einen Test, der ohne den Fix fehlschlägt. |
