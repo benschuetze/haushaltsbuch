@@ -10,6 +10,8 @@ test("Startseite: die Zahl für heute steht ohne Frage da, „Wie gerechnet?“ 
   await expect(page.getByTestId("today-context")).toBeVisible();
   await page.getByText("Wie gerechnet?").click();
   await expect(page.getByText("Ausgegeben", { exact: true })).toBeVisible();
+  // What the number leaves out is said, not only written in a code comment.
+  await expect(page.getByTestId("today-limits")).toContainText("Restgeld vom Vormonat zählt nicht mit");
 });
 
 test("Vorschlag antippen: Antwort erscheint direkt darunter, mit Urteil", async ({ page }) => {
@@ -37,7 +39,7 @@ test("„Diese Woche“: Betrag seit Montag, mit Vergleich oder ehrlichem Hinwei
   await page.goto("/");
   await expect(page.getByTestId("week-spent")).toHaveText(/€$/);
   await expect(page.getByTestId("week-compare")).toHaveText(
-    /(weniger|mehr) als sonst bis \w+|fehlen noch ein paar Wochen/,
+    /(weniger|mehr) als sonst bis \w+|fehlen noch ein paar Wochen|Bisher nichts ausgegeben|noch nichts ausgegeben|Genau wie sonst/,
   );
 });
 
