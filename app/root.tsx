@@ -16,6 +16,7 @@ import {
 import { Assistant } from "~/components/assistant";
 import { NotificationBell } from "~/components/notification-bell";
 import { TabBar } from "~/components/tab-bar";
+import { ThemeSwitch } from "~/components/theme-switch";
 import { guard, isDemo, isLoggedIn } from "~/lib/auth.server";
 import { bankIssues } from "~/lib/bank/index.server";
 import { getAssistantModel } from "~/lib/categorize/model";
@@ -23,6 +24,7 @@ import { getDb } from "~/lib/db/client";
 import { notificationSummary, openInsights, refreshInsightsIfStale } from "~/lib/insights";
 import { applySecurityHeaders, isCrossSiteWrite } from "~/lib/security.server";
 import { cancelLinkFor } from "~/lib/subscriptions/cancel-links";
+import { readTheme } from "~/lib/theme.server";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/root";
 import { useNonce } from "./nonce";
@@ -48,14 +50,16 @@ export const middleware: Route.MiddlewareFunction[] = [
 
 export async function loader({ request }: Route.LoaderArgs) {
   const demo = isDemo();
+  const theme = await readTheme(request);
   const loggedIn = demo || (await isLoggedIn(request));
-  if (!loggedIn) return data({ demo, loggedIn, notifications: null, assistant: false });
+  if (!loggedIn) return data({ demo, loggedIn, theme, notifications: null, assistant: false });
   const db = getDb();
   await refreshInsightsIfStale(db);
   const [summary, top, bank] = await Promise.all([notificationSummary(db), openInsights(db, 5), bankIssues(db)]);
   return data({
     demo,
     loggedIn,
+    theme,
     assistant: (await getAssistantModel()) !== null,
     notifications: {
       ...summary,
@@ -96,7 +100,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     document.documentElement.dataset.hydrated = "true";
   }, []);
   return (
-    <html lang="de">
+    <html lang="de" data-theme={root?.theme && root.theme !== "system" ? root.theme : undefined}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -171,7 +175,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </header>
         ) : null}
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-        <footer className="mx-auto flex max-w-5xl gap-4 px-4 pb-24 text-xs text-muted-foreground">
+        <footer className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 pb-24 text-xs text-muted-foreground">
           <a href="/datenschutz" className="underline underline-offset-2">
             Datenschutz
           </a>
@@ -181,6 +185,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <a href="/impressum" className="underline underline-offset-2">
             Impressum
           </a>
+          <span className="ml-auto">
+            <ThemeSwitch current={root?.theme ?? "system"} />
+          </span>
         </footer>
         {root?.assistant ? <Assistant open={chatOpen} onOpenChange={setChatOpen} launcher={!onHome} /> : null}
         {root?.loggedIn ? (

@@ -116,6 +116,7 @@ const PUBLIC_PATHS = new Set([
   "/datenschutz",
   "/nutzungsbedingungen",
   "/impressum",
+  "/theme",
 ]);
 
 /**
@@ -128,7 +129,9 @@ export async function guard(request: Request): Promise<void> {
 
   if (isDemo()) {
     // The assistant only reads (and answers with the mock model in the demo), so it may be asked there.
-    if (writing && path !== "/assistent") throw new Response("Die Demo ist schreibgeschützt.", { status: 403 });
+    // The theme switch only sets a cookie in the visitor's own browser.
+    if (writing && path !== "/assistent" && path !== "/theme")
+      throw new Response("Die Demo ist schreibgeschützt.", { status: 403 });
     if (path === "/login") throw redirect("/");
     return;
   }
