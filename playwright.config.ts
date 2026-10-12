@@ -100,7 +100,7 @@ export default defineConfig({
     {
       command: "pnpm exec react-router-serve ./build/server/index.js",
       url: `http://127.0.0.1:${DEMO_PORT}/`,
-      env: { ...appEnv, PORT: String(DEMO_PORT), DEMO_MODE: "true" },
+      env: { ...appEnv, PORT: String(DEMO_PORT), DEMO_MODE: "true", DEMO_NIGHTLY_RESET: "0" },
       reuseExistingServer: !CI,
       timeout: 60_000,
     },

@@ -21,7 +21,15 @@ const euro = (cents: number) =>
  * Provider pages cannot be embedded and their answer cannot be read, so the page opens in its own window
  * and the app asks once the user is back. Whether it really worked is then checked against the bookings.
  */
-export function CancelDialog({ target, demo, onClose }: { target: CancelTarget; demo: boolean; onClose: () => void }) {
+export function CancelDialog({
+  target,
+  readOnly,
+  onClose,
+}: {
+  target: CancelTarget;
+  readOnly: boolean;
+  onClose: () => void;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const fetcher = useFetcher<{ ok: boolean; message: string }>();
   const [stage, setStage] = useState<"start" | "letter" | "away" | "ask">("start");
@@ -138,9 +146,9 @@ export function CancelDialog({ target, demo, onClose }: { target: CancelTarget; 
               </p>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button onClick={confirm} disabled={demo || fetcher.state !== "idle"} className="flex-1">
+              <Button onClick={confirm} disabled={readOnly || fetcher.state !== "idle"} className="flex-1">
                 {fetcher.state !== "idle" ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
-                {demo ? "In der Demo abgeschaltet" : "Ja, gekündigt"}
+                {readOnly ? "In der Demo abgeschaltet" : "Ja, gekündigt"}
               </Button>
               <Button variant="outline" onClick={openProvider} className="flex-1">
                 Seite nochmal öffnen

@@ -47,10 +47,41 @@ test.describe("Demo-Modus", () => {
     );
   });
 
-  test("jeder schreibende Request wird mit 403 abgelehnt", async ({ request }) => {
-    for (const path of ["/import", "/buchungen", "/regeln", "/login", "/logout"]) {
-      const response = await request.post(path, { form: { intent: "create" } });
-      expect(response.status(), path).toBe(403);
+  test("zum Ausprobieren: eine Regel anlegen geht, „Jetzt zurücksetzen“ räumt sie wieder weg", async ({ page }) => {
+    await page.goto(`${DEMO_URL}/regeln`);
+    await page.getByText("Regel selbst einstellen (für Profis)").click();
+    const form = page.getByRole("region", { name: "Regel selbst einstellen" });
+    await form.getByLabel("Muster").fill("kiosk-demo");
+    await form.getByLabel("Kategorie").selectOption({ label: "Sonstiges" });
+    await form.getByRole("button", { name: "Regel anlegen" }).click();
+    await expect(page.getByRole("heading", { name: "Deine Regeln (1)" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Jetzt zurücksetzen" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Zurückgesetzt." })).toBeVisible();
+    await page.goto(`${DEMO_URL}/regeln`);
+    await expect(page.getByRole("heading", { name: "Deine Regeln (0)" })).toBeVisible();
+  });
+
+  test("zum Ausprobieren: eine Beispieldatei herunterladen und importieren", async ({ page }) => {
+    await page.goto(`${DEMO_URL}/import`);
+    const demo = page.getByTestId("demo-import");
+    await expect(demo).toContainText("keine echten Kontoauszüge");
+    await expect(demo.getByRole("link", { name: "Sparkasse (CSV)" })).toHaveAttribute(
+      "href",
+      "/beispiele/sparkasse.csv",
+    );
+    const sample = await page.request.get(`${DEMO_URL}/beispiele/sparkasse.csv`);
+    expect(sample.status()).toBe(200);
+
+    await page.getByLabel("Kontoauszüge").setInputFiles("public/beispiele/sparkasse.csv");
+    await page.getByRole("button", { name: "Importieren" }).click();
+    await expect(page.getByRole("status", { name: /^Ergebnis für/ })).toBeVisible();
+  });
+
+  test("Login und Logout gibt es in der Demo nicht", async ({ request }) => {
+    for (const path of ["/login", "/logout"]) {
+      const response = await request.get(path, { maxRedirects: 0 });
+      expect(response.status(), path).toBe(302);
     }
   });
 });

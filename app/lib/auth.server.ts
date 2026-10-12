@@ -5,6 +5,14 @@ export function isDemo(): boolean {
   return process.env.DEMO_MODE === "true";
 }
 
+/**
+ * The demo is for trying things: import, rules, budgets, goals all work there, and the data is reset to the
+ * examples every night or by button. DEMO_READ_ONLY=1 brings back the old look-only demo.
+ */
+export function isReadOnly(): boolean {
+  return isDemo() && process.env.DEMO_READ_ONLY === "1";
+}
+
 const MIN_SECRET_LENGTH = 32;
 const DEV_SECRET = "nur-fuer-lokale-entwicklung";
 
@@ -128,11 +136,11 @@ export async function guard(request: Request): Promise<void> {
   const writing = request.method !== "GET" && request.method !== "HEAD";
 
   if (isDemo()) {
-    // The assistant only reads (and answers with the mock model in the demo), so it may be asked there.
-    // The theme switch only sets a cookie in the visitor's own browser.
-    if (writing && path !== "/assistent" && path !== "/theme")
+    // Read-only mode only: the assistant and the theme switch never change the data, so they stay open.
+    if (isReadOnly() && writing && path !== "/assistent" && path !== "/theme")
       throw new Response("Die Demo ist schreibgeschützt.", { status: 403 });
-    if (path === "/login") throw redirect("/");
+    // There is no login in the demo, so nothing to log in to or out of.
+    if (path === "/login" || path === "/logout") throw redirect("/");
     return;
   }
   if (PUBLIC_PATHS.has(path)) return;

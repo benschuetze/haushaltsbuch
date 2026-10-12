@@ -6,7 +6,7 @@ import { z } from "zod";
 import { Amount } from "~/components/amount";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { isDemo } from "~/lib/auth.server";
+import { isReadOnly } from "~/lib/auth.server";
 import { reapplyRules } from "~/lib/categorize/apply";
 import { KNOWN_MERCHANTS } from "~/lib/categorize/known-merchants";
 import { getModel } from "~/lib/categorize/model";
@@ -32,7 +32,7 @@ export const meta: Route.MetaFunction = () => [{ title: "Regeln · Haushaltsbuch
 export async function loader() {
   const db = getDb();
   const [ruleRows, categories] = await Promise.all([listRules(db), listCategories(db)]);
-  return { rules: ruleRows, categories, demo: isDemo() };
+  return { rules: ruleRows, categories, readOnly: isReadOnly() };
 }
 
 type ActionData =
@@ -296,7 +296,7 @@ function previewText(preview: RulePreview): string {
 }
 
 /** One sentence in, finished rules out: what each does, how many bookings it hits, one click to keep them. */
-function RuleAgent({ categories, demo }: { categories: { id: string; name: string }[]; demo: boolean }) {
+function RuleAgent({ categories, readOnly }: { categories: { id: string; name: string }[]; readOnly: boolean }) {
   const fetcher = useFetcher<ActionData>();
   const inputRef = useRef<HTMLInputElement>(null);
   const [wish, setWish] = useState("");
@@ -345,10 +345,10 @@ function RuleAgent({ categories, demo }: { categories: { id: string; name: strin
           placeholder="z. B. Lieferando ist immer Restaurant"
           aria-label="Was soll die Regel tun?"
           maxLength={300}
-          disabled={demo}
+          disabled={readOnly}
           className="h-11 flex-1 text-base"
         />
-        <Button type="submit" className="h-11" disabled={demo || busy || wish.trim().length < 3}>
+        <Button type="submit" className="h-11" disabled={readOnly || busy || wish.trim().length < 3}>
           {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
           Vorschlag
         </Button>
@@ -359,7 +359,7 @@ function RuleAgent({ categories, demo }: { categories: { id: string; name: strin
             <button
               key={e}
               type="button"
-              disabled={demo}
+              disabled={readOnly}
               onClick={() => ask(e)}
               className="rounded-full border px-3 py-1 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
             >
@@ -368,7 +368,7 @@ function RuleAgent({ categories, demo }: { categories: { id: string; name: strin
           ))}
         </fieldset>
       ) : null}
-      {demo ? <p className="text-sm text-muted-foreground">In der Demo lassen sich keine Regeln anlegen.</p> : null}
+      {readOnly ? <p className="text-sm text-muted-foreground">In der Demo lassen sich keine Regeln anlegen.</p> : null}
 
       {result && items.length === 0 ? (
         <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
@@ -471,7 +471,7 @@ function RuleAgent({ categories, demo }: { categories: { id: string; name: strin
 }
 
 export default function Regeln({ loaderData, actionData }: Route.ComponentProps) {
-  const { rules: ruleRows, categories, demo } = loaderData;
+  const { rules: ruleRows, categories, readOnly } = loaderData;
   const result = actionData && "ok" in actionData ? actionData : undefined;
 
   return (
@@ -493,15 +493,15 @@ export default function Regeln({ loaderData, actionData }: Route.ComponentProps)
         </p>
       ) : null}
 
-      <RuleAgent categories={categories} demo={demo} />
+      <RuleAgent categories={categories} readOnly={readOnly} />
 
       <details className="rounded-lg border p-4">
         <summary className="cursor-pointer text-sm font-medium">Regel selbst einstellen (für Profis)</summary>
         <section aria-label="Regel selbst einstellen" className="mt-3">
           <Form method="post" className="space-y-3">
             <input type="hidden" name="intent" value="create" />
-            <RuleFields prefix="new" categories={categories} disabled={demo} />
-            <Button type="submit" disabled={demo}>
+            <RuleFields prefix="new" categories={categories} disabled={readOnly} />
+            <Button type="submit" disabled={readOnly}>
               Regel anlegen
             </Button>
           </Form>
@@ -524,9 +524,16 @@ export default function Regeln({ loaderData, actionData }: Route.ComponentProps)
                   <summary className="cursor-pointer text-sm text-muted-foreground">Bearbeiten</summary>
                   <Form method="post" className="mt-3 space-y-3" aria-label={`Regel ${rule.pattern}`}>
                     <input type="hidden" name="ruleId" value={rule.id} />
-                    <RuleFields prefix={rule.id} defaults={rule} categories={categories} disabled={demo} />
+                    <RuleFields prefix={rule.id} defaults={rule} categories={categories} disabled={readOnly} />
                     <div className="flex gap-2">
-                      <Button type="submit" name="intent" value="update" size="sm" variant="outline" disabled={demo}>
+                      <Button
+                        type="submit"
+                        name="intent"
+                        value="update"
+                        size="sm"
+                        variant="outline"
+                        disabled={readOnly}
+                      >
                         Speichern
                       </Button>
                       <Button
@@ -535,7 +542,7 @@ export default function Regeln({ loaderData, actionData }: Route.ComponentProps)
                         value="delete"
                         size="sm"
                         variant="ghost"
-                        disabled={demo}
+                        disabled={readOnly}
                         formNoValidate
                       >
                         Löschen

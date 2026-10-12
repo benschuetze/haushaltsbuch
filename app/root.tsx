@@ -17,10 +17,11 @@ import { Assistant } from "~/components/assistant";
 import { NotificationBell } from "~/components/notification-bell";
 import { TabBar } from "~/components/tab-bar";
 import { ThemeSwitch } from "~/components/theme-switch";
-import { guard, isDemo, isLoggedIn } from "~/lib/auth.server";
+import { guard, isDemo, isLoggedIn, isReadOnly } from "~/lib/auth.server";
 import { bankIssues } from "~/lib/bank/index.server";
 import { getAssistantModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
+import { resetDemoNightly } from "~/lib/demo-reset.server";
 import { notificationSummary, openInsights, refreshInsightsIfStale } from "~/lib/insights";
 import { applySecurityHeaders, isCrossSiteWrite } from "~/lib/security.server";
 import { cancelLinkFor } from "~/lib/subscriptions/cancel-links";
@@ -37,6 +38,8 @@ export const middleware: Route.MiddlewareFunction[] = [
         throw new Response("Anfrage von fremder Seite abgelehnt.", { status: 403 });
       }
       await guard(request);
+      // Before any loader reads: the first request of the night puts the demo back to the example data.
+      if (isDemo()) await resetDemoNightly(getDb());
     } catch (error) {
       // Redirects to the login and rejections need the same headers as everything else.
       if (error instanceof Response) applySecurityHeaders(error.headers);
@@ -52,12 +55,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   const demo = isDemo();
   const theme = await readTheme(request);
   const loggedIn = demo || (await isLoggedIn(request));
-  if (!loggedIn) return data({ demo, loggedIn, theme, notifications: null, assistant: false });
+  if (!loggedIn) return data({ demo, readOnly: false, loggedIn, theme, notifications: null, assistant: false });
   const db = getDb();
   await refreshInsightsIfStale(db);
   const [summary, top, bank] = await Promise.all([notificationSummary(db), openInsights(db, 5), bankIssues(db)]);
   return data({
     demo,
+    readOnly: isReadOnly(),
     loggedIn,
     theme,
     assistant: (await getAssistantModel()) !== null,
@@ -94,7 +98,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const nonce = useNonce();
   const [chatOpen, setChatOpen] = useState(false);
   // The start page has its own question box; a second way into the same assistant there only competes with it.
-  const onHome = useLocation().pathname === "/";
+  const location = useLocation();
+  const onHome = location.pathname === "/";
+  const resetDone = new URLSearchParams(location.search).get("zurueckgesetzt") === "1";
   // Marks the moment React has taken over the server-rendered page; E2E tests wait for it before typing.
   useEffect(() => {
     document.documentElement.dataset.hydrated = "true";
@@ -117,7 +123,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="min-h-dvh">
         {root?.demo ? (
           <p className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-950">
-            Demo mit erfundenen Beispieldaten. Nur lesen, Änderungen sind abgeschaltet.{" "}
+            {root.readOnly ? (
+              "Demo mit erfundenen Beispieldaten. Nur lesen, Änderungen sind abgeschaltet. "
+            ) : (
+              <>
+                Demo mit erfundenen Beispieldaten: Probier alles aus, auch Import und Regeln. Alle Besucher sehen
+                dieselben Daten, deshalb keine echten Kontoauszüge hochladen. Jede Nacht geht es zurück auf die
+                Beispiele. {resetDone ? <strong role="status">Zurückgesetzt. </strong> : null}
+                <Form method="post" action="/demo/reset" className="inline">
+                  <button type="submit" className="font-medium underline underline-offset-2">
+                    Jetzt zurücksetzen
+                  </button>
+                </Form>
+                {" · "}
+              </>
+            )}
             <a
               href="https://github.com/benschuetze/haushaltsbuch"
               className="font-medium underline underline-offset-2"
@@ -136,7 +156,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span className="pixel hidden text-muted-foreground sm:inline">Nr. 1 · Eigenes Konto</span>
               </NavLink>
               <div className="flex items-center gap-1">
-                {root.notifications ? <NotificationBell notifications={root.notifications} demo={root.demo} /> : null}
+                {root.notifications ? (
+                  <NotificationBell notifications={root.notifications} readOnly={root.readOnly} />
+                ) : null}
                 {root.demo ? null : (
                   <Form method="post" action="/logout">
                     <button

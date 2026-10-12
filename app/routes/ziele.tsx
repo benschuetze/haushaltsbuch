@@ -4,7 +4,7 @@ import { data, Form, useNavigation } from "react-router";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { isDemo } from "~/lib/auth.server";
+import { isReadOnly } from "~/lib/auth.server";
 import { goalStatus } from "~/lib/budget/goals";
 import { createGoal, deleteGoal, deposit, loadGoalInputs, savingsPlan } from "~/lib/budget/goals.server";
 import { getDb } from "~/lib/db/client";
@@ -23,7 +23,7 @@ export async function loader() {
   const plan = await savingsPlan(db, available.today);
   const suggestion = plan && !statuses.some((g) => !g.done && g.fundedBy === plan.key) ? plan : null;
   return {
-    demo: isDemo(),
+    readOnly: isReadOnly(),
     goals: statuses,
     perDayCents: available.perDayCents,
     suggestion,
@@ -133,7 +133,7 @@ function nextMonths(from: string, count: number): string[] {
 }
 
 export default function Ziele({ loaderData, actionData }: Route.ComponentProps) {
-  const { demo, goals, thisMonth, suggestion } = loaderData;
+  const { readOnly, goals, thisMonth, suggestion } = loaderData;
   // Filled by "Als Ziel übernehmen"; the form below stays the one place where a goal is created.
   const [prefill, setPrefill] = useState<{ name: string; target: string } | null>(null);
   // Once the goal is saved, the next one starts empty again.
@@ -206,7 +206,7 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
           className="grid gap-3 sm:grid-cols-[1fr_9rem_10rem_auto] sm:items-end"
         >
           <input type="hidden" name="intent" value="create" />
-          <fieldset disabled={demo} className="contents">
+          <fieldset disabled={readOnly} className="contents">
             <div className="space-y-1 text-sm">
               <label htmlFor="goal-name" className="block">
                 Wofür?
@@ -270,7 +270,9 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
             </Button>
           </fieldset>
         </Form>
-        {demo ? <p className="text-sm text-muted-foreground">In der Demo lassen sich keine Ziele anlegen.</p> : null}
+        {readOnly ? (
+          <p className="text-sm text-muted-foreground">In der Demo lassen sich keine Ziele anlegen.</p>
+        ) : null}
       </section>
 
       {active.length === 0 && done.length === 0 ? (
@@ -323,10 +325,10 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
                         inputMode="decimal"
                         defaultValue={((g.stillToReserveCents || g.perMonthCents) / 100).toFixed(2).replace(".", ",")}
                         className="w-28"
-                        disabled={demo}
+                        disabled={readOnly}
                       />
                     </div>
-                    <Button type="submit" variant="outline" disabled={busy || demo}>
+                    <Button type="submit" variant="outline" disabled={busy || readOnly}>
                       Einzahlen
                     </Button>
                   </Form>
@@ -338,7 +340,7 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
                       variant="ghost"
                       size="icon"
                       aria-label={`${g.name} löschen`}
-                      disabled={busy || demo}
+                      disabled={busy || readOnly}
                     >
                       <Trash2 aria-hidden="true" />
                     </Button>

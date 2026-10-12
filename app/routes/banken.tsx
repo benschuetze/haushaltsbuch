@@ -5,7 +5,7 @@ import { AccountsList } from "~/components/accounts-list";
 import { BankTiles } from "~/components/bank-tiles";
 import { Button } from "~/components/ui/button";
 import { accountOverview } from "~/lib/account-overview.server";
-import { isDemo } from "~/lib/auth.server";
+import { isDemo, isReadOnly } from "~/lib/auth.server";
 import { BANK_TILES, tileState } from "~/lib/bank/catalog";
 import { BankApiError } from "~/lib/bank/enable-banking.server";
 import { bankClient, listConnections } from "~/lib/bank/index.server";
@@ -60,6 +60,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     configured: client !== null,
     demo,
+    readOnly: isReadOnly(),
     tiles,
     mockAccounts: mockAccounts.map(({ id, name, bookings }) => ({ id, name, bookings })),
     country,
@@ -168,8 +169,19 @@ const NOTICES: Record<string, string> = {
 };
 
 export default function Banken({ loaderData, actionData }: Route.ComponentProps) {
-  const { configured, demo, tiles, mockAccounts, country, countries, banks, listError, connections, accounts } =
-    loaderData;
+  const {
+    configured,
+    demo,
+    readOnly,
+    tiles,
+    mockAccounts,
+    country,
+    countries,
+    banks,
+    listError,
+    connections,
+    accounts,
+  } = loaderData;
   const [params] = useSearchParams();
   const busy = useNavigation().state !== "idle";
   // Messages from the return URL belong to that moment; a newer action result replaces them.
@@ -287,7 +299,7 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
           </h2>
           {listError ? <p className="text-sm text-muted-foreground">{listError}</p> : null}
         </div>
-        <BankTiles tiles={tiles} country={country} demo={demo} />
+        <BankTiles tiles={tiles} country={country} readOnly={readOnly} />
       </section>
 
       {configured && !listError ? (
@@ -353,7 +365,7 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
         <p className="text-sm text-muted-foreground">
           Konten legt die App beim Import oder Verbinden selbst an. Hier kannst du ihnen einen besseren Namen geben.
         </p>
-        <AccountsList accounts={accounts} demo={demo} />
+        <AccountsList accounts={accounts} readOnly={readOnly} />
       </section>
     </div>
   );

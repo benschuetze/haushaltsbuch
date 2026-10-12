@@ -30,7 +30,7 @@ const STEP_COUNT = 4;
  * grouped under headings so the page does not read like one long wall. One click opens a dialog that does
  * the next step: off to the bank, pick the branch, or (without real access) a clearly marked mock connection.
  */
-export function BankTiles({ tiles, country, demo }: { tiles: TileView[]; country: string; demo: boolean }) {
+export function BankTiles({ tiles, country, readOnly }: { tiles: TileView[]; country: string; readOnly: boolean }) {
   const [selected, setSelected] = useState<TileView | null>(null);
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<BankGroup | null>(null);
@@ -103,7 +103,13 @@ export function BankTiles({ tiles, country, demo }: { tiles: TileView[]; country
       )}
 
       {selected ? (
-        <TileDialog key={selected.id} tile={selected} country={country} demo={demo} onClose={() => setSelected(null)} />
+        <TileDialog
+          key={selected.id}
+          tile={selected}
+          country={country}
+          readOnly={readOnly}
+          onClose={() => setSelected(null)}
+        />
       ) : null}
     </div>
   );
@@ -150,12 +156,12 @@ function Tile({ tile, onOpen }: { tile: TileView; onOpen: () => void }) {
 function TileDialog({
   tile,
   country,
-  demo,
+  readOnly,
   onClose,
 }: {
   tile: TileView;
   country: string;
-  demo: boolean;
+  readOnly: boolean;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -168,8 +174,8 @@ function TileDialog({
   }, []);
 
   const state = tile.state;
-  // Without real access (and always in the demo) the connection is simulated, and says so.
-  const mock = state.kind === "file" || demo;
+  // Without real access (and always in the read-only demo) the connection is simulated, and says so.
+  const mock = state.kind === "file" || readOnly;
   const matches =
     state.kind === "choose"
       ? state.aspsps.filter((a) => a.toLowerCase().includes(filter.trim().toLowerCase())).slice(0, 40)
@@ -206,12 +212,12 @@ function TileDialog({
       <div className="space-y-4 p-5">
         {mock ? (
           <>
-            <MockConnect tile={tile} demo={demo} />
-            {state.kind === "file" && !demo ? (
+            <MockConnect tile={tile} readOnly={readOnly} />
+            {state.kind === "file" && !readOnly ? (
               <details className="rounded-lg border p-3">
                 <summary className="cursor-pointer text-sm font-medium">Echte Umsätze per Datei-Import</summary>
                 <div className="mt-3">
-                  <FileImport tile={tile} demo={demo} busy={busy} />
+                  <FileImport tile={tile} readOnly={readOnly} busy={busy} />
                 </div>
               </details>
             ) : null}
@@ -278,7 +284,7 @@ function TileDialog({
   );
 }
 
-function FileImport({ tile, demo, busy }: { tile: TileView; demo: boolean; busy: boolean }) {
+function FileImport({ tile, readOnly, busy }: { tile: TileView; readOnly: boolean; busy: boolean }) {
   const [file, setFile] = useState<string | null>(null);
   return (
     <Form method="post" action="/import" encType="multipart/form-data" className="space-y-4">
@@ -325,19 +331,19 @@ function FileImport({ tile, demo, busy }: { tile: TileView; demo: boolean; busy:
         className="sr-only"
         onChange={(e) => setFile(e.target.files?.[0]?.name ?? null)}
       />
-      <Button type="submit" className="w-full" disabled={busy || demo || !file}>
+      <Button type="submit" className="w-full" disabled={busy || readOnly || !file}>
         {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
-        {demo ? "In der Demo abgeschaltet" : "Importieren"}
+        {readOnly ? "In der Demo abgeschaltet" : "Importieren"}
       </Button>
     </Form>
   );
 }
 
 /**
- * Plays the steps of a bank connection, then (outside the demo) creates the mock account with invented
+ * Plays the steps of a bank connection, then (unless the demo is read-only) creates the mock account with invented
  * bookings, so subscriptions, hints and budgets react like after a real connection.
  */
-function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
+function MockConnect({ tile, readOnly }: { tile: TileView; readOnly: boolean }) {
   const fetcher = useFetcher<{ ok: boolean; message: string }>();
   const [step, setStep] = useState<number | null>(null);
   const done = step !== null && step >= STEP_COUNT;
@@ -350,8 +356,8 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
 
   const { submit } = fetcher;
   useEffect(() => {
-    if (done && !demo) submit({ intent: "mock", tile: tile.id }, { method: "post", action: "/banken" });
-  }, [done, demo, submit, tile.id]);
+    if (done && !readOnly) submit({ intent: "mock", tile: tile.id }, { method: "post", action: "/banken" });
+  }, [done, readOnly, submit, tile.id]);
 
   if (tile.mockConnected && step === null) {
     return (
@@ -372,7 +378,7 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
         </p>
         <Button className="w-full" onClick={() => setStep(0)} autoFocus>
           <Zap aria-hidden="true" />
-          {demo ? "Verbindung testen (Demo)" : `Mit ${tile.name} verbinden (Mock)`}
+          {readOnly ? "Verbindung testen (Demo)" : `Mit ${tile.name} verbinden (Mock)`}
         </Button>
       </>
     );
@@ -391,7 +397,7 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
           <span className={i <= step ? "" : "text-muted-foreground"}>{label}</span>
         </li>
       ))}
-      {done && demo ? (
+      {done && readOnly ? (
         <li role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950">
           So sieht das Verbinden aus. Danach erscheinen die Umsätze von {tile.name} in Übersicht, Abos und Hinweisen.
           (Demo, nichts wurde verbunden.)

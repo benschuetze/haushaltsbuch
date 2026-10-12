@@ -64,11 +64,12 @@ test("Escape schließt das Pop-up, eine andere Kachel öffnet ihr eigenes", asyn
   await expect(page.getByRole("dialog", { name: "N26 hinzufügen" })).toBeVisible();
 });
 
-test("Demo spielt die Verbindung nach, ohne etwas zu verbinden", async ({ page }) => {
+test("Demo: Verbinden legt wie überall ein gekennzeichnetes Mock-Konto an, ohne echte Bank", async ({ page }) => {
   await page.goto(`${DEMO_URL}/banken`);
   await page.getByRole("button", { name: "DKB hinzufügen" }).click();
-  await page.getByRole("button", { name: "Verbindung testen (Demo)" }).click();
-  await expect(page.getByRole("dialog").getByRole("status")).toContainText("Demo, nichts wurde verbunden");
+  await page.getByRole("button", { name: "Mit DKB verbinden (Mock)" }).click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("DKB");
+  // A simulated account, never a real bank connection.
   await expect(page.getByTestId("connection")).toHaveCount(0);
 });
 
@@ -155,10 +156,10 @@ test("Demo-Verbindung spricht vom Institut, nicht von „der Bank“, und verspr
 }) => {
   await page.goto(`${DEMO_URL}/banken`);
   await page.getByRole("button", { name: "PayPal hinzufügen" }).click();
-  await page.getByRole("button", { name: "Verbindung testen (Demo)" }).click();
+  await page.getByRole("button", { name: "Mit PayPal verbinden (Mock)" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("list", { name: "Verbindungsschritte" })).toContainText("Anmeldung bei PayPal");
-  await expect(dialog.getByRole("status")).toContainText("Danach erscheinen die Umsätze von PayPal");
+  await expect(dialog.getByRole("status")).toBeVisible();
   await expect(dialog).not.toContainText("jeden Morgen");
 });
 

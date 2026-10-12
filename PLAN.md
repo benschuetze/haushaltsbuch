@@ -10,7 +10,7 @@ Kontoauszüge als CSV importieren, Buchungen per Regeln und LLM automatisch kate
 - Buchungen mit niedriger Konfidenz als „prüfen“ markieren
 - Kategorie manuell ändern, daraus optional eine Regel anlegen
 - Monatsübersicht: Ausgaben und Einnahmen je Kategorie
-- Demo-Modus mit Beispieldaten (`beispieldaten/`), schreibgeschützt
+- Demo-Modus mit Beispieldaten (`beispieldaten/`), zum Ausprobieren offen, nachts zurückgesetzt
 - Deployment auf Vercel, CI mit GitHub Actions
 
 **Danach**
@@ -27,7 +27,7 @@ Kontoauszüge als CSV importieren, Buchungen per Regeln und LLM automatisch kate
 - Vitest für Unit-Tests, PGlite für DB-Tests ohne Netz, Playwright (Desktop und iPhone) für Nutzerabläufe, axe-core für Barrierefreiheit
 - GitHub Actions: Typecheck, Lint, Unit- und DB-Tests, E2E gegen Postgres-Service, Actions auf Commit-SHA gepinnt
 - Vercel: Preview pro Branch, Produktion auf `main`
-- Auth: ein Benutzer, Passwort aus Env, Session-Cookie. Demo-Instanz ohne Login, nur lesend.
+- Auth: ein Benutzer, Passwort aus Env, Session-Cookie. Demo-Instanz ohne Login, offen zum Ausprobieren, nachts zurückgesetzt.
 
 ## Datenmodell
 

@@ -19,7 +19,9 @@ const db = drizzle(client, { schema });
 await migrate(db, { migrationsFolder: "drizzle" });
 await seed(db);
 
-const server = new PGLiteSocketServer({ db: client, port, host: "127.0.0.1", maxConnections: 20 });
+// Two app servers (private and demo, both writing) plus the test helpers keep more than 20 connections open; past
+// the limit the socket server resets connections and every later test fails with ECONNRESET.
+const server = new PGLiteSocketServer({ db: client, port, host: "127.0.0.1", maxConnections: 100 });
 await server.start();
 console.log(`Lokale Datenbank läuft: postgres://postgres@127.0.0.1:${port}/postgres${memory ? " (im Speicher)" : ""}`);
 

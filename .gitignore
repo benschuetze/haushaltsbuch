@@ -11,6 +11,8 @@ build/
 !beispieldaten/banken/neu/*.csv
 !beispieldaten/demo-verlauf/*.csv
 !app/lib/import/profiles/__fixtures__/*.csv
+# Copies of the invented examples for the demo download; sample-files.test.ts checks they match.
+!public/beispiele/*.csv
 .DS_Store
 coverage/
 playwright-report/

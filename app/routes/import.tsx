@@ -3,13 +3,14 @@ import { data, Form, Link, useNavigation } from "react-router";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
-import { isDemo } from "~/lib/auth.server";
+import { isDemo, isReadOnly } from "~/lib/auth.server";
 import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { countLabel } from "~/lib/format";
 import { profileLabel } from "~/lib/import/formats/detect";
 import { type AutoImportResult, type ImportResult, importAuto, importCsv } from "~/lib/import/run";
 import { listAccounts } from "~/lib/queries";
+import { SAMPLE_FILES } from "~/lib/sample-files";
 import type { Route } from "./+types/import";
 
 export const meta: Route.MetaFunction = () => [{ title: "Import · Haushaltsbuch" }];
@@ -38,7 +39,10 @@ export async function loader() {
   const db = getDb();
   const accountRows = await listAccounts(db);
   return {
+    readOnly: isReadOnly(),
     demo: isDemo(),
+    // The demo files its bookings with the free keyword model, not Claude; say so instead of implying otherwise.
+    mockModel: process.env.AI_MOCK === "1",
     accounts: await Promise.all(
       accountRows.map(async (a) => ({ id: a.id, name: a.name, bank: await profileLabel(db, a.bankProfile) })),
     ),
@@ -85,7 +89,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Import({ loaderData, actionData }: Route.ComponentProps) {
-  const { demo, accounts } = loaderData;
+  const { readOnly, demo, mockModel, accounts } = loaderData;
   const busy = useNavigation().state === "submitting";
   const [selectionProblem, setSelectionProblem] = useState<string | null>(null);
 
@@ -111,9 +115,40 @@ export default function Import({ loaderData, actionData }: Route.ComponentProps)
           App selbst; ein neues Format lernt sie beim ersten Mal.
         </p>
       </div>
-      {demo ? <p className="rounded-lg border p-4">In der Demo ist der Import abgeschaltet.</p> : null}
+      {readOnly ? <p className="rounded-lg border p-4">In der Demo ist der Import abgeschaltet.</p> : null}
+      {demo && !readOnly ? (
+        <section
+          aria-labelledby="demo-import"
+          data-testid="demo-import"
+          className="space-y-2 border-2 border-pen bg-pen/5 p-4 text-sm text-pen"
+        >
+          <h2 id="demo-import" className="pixel">
+            Demo
+          </h2>
+          <p>
+            Bitte keine echten Kontoauszüge hochladen: Alle Besucher sehen dieselben Daten. Zum Ausprobieren gibt es
+            erfundene Exporte:
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {SAMPLE_FILES.map((f) => (
+              <li key={f.file}>
+                <a
+                  href={`/beispiele/${f.file}`}
+                  download
+                  className="inline-block border-2 border-pen px-2 py-0.5 underline-offset-2 hover:underline"
+                >
+                  {f.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          {mockModel ? (
+            <p>Die Kategorien vergibt hier ein einfaches Testmodell statt Claude; der Assistent antwortet echt.</p>
+          ) : null}
+        </section>
+      ) : null}
       <Form method="post" encType="multipart/form-data" className="max-w-md space-y-4">
-        <fieldset disabled={demo || busy} className="space-y-4">
+        <fieldset disabled={readOnly || busy} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="file">Kontoauszüge</Label>
             <input

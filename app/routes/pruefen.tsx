@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Amount } from "~/components/amount";
 import { DemoNotice } from "~/components/demo-notice";
 import { Button } from "~/components/ui/button";
-import { isDemo } from "~/lib/auth.server";
+import { isReadOnly } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
 import { formatDate, formatPercent } from "~/lib/format";
 import { listCategories } from "~/lib/queries";
@@ -32,7 +32,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     tx,
     remaining,
     categories: categories.map((c) => ({ id: c.id, name: c.name, kind: c.kind })),
-    demo: isDemo(),
+    readOnly: isReadOnly(),
   };
 }
 
@@ -166,13 +166,13 @@ function SwipeCard({
 }
 
 export default function Pruefen({ loaderData, actionData }: Route.ComponentProps) {
-  const { tx, remaining, categories, demo } = loaderData;
+  const { tx, remaining, categories, readOnly } = loaderData;
   const [params] = useSearchParams();
   const busy = useNavigation().state !== "idle";
   const skip = params.get("skip");
   const submit = useSubmit();
   const navigate = useNavigate();
-  // The demo cannot save, but trying it out should feel the same: say what would happen, then show the next card.
+  // The read-only demo cannot save, but trying it out should feel the same: say what would happen, then show the next card.
   const [demoNote, setDemoNote] = useState<{ message: string; next: string } | null>(null);
 
   if (!tx) {
@@ -211,7 +211,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
   return (
     <div className="mx-auto max-w-xl space-y-6">
       {actionData?.decision ? <SavedDialog key={tx.id} decision={actionData.decision} /> : null}
-      {demo ? (
+      {readOnly ? (
         <p className="rounded border-2 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           <span className="pixel block text-amber-950">Demo</span>
           In der Demo kannst du hier alles ausprobieren. Gespeichert wird nichts.
@@ -231,7 +231,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-2xl font-semibold">Prüfen</h1>
         <p className="text-sm text-muted-foreground" data-testid="review-remaining">
-          noch {demo ? Math.max(0, remaining - (skip?.split(",").length ?? 0)) : remaining}
+          noch {readOnly ? Math.max(0, remaining - (skip?.split(",").length ?? 0)) : remaining}
         </p>
       </div>
 
@@ -240,7 +240,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         onAccept={
           suggested
             ? () =>
-                demo
+                readOnly
                   ? tryInDemo(suggested.id)
                   : submit({ transactionId: tx.id, categoryId: suggested.id }, { method: "post" })
             : null
@@ -266,7 +266,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
       </SwipeCard>
 
       {suggested ? (
-        <Form method="post" className="flex gap-2" onSubmit={demo ? demoSubmit : undefined}>
+        <Form method="post" className="flex gap-2" onSubmit={readOnly ? demoSubmit : undefined}>
           <input type="hidden" name="transactionId" value={tx.id} />
           <input type="hidden" name="categoryId" value={suggested.id} />
           <Button type="submit" className="h-12 flex-1 text-base" disabled={busy}>
@@ -281,7 +281,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         </Form>
       ) : null}
 
-      <Form method="post" className="space-y-3" onSubmit={demo ? demoSubmit : undefined}>
+      <Form method="post" className="space-y-3" onSubmit={readOnly ? demoSubmit : undefined}>
         <input type="hidden" name="transactionId" value={tx.id} />
         <fieldset disabled={busy}>
           <legend className="mb-2 text-sm font-medium">

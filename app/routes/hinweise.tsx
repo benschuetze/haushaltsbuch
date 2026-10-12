@@ -1,7 +1,7 @@
 import { data, Form, useNavigation } from "react-router";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
-import { isDemo } from "~/lib/auth.server";
+import { isDemo, isReadOnly } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
 import { formatMonth } from "~/lib/format";
 import { dismissInsight, markInsightsRead, openInsights } from "~/lib/insights";
@@ -15,7 +15,7 @@ export async function loader() {
   const items = await openInsights(db, 50);
   // Opening the list counts as reading it; the dot on the bell goes away for these.
   if (!isDemo()) await markInsightsRead(db);
-  return { items, demo: isDemo() };
+  return { items, readOnly: isReadOnly() };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -26,7 +26,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Hinweise({ loaderData }: Route.ComponentProps) {
-  const { items, demo } = loaderData;
+  const { items, readOnly } = loaderData;
   const busy = useNavigation().state !== "idle";
   const savings = savingsText(items);
   return (
@@ -57,7 +57,7 @@ export default function Hinweise({ loaderData }: Route.ComponentProps) {
               )}
               <Form method="post">
                 <input type="hidden" name="id" value={i.id} />
-                <Button type="submit" size="sm" variant="ghost" disabled={demo || busy}>
+                <Button type="submit" size="sm" variant="ghost" disabled={readOnly || busy}>
                   Erledigt
                 </Button>
               </Form>

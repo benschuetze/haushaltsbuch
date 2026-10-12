@@ -4,7 +4,7 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 
 | | |
 |---|---|
-| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, nur lesend. Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
+| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, zum Ausprobieren: Import (mit Beispieldateien), Regeln, Budgets, Ziele, Prüfen. Jede Nacht und per Knopf zurück auf die Beispiele. Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
 | **Code** | [github.com/benschuetze/haushaltsbuch](https://github.com/benschuetze/haushaltsbuch) |
 
 ## Was die App kann
@@ -109,7 +109,7 @@ Korrektur in der UI ──► manuell (nie wieder überschrieben) ──► opti
 - Bank-Sitzungen sind mit AES-256-GCM verschlüsselt gespeichert.
 - Strikte Content Security Policy mit Nonce, CSRF-Prüfung, Login-Drosselung, HSTS, `Permissions-Policy` (Mikrofon nur für die Spracheingabe), `noindex`.
 - XML-Kontoauszüge mit DOCTYPE oder ENTITY werden abgelehnt (XXE, „Billion Laughs“).
-- Die Demo ist schreibgeschützt; Schreibzugriffe blockiert eine Middleware für jede Route.
+- Die Demo ist zum Ausprobieren offen, ohne Login: Alle Besucher teilen dieselben erfundenen Daten, die jede Nacht und per Knopf zurückgesetzt werden. Die Kategorisierung läuft dort auf einem kostenlosen Testmodell; nur der Assistent nutzt das echte Modell, mit Tageslimit. Mit `DEMO_READ_ONLY=1` ist sie wieder schreibgeschützt, dann blockiert eine Middleware jeden Schreibzugriff.
 - Jeder Produktions-Build schickt eine Mini-Anfrage an die echte Claude-API und an die Bank-API und bricht ab, wenn Key, Modell oder Schlüssel nicht stimmen.
 
 ## Datenmodell
