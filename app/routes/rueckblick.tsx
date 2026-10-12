@@ -82,7 +82,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 /** E-ink cards: ink on paper, inverted for good news, red ink only when it went wrong. */
 const TONE = {
   good: "bg-foreground text-background",
-  bad: "bg-red-700 text-white",
+  bad: "bg-red-700 text-background",
   neutral: "bg-card text-foreground border-2 border-foreground",
 } as const;
 
