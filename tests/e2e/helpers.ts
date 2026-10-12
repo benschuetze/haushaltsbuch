@@ -97,3 +97,13 @@ export async function modelUnsureAboutDm() {
     where counterparty = 'dm-drogerie markt';
     delete from meta where key = 'insights_refreshed_at';`);
 }
+
+/** The category picker sits behind the chip of each booking; open it for the one on that date. */
+export async function openCategory(page: Page, counterparty: string, date: string) {
+  await page
+    .getByTestId("transaction")
+    .filter({ hasText: counterparty })
+    .filter({ hasText: date })
+    .getByTestId("category-chip")
+    .click();
+}

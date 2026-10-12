@@ -26,3 +26,18 @@ test("lange Buchungsliste: erst die neuesten 100, auf Wunsch mehr, Filter zähle
   await expect(summary).toHaveText(/^\d+ Buchungen$/);
   await expect(page.getByRole("link", { name: /^Weitere/ })).toHaveCount(0);
 });
+
+test("Handy: eine Buchung ist eine kompakte Zeile, die Kategorie öffnet sich erst beim Antippen", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "betrifft nur Handys");
+  await importDemo(page);
+  await page.goto("/transaktionen?monat=2026-09");
+  const row = page.getByTestId("transaction").first();
+  const box = await row.boundingBox();
+  expect(box?.height).toBeLessThanOrEqual(140);
+  await expect(row.getByRole("combobox")).toBeHidden();
+  await row.getByTestId("category-chip").click();
+  await expect(row.getByRole("combobox")).toBeVisible();
+});
