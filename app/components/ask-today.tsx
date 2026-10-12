@@ -216,6 +216,10 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
               <span>Ergibt {formatCents(today.freeCents)}</span>
             </li>
           </ul>
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="today-limits">
+            Rechnet nur mit dem, was seit dem letzten Gehalt kam und ging. Erspartes oder Restgeld vom Vormonat zählt
+            nicht mit.
+          </p>
         </details>
       </div>
 
