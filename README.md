@@ -73,17 +73,21 @@ Alles läuft in einer React-Router-App auf Vercel: Loader und Actions sind der S
 
 Gemessen mit `pnpm eval` am 12.10.2026, Modell `claude-haiku-5-5`, 203 erfundene und von Hand beschriftete Buchungen ([`evals/kategorisierung.json`](evals/kategorisierung.json)). 91 davon entscheidet die eingebaute Händlerliste ohne Modell, 112 gehen an das Modell.
 
-| Kennzahl | erster Lauf | mit Kategorie-Beschreibungen |
-|---|---|---|
-| Trefferquote gesamt | 93,6 % | 98,5 % |
-| Trefferquote nur Modell | 88,4 % | 97,3 % |
-| Anteil „prüfen“ | 13,8 % | 9,9 % |
-| Falsch mit Konfidenz ≥ 0,7 (stille Fehler) | 7 | 1 |
-| Tokens pro Buchung ans Modell | 158 | 200 |
+| Kennzahl | erster Lauf | mit Beschreibungen und fester Liste | zusätzlich eigene Beispiele |
+|---|---|---|---|
+| Trefferquote gesamt | 93,6 % | 99,0 % | 99,0 % |
+| Trefferquote nur Modell | 88,4 % | 98,2 % | 98,2 % |
+| Anteil „prüfen“ | 13,8 % | 9,4 % | 9,4 % |
+| Falsch mit Konfidenz ≥ 0,7 (stille Fehler) | 7 | 1 | 0 |
+| Tokens pro Buchung ans Modell | 158 | 216 | 231 |
 
-Im ersten Lauf sah das Modell nur Kategorienamen und verlor die meisten Punkte an Grenzen: Kletterhalle und Tanzschule als „Freizeit“ statt „Hobbys“, Kindergeld als „Kind & Kita“ statt „Einkommen“. Seitdem bekommt jede Standardkategorie eine Zeile Beschreibung. **Einschränkung:** Diese Beschreibungen sind nach dem ersten Lauf auf demselben Set entstanden. Die zweite Zahl ist deshalb optimistischer als eine Messung auf neuen Daten; neue Fälle kommen ins Set, bevor der Prompt wieder angepasst wird.
+Im ersten Lauf sah das Modell nur Kategorienamen und verlor die meisten Punkte an Grenzen: Kletterhalle und Tanzschule als „Freizeit“ statt „Hobbys“, Kindergeld als „Kind & Kita“ statt „Einkommen“. Seitdem bekommt jede Standardkategorie eine Zeile Beschreibung, und das Antwortschema lässt nur die vorhandenen Kategorienamen zu.
 
-**Schwelle 0,7:** Bei 0,7 bleibt ein stiller Fehler (Laufschuhe als „Kleidung“, vertretbar) und 9,9 % gehen nach „prüfen“; 0,8 hätte ihn für 13,3 % „prüfen“ vermieden, 0,9 für 20,7 %. Antworten mit Konfidenz 0,7–0,9 stimmten zu 95,5 %, ab 0,9 zu 100 %. Die vollständige Auswertung je Kategorie, Kalibrierung und Verwechslungen steht in [`evals/ergebnis.md`](evals/ergebnis.md), der erste Lauf in [`evals/ergebnis-erster-lauf.md`](evals/ergebnis-erster-lauf.md).
+**Eigene Beispiele:** Bis zu fünf Buchungen, die der Haushalt selbst eingeordnet oder bestätigt hat und die der neuen ähneln, gehen als Beispiele mit (dieselben vier Felder, IBANs geschwärzt). Im Eval stehen dafür die jeweils anderen Fälle, nie die eigenen. Ergebnis: gleiche Trefferquote, der letzte stille Fehler (Laufschuhe als „Kleidung“ statt „Hobbys“) landet stattdessen in „prüfen“, 7 % mehr Tokens. Das ist ein einzelner Fall und kann Zufall sein.
+
+**Einschränkung:** Beschreibungen und Beispiele sind nach dem ersten Lauf auf demselben Set entstanden. Die späteren Zahlen sind deshalb optimistischer als eine Messung auf neuen Daten; neue Fälle kommen ins Set, bevor der Prompt wieder angepasst wird.
+
+**Schwelle 0,7:** Ohne Beispiele bleibt bei 0,7 ein stiller Fehler und 9,4 % gehen nach „prüfen“; 0,8 hätte ihn für 12,3 % „prüfen“ vermieden, 0,9 für 19,2 %. Antworten mit Konfidenz 0,7–0,9 stimmten zu 95 %, ab 0,9 zu 100 %. Die vollständigen Auswertungen je Kategorie, Kalibrierung und Verwechslungen: [`evals/ergebnis.md`](evals/ergebnis.md), [`evals/ergebnis-beispiele.md`](evals/ergebnis-beispiele.md), erster Lauf in [`evals/ergebnis-erster-lauf.md`](evals/ergebnis-erster-lauf.md).
 
 ## Kategorisierung einer Buchung
 

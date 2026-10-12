@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
-import { accounts, categories, rules, transactions } from "~/lib/db/schema";
+import { accounts, categories, imports, rules, transactions } from "~/lib/db/schema";
 import { importCsv } from "~/lib/import/run";
 import { createTestDb } from "../../../tests/helpers/db";
 import { scriptedModel } from "../../../tests/helpers/models";
@@ -249,5 +249,30 @@ describe("offene Buchungen nachträglich zuordnen", () => {
     expect(club).toMatchObject({ categorySource: "ai", aiPromptVersion: PROMPT_VERSION, aiModel: "mock-model-id" });
     const [rewe] = await txBy("REWE Markt");
     expect(rewe).toMatchObject({ categorySource: "rule", aiPromptVersion: null, aiModel: null });
+  });
+
+  it("von Hand eingeordnete ähnliche Buchungen gehen als Beispiel mit, ohne Kontodaten", async () => {
+    await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model: null });
+    const [club] = await txBy("Club Hafen");
+    if (!club) throw new Error("Club Hafen fehlt");
+    await setManualCategory(db, club.id, cat.Einkommen as string);
+    const [imp] = await db.select().from(imports);
+    await db.insert(transactions).values({
+      accountId,
+      importId: imp?.id ?? "",
+      bookingDate: "2026-10-02",
+      amountCents: 30000,
+      counterparty: "Club Hafen Event GmbH",
+      purpose: "Gage Oktober",
+      raw: { IBAN: "DE89370400440532013000" },
+      dedupeHash: "neu-club",
+    });
+    const [fresh] = await txBy("Club Hafen Event GmbH");
+    const { model, calls } = modelSaying("Einkommen");
+    await categorizeTransactions(db, [fresh?.id ?? ""], model);
+    const sent = JSON.stringify(calls[0]?.prompt);
+    expect(sent).toContain("So hat dieser Haushalt");
+    expect(sent).toContain('\\"counterparty\\":\\"Club Hafen\\"');
+    expect(sent).not.toContain("DE89");
   });
 });

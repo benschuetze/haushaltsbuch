@@ -13,7 +13,7 @@ import {
   SYSTEM_PROMPT,
 } from "./llm";
 
-const KNOWN_PROMPTS = { version: "2026-10-12.1", fingerprint: "2c40bde75076" };
+const KNOWN_PROMPTS = { version: "2026-10-12.2", fingerprint: "eeb02060a7bb" };
 
 const categories = [
   { id: "cat-food", name: "Lebensmittel", kind: "expense" },
@@ -182,5 +182,30 @@ describe("feste Kategorienliste und parallele Batches", () => {
     const v = await categorizeWithLlm(model, categories, items);
     expect(v.size).toBe(items.length);
     expect(peak).toBe(3);
+  });
+});
+
+describe("bestätigte Beispiele im Prompt", () => {
+  it("ähnliche Beispiele stehen mit ihrer Kategorie im Prompt, IBANs geschwärzt", async () => {
+    const { model, calls } = scriptedModel(answer([]));
+    await categorizeWithLlm(model, categories, [item("x")], undefined, undefined, () => [
+      {
+        counterparty: "REWE City",
+        purpose: "Einkauf DE89370400440532013000",
+        amountCents: -2000,
+        category: "Lebensmittel",
+      },
+    ]);
+    const sent = promptText(calls[0] as (typeof calls)[number]);
+    expect(sent).toContain("So hat dieser Haushalt ähnliche Buchungen selbst eingeordnet");
+    expect(sent).toContain("REWE City");
+    expect(sent).toContain("Lebensmittel");
+    expect(sent).not.toContain("DE89");
+  });
+
+  it("ohne Beispiele bleibt der Prompt wie bisher", async () => {
+    const { model, calls } = scriptedModel(answer([]));
+    await categorizeWithLlm(model, categories, [item("x")]);
+    expect(promptText(calls[0] as (typeof calls)[number])).not.toContain("So hat dieser Haushalt");
   });
 });
