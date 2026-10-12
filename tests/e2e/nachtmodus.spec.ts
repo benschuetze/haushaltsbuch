@@ -40,6 +40,9 @@ test("Schalter: Dunkel bei hellem System, Hell bei dunklem System, die Wahl blei
 
   await page.getByRole("button", { name: "System" }).click();
   await expect.poll(() => background(page)).toBe(DARK);
+  // Measured on a fresh load: right after the switch, colour transitions are still running and axe catches
+  // elements halfway between light and dark.
+  await page.reload();
   await expectNoSeriousA11yViolations(page);
 });
 
