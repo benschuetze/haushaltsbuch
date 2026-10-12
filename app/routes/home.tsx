@@ -151,7 +151,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const topExpenses = summary.byCategory
     .filter((c) => c.kind !== "transfer" && c.kind !== "income" && c.cents < 0)
     .sort((a, b) => a.cents - b.cents)
-    .slice(0, 5);
+    .slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -247,7 +247,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </p>
         </Card>
 
-        <Card title="Größte Ausgaben" link={{ to: `/monat/${month}`, label: "Ganzer Monat" }}>
+        <Card title="Größte Ausgaben" link={{ to: `/monat/${month}`, label: "Alle Kategorien" }}>
           {topExpenses.length > 0 ? (
             <CategoryBars items={topExpenses} label="Größte Ausgaben nach Kategorie" />
           ) : (

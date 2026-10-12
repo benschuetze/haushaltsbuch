@@ -24,7 +24,7 @@ test("Handy: kein Eingabefeld unter 16 px, sonst zoomt iOS beim Tippen hinein", 
     await page.goto(path);
     small.push(...(await smallFields(page)));
   }
-  await page.goto("/");
+  await page.goto("/transaktionen");
   await page.getByRole("button", { name: "Assistent öffnen" }).last().click();
   small.push(...(await smallFields(page)));
   expect(small).toEqual([]);
@@ -35,7 +35,7 @@ test("Handy: der Assistent ist ein Vollbild, Seite und Tab-Leiste liegen nicht d
   isMobile,
 }) => {
   test.skip(!isMobile, "betrifft nur Handys");
-  await page.goto("/");
+  await page.goto("/transaktionen");
   await page.getByRole("button", { name: "Assistent öffnen" }).last().click();
   const panel = page.getByRole("dialog", { name: "Assistent" });
   const box = await panel.boundingBox();

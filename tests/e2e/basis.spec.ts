@@ -9,7 +9,7 @@ import {
 } from "./helpers";
 
 const PAGES = [
-  { path: "/", heading: "Übersicht", action: { role: "link" as const, name: "Ganzer Monat" } },
+  { path: "/", heading: "Übersicht", action: { role: "link" as const, name: "Alle Kategorien" } },
   { path: "/transaktionen", heading: "Buchungen", action: { role: "button" as const, name: "Filtern" } },
   { path: "/monat/2026-09", heading: "September 2026", action: { role: "link" as const, name: /August 2026/ } },
   { path: "/import", heading: "Kontoauszug importieren", action: { role: "button" as const, name: "Importieren" } },

@@ -73,7 +73,7 @@ test("doppelt abgeschickt (Tastatur + Spracheingabe auf iOS) ergibt eine Frage u
 
 test("Assistent: doppelt abgeschickt ergibt eine Frage", async ({ page }) => {
   await importDemo(page);
-  await page.goto("/");
+  await page.goto("/transaktionen");
   await page.getByRole("button", { name: "Assistent öffnen" }).last().click();
   const panel = page.getByRole("dialog", { name: "Assistent" });
   await panel.getByLabel("Frage an den Assistenten").fill("Wie stehen meine Budgets?");
@@ -84,4 +84,20 @@ test("Assistent: doppelt abgeschickt ergibt eine Frage", async ({ page }) => {
   });
   await expect(panel.locator('[data-role="assistant"]')).toHaveCount(1);
   await expect(panel.locator('[data-role="user"]')).toHaveCount(1);
+});
+
+test("Startseite: ein Weg zum Fragen, kein zweiter Chat daneben", async ({ page }, testInfo) => {
+  await importDemo(page);
+  await page.goto("/");
+  await expect(page.getByLabel("Frage an dein Haushaltsbuch")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Assistent öffnen" })).toHaveCount(0);
+  if (testInfo.project.name === "mobile") {
+    // On the phone the tab bar's "Fragen" leads into the box on the page instead of a chat on top of it.
+    await page.getByRole("button", { name: "Zum Fragefeld" }).click();
+    await expect(page.getByLabel("Frage an dein Haushaltsbuch")).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Assistent" })).toHaveCount(0);
+  }
+  // Elsewhere the chat stays one tap away.
+  await page.goto("/transaktionen");
+  await expect(page.getByRole("button", { name: "Assistent öffnen" }).last()).toBeVisible();
 });

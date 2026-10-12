@@ -43,9 +43,12 @@ function useKeyboardSafeViewport(active: boolean): { top: number | undefined; he
 export function Assistant({
   open: controlledOpen,
   onOpenChange,
+  launcher = true,
 }: {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** The round button bottom right; off where the page has its own way to ask. */
+  launcher?: boolean;
 } = {}) {
   const [ownOpen, setOwnOpen] = useState(false);
   const open = controlledOpen ?? ownOpen;
@@ -202,15 +205,17 @@ export function Assistant({
           </form>
         </div>
       ) : null}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Assistent schließen" : "Assistent öffnen"}
-        aria-expanded={open}
-        className="fixed right-4 bottom-4 z-30 hidden size-14 sm:flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
-        {open ? <X className="size-6" aria-hidden="true" /> : <MessageCircle className="size-6" aria-hidden="true" />}
-      </button>
+      {launcher ? (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Assistent schließen" : "Assistent öffnen"}
+          aria-expanded={open}
+          className="fixed right-4 bottom-4 z-30 hidden size-14 sm:flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {open ? <X className="size-6" aria-hidden="true" /> : <MessageCircle className="size-6" aria-hidden="true" />}
+        </button>
+      ) : null}
     </>
   );
 }

@@ -21,7 +21,18 @@ const tab =
  * Phones: the five things within thumb reach, the question in the middle. Everything else sits under
  * "Mehr", a <details> panel that works without JavaScript and closes on navigation.
  */
-export function TabBar({ chatOpen, onChat, assistant }: { chatOpen: boolean; onChat: () => void; assistant: boolean }) {
+export function TabBar({
+  chatOpen,
+  onChat,
+  assistant,
+  askInPage = false,
+}: {
+  chatOpen: boolean;
+  onChat: () => void;
+  assistant: boolean;
+  /** The page has its own question box: "Fragen" jumps there instead of opening the chat on top. */
+  askInPage?: boolean;
+}) {
   const more = useRef<HTMLDetailsElement>(null);
   const location = useLocation();
   // biome-ignore lint/correctness/useExhaustiveDependencies: closing is exactly what a location change should do
@@ -49,8 +60,8 @@ export function TabBar({ chatOpen, onChat, assistant }: { chatOpen: boolean; onC
           <button
             type="button"
             onClick={onChat}
-            aria-label={chatOpen ? "Assistent schließen" : "Assistent öffnen"}
-            aria-expanded={chatOpen}
+            aria-label={askInPage ? "Zum Fragefeld" : chatOpen ? "Assistent schließen" : "Assistent öffnen"}
+            aria-expanded={askInPage ? undefined : chatOpen}
             className={cn(tab, "font-semibold")}
           >
             <span className="-mt-5 flex size-12 items-center justify-center rounded-full border-2 border-foreground bg-primary text-primary-foreground">
