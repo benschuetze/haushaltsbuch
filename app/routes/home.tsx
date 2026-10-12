@@ -5,6 +5,7 @@ import { CategoryBars } from "~/components/category-bars";
 import { BudgetBar } from "~/components/progress";
 import { Stat } from "~/components/stat";
 import { Button } from "~/components/ui/button";
+import { weekCompareText } from "~/lib/budget/week-text";
 import { getAssistantModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { formatMonth } from "~/lib/format";
@@ -90,7 +91,6 @@ const WEEKDAY = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Sam
 function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }) {
   if (!week) return null;
   const day = WEEKDAY[(new Date(`${week.today}T00:00:00Z`).getUTCDay() + 6) % 7];
-  const diff = week.usualCents === null ? null : week.usualCents - week.spentCents;
   return (
     <section
       aria-labelledby="week-title"
@@ -104,11 +104,7 @@ function WeekCard({ week }: { week: Route.ComponentProps["loaderData"]["week"] }
           {formatCents(week.spentCents)}
         </p>
         <p className="text-sm" data-testid="week-compare">
-          {diff === null
-            ? "Für einen Vergleich fehlen noch ein paar Wochen."
-            : diff >= 0
-              ? `${formatCents(diff)} weniger als sonst bis ${day}`
-              : `${formatCents(-diff)} mehr als sonst bis ${day}`}
+          {weekCompareText(week, day ?? "heute")}
         </p>
       </div>
       {week.streakWeeks > 0 ? (
