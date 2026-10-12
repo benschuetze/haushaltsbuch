@@ -71,6 +71,13 @@
       "when": 1791789287621,
       "tag": "0009_sweet_harry_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791819543773,
+      "tag": "0010_typical_leo",
+      "breakpoints": true
     }
   ]
 }

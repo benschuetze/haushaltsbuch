@@ -104,6 +104,9 @@ export const transactions = pgTable(
     categoryId: uuid("category_id").references(() => categories.id),
     categorySource: categorySource("category_source"),
     aiConfidence: real("ai_confidence"),
+    /** Which prompt and model made an AI decision; null for rules and manual choices. Makes old decisions traceable. */
+    aiPromptVersion: text("ai_prompt_version"),
+    aiModel: text("ai_model"),
     needsReview: boolean("needs_review").notNull().default(false),
     createdAt: createdAt(),
   },

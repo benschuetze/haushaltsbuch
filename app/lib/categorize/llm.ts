@@ -10,6 +10,11 @@ import { safeError } from "~/lib/security.server";
  */
 export const REVIEW_THRESHOLD = 0.7;
 export const BATCH_SIZE = 25;
+/**
+ * Stored with every AI decision. Bump it whenever SYSTEM_PROMPT, CATEGORY_HINTS or the threshold change; a test
+ * compares a fingerprint of all three and fails until the version moves along.
+ */
+export const PROMPT_VERSION = "2026-10-12.1";
 
 /** Exactly what may leave the app. No IBAN, no account number, no raw CSV row. */
 export type LlmInput = {

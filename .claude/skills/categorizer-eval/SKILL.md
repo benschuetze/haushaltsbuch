@@ -9,8 +9,9 @@ Das Eval-Set `evals/kategorisierung.json` enthält gut 200 erfundene, von Hand b
 
 1. Vor der Änderung: `pnpm eval` ausführen und Ergebnis notieren (Trefferquote, Anteil „prüfen“, falsch mit hoher Konfidenz).
 2. Änderung in `app/lib/categorize/llm.ts` bzw. Kategorienliste vornehmen.
-3. Nach der Änderung: `pnpm eval` erneut ausführen.
-4. Vergleich als Tabelle ausgeben:
+3. `PROMPT_VERSION` in `app/lib/categorize/llm.ts` erhöhen und den Fingerabdruck in `llm.test.ts` nachtragen (der Test nennt ihn). Jede KI-Entscheidung speichert Version und Modell.
+4. Nach der Änderung: `pnpm eval` erneut ausführen.
+5. Vergleich als Tabelle ausgeben:
 
    | Kennzahl | vorher | nachher |
    |---|---|---|
@@ -18,12 +19,12 @@ Das Eval-Set `evals/kategorisierung.json` enthält gut 200 erfundene, von Hand b
    | Anteil needs_review | | |
    | Falsch mit Konfidenz ≥ 0,7 | | |
 
-5. Ergebnis bewerten:
+6. Ergebnis bewerten:
    - „Falsch mit Konfidenz ≥ 0,7“ ist die wichtigste Zahl. Diese Fehler sieht der Nutzer nicht. Sie darf nicht steigen.
    - Trefferquote darf nicht sinken, außer der Nutzer stimmt ausdrücklich zu.
-6. Fehlschläge einzeln auflisten (Buchung, erwartet, bekommen, Konfidenz) und begründen.
-7. Wenn ein neuer Fehlertyp auftaucht, passende Fälle zum Eval-Set hinzufügen.
-8. Commit mit Änderung und Eval-Ergebnis in der Commit-Message.
+7. Fehlschläge einzeln auflisten (Buchung, erwartet, bekommen, Konfidenz) und begründen.
+8. Wenn ein neuer Fehlertyp auftaucht, passende Fälle zum Eval-Set hinzufügen.
+9. Commit mit Änderung und Eval-Ergebnis in der Commit-Message.
 
 ## Regeln für den Prompt
 
