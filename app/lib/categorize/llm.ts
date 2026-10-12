@@ -74,6 +74,8 @@ export async function categorizeWithLlm(
   items: LlmInput[],
   onError: (error: unknown) => void = (error) =>
     console.error(`LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“: ${safeError(error)}`),
+  /** Tokens per batch; the eval uses it to report what a booking costs. */
+  onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void,
 ): Promise<Map<string, LlmVerdict>> {
   const verdicts = new Map<string, LlmVerdict>();
   const byName = new Map(categories.map((c) => [c.name.toLocaleLowerCase("de"), c.id]));
@@ -82,7 +84,7 @@ export async function categorizeWithLlm(
     const batch = items.slice(start, start + BATCH_SIZE);
     let results: z.infer<typeof responseSchema>["results"] = [];
     try {
-      const { output } = await generateText({
+      const { output, usage } = await generateText({
         model,
         system: SYSTEM_PROMPT,
         prompt: buildPrompt(categories, batch),
@@ -92,6 +94,7 @@ export async function categorizeWithLlm(
         maxOutputTokens: 3000,
       });
       results = output.results;
+      onUsage?.({ inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 });
     } catch (error) {
       onError(error);
     }
