@@ -10,6 +10,6 @@ export async function createTestDb({ seeded = true } = {}): Promise<{ db: Db; cl
   const client = new PGlite();
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: "drizzle" });
-  if (seeded) await seed(db as unknown as Db);
-  return { db: db as unknown as Db, client };
+  if (seeded) await seed(db);
+  return { db, client };
 }
