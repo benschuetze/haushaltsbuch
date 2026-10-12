@@ -6,7 +6,6 @@ import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import type { Db } from "~/lib/db/client";
 import * as schema from "~/lib/db/schema";
 import { seed } from "~/lib/db/seed";
 
@@ -18,7 +17,7 @@ const port = portArg >= 0 ? Number(args[portArg + 1]) : 5433;
 const client = await PGlite.create(memory ? undefined : ".pglite");
 const db = drizzle(client, { schema });
 await migrate(db, { migrationsFolder: "drizzle" });
-await seed(db as unknown as Db);
+await seed(db);
 
 const server = new PGLiteSocketServer({ db: client, port, host: "127.0.0.1", maxConnections: 20 });
 await server.start();

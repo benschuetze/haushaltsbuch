@@ -309,7 +309,7 @@ export default function Pruefen({ loaderData, actionData }: Route.ComponentProps
         <Link to={`/pruefen?skip=${nextSkip}`} className="underline underline-offset-4">
           Überspringen
         </Link>
-        <Link to="/transaktionen?pruefen=1" className="text-muted-foreground underline underline-offset-4">
+        <Link to="/buchungen?pruefen=1" className="text-muted-foreground underline underline-offset-4">
           Als Liste anzeigen
         </Link>
       </div>

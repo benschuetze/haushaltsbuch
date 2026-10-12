@@ -236,7 +236,7 @@ function ImportSummary({ filename, result }: { filename: string; result: ImportR
         </p>
       ) : null}
       {result.needsReview > 0 ? (
-        <Link to="/transaktionen?pruefen=1" className="inline-block text-sm underline underline-offset-4">
+        <Link to="/buchungen?pruefen=1" className="inline-block text-sm underline underline-offset-4">
           {countLabel(result.needsReview, "Buchung", "Buchungen")} prüfen
         </Link>
       ) : null}

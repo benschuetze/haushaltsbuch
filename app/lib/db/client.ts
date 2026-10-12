@@ -13,9 +13,9 @@ let db: Db | undefined;
 export function createDb(url: string): Db {
   // Neon over HTTP suits serverless: no socket to keep alive between invocations.
   if (new URL(url).hostname.endsWith(".neon.tech")) {
-    return drizzleNeon(neon(url), { schema }) as unknown as Db;
+    return drizzleNeon(neon(url), { schema });
   }
-  return drizzleNodePg(new pg.Pool({ connectionString: url }), { schema }) as unknown as Db;
+  return drizzleNodePg(new pg.Pool({ connectionString: url }), { schema });
 }
 
 export function getDb(): Db {

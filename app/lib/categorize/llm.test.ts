@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import { failingModel, promptText, scriptedModel } from "../../../tests/helpers/models";
 import {
@@ -134,5 +135,52 @@ describe("Prompt-Version", () => {
       .digest("hex")
       .slice(0, 12);
     expect({ version: PROMPT_VERSION, fingerprint }).toEqual(KNOWN_PROMPTS);
+  });
+});
+
+describe("feste Kategorienliste und parallele Batches", () => {
+  it("das Schema an das Modell nennt nur die erlaubten Kategorien", async () => {
+    const { model, calls } = scriptedModel(answer([]));
+    await categorizeWithLlm(model, categories, [item("x")]);
+    const format = JSON.stringify(calls[0]?.responseFormat);
+    expect(format).toContain('"enum":["Lebensmittel","Sonstiges"]');
+  });
+
+  it("ein unbekannter Name trifft nur seine Buchung, die anderen im Batch bleiben", async () => {
+    const { model } = scriptedModel(
+      answer([
+        { ref: "t1", category: "Gibtsnicht", confidence: 0.9 },
+        { ref: "t2", category: "Lebensmittel", confidence: 0.9 },
+      ]),
+    );
+    const v = await categorizeWithLlm(model, categories, [item("a"), item("b")]);
+    expect(v.get("a")).toMatchObject({ categoryId: null, needsReview: true });
+    expect(v.get("b")).toMatchObject({ categoryId: "cat-food", needsReview: false });
+  });
+
+  it("höchstens drei Batches gleichzeitig, und alle kommen an", async () => {
+    let running = 0;
+    let peak = 0;
+    const model = new MockLanguageModelV4({
+      doGenerate: async () => {
+        running++;
+        peak = Math.max(peak, running);
+        await new Promise((r) => setTimeout(r, 20));
+        running--;
+        return {
+          content: [{ type: "text", text: answer([]) }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage: {
+            inputTokens: { total: 0, noCache: 0, cacheRead: undefined, cacheWrite: undefined },
+            outputTokens: { total: 0, text: 0, reasoning: undefined },
+          },
+          warnings: [],
+        };
+      },
+    });
+    const items = Array.from({ length: BATCH_SIZE * 7 }, (_, i) => item(`i${i}`));
+    const v = await categorizeWithLlm(model, categories, items);
+    expect(v.size).toBe(items.length);
+    expect(peak).toBe(3);
   });
 });

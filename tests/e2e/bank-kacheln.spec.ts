@@ -111,7 +111,7 @@ test("Mock: Pop-up sagt oben klar „Mockdaten“, Verbinden legt ein gekennzeic
   await mock.getByRole("button", { name: "Entfernen" }).click();
   await expect(page.getByRole("status")).toHaveText("„PayPal (Mock)“ mit allen Mock-Buchungen entfernt.");
   await expect(page.getByTestId("mock-connection")).toHaveCount(0);
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await expect(page.getByText("Netflix")).toHaveCount(0);
 });
 

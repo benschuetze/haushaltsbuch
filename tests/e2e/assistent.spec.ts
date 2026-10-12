@@ -17,7 +17,7 @@ async function addGym() {
 test("Kreis unten rechts öffnet den Chat, Vorschlag findet versteckte Abos", async ({ page }) => {
   await importDemo(page);
   await addGym();
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await page.getByRole("button", { name: "Assistent öffnen" }).click();
   await expect(panel(page)).toBeVisible();
   await expect(page.getByLabel("Frage an den Assistenten")).toBeFocused();
@@ -30,7 +30,7 @@ test("Kreis unten rechts öffnet den Chat, Vorschlag findet versteckte Abos", as
 
 test("eigene Frage per Enter, Verlauf bleibt, Escape schließt", async ({ page }) => {
   await importDemo(page);
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await page.getByRole("button", { name: "Assistent öffnen" }).click();
   await page.getByLabel("Frage an den Assistenten").fill("Wie waren meine Ausgaben?");
   await page.getByLabel("Frage an den Assistenten").press("Enter");
@@ -46,7 +46,7 @@ test("eigene Frage per Enter, Verlauf bleibt, Escape schließt", async ({ page }
 });
 
 test("das Chatfenster passt auf den Bildschirm", async ({ page }) => {
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await page.getByRole("button", { name: "Assistent öffnen" }).click();
   const box = await panel(page).boundingBox();
   const vp = page.viewportSize();
@@ -56,7 +56,7 @@ test("das Chatfenster passt auf den Bildschirm", async ({ page }) => {
 test.describe("Demo", () => {
   test.use({ storageState: { cookies: [], origins: [] }, baseURL: DEMO_URL });
   test("Assistent antwortet auch in der Demo", async ({ page }) => {
-    await page.goto("/transaktionen");
+    await page.goto("/buchungen");
     await page.getByRole("button", { name: "Assistent öffnen" }).click();
     await panel(page).getByRole("button", { name: "Wie stehen meine Budgets?" }).click();
     await expect(panel(page).locator('[data-role="assistant"]')).toContainText(/Budgets|Knapp/);

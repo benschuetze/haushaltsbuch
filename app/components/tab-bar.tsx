@@ -51,7 +51,7 @@ export function TabBar({
           <Home className="size-5" aria-hidden="true" />
           Übersicht
         </NavLink>
-        <NavLink prefetch="intent" to="/transaktionen" className={link}>
+        <NavLink prefetch="intent" to="/buchungen" className={link}>
           <List className="size-5" aria-hidden="true" />
           Buchungen
         </NavLink>

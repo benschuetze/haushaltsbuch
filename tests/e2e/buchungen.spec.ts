@@ -10,7 +10,7 @@ test("lange Buchungsliste: erst die neuesten 100, auf Wunsch mehr, Filter zähle
     insert into transactions (account_id, import_id, booking_date, amount_cents, counterparty, purpose, raw, dedupe_hash)
     select t.account_id, t.import_id, date '2026-07-01' + (n % 28), -100 - n, 'Testladen ' || n, 'Kartenzahlung', '{}'::jsonb, 'paging-' || n
     from (select account_id, import_id from transactions limit 1) t, generate_series(1, 150) n;`);
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   const list = page.getByRole("list", { name: "Buchungen" }).getByRole("listitem");
   await expect(list).toHaveCount(100);
   const summary = page.getByTestId("transactions-count");
@@ -22,7 +22,7 @@ test("lange Buchungsliste: erst die neuesten 100, auf Wunsch mehr, Filter zähle
   await expect(list).toHaveCount(Math.min(200, total));
 
   // A month filter counts within that month and needs no paging.
-  await page.goto("/transaktionen?monat=2026-09");
+  await page.goto("/buchungen?monat=2026-09");
   await expect(summary).toHaveText(/^\d+ Buchungen$/);
   await expect(page.getByRole("link", { name: /^Weitere/ })).toHaveCount(0);
 });
@@ -33,7 +33,7 @@ test("Handy: eine Buchung ist eine kompakte Zeile, die Kategorie öffnet sich er
 }) => {
   test.skip(!isMobile, "betrifft nur Handys");
   await importDemo(page);
-  await page.goto("/transaktionen?monat=2026-09");
+  await page.goto("/buchungen?monat=2026-09");
   const row = page.getByTestId("transaction").first();
   const box = await row.boundingBox();
   expect(box?.height).toBeLessThanOrEqual(140);

@@ -20,9 +20,9 @@ describe("guard", () => {
   it("Demo: jeder schreibende Request wird mit 403 abgelehnt, lesen geht ohne Login", async () => {
     vi.stubEnv("DEMO_MODE", "true");
     for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-      expect(await outcome(new Request("http://x/transaktionen", { method }))).toBe(403);
+      expect(await outcome(new Request("http://x/buchungen", { method }))).toBe(403);
     }
-    expect(await outcome(new Request("http://x/transaktionen"))).toBe("ok");
+    expect(await outcome(new Request("http://x/buchungen"))).toBe("ok");
   });
 
   it("privat: ohne Login Weiterleitung auf /login mit Rücksprung", async () => {

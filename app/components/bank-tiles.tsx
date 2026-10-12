@@ -357,7 +357,7 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
     return (
       <p className="text-sm">
         {tile.name} ist schon als Mock verbunden.{" "}
-        <Link to="/transaktionen" className="underline underline-offset-2">
+        <Link to="/buchungen" className="underline underline-offset-2">
           Buchungen ansehen
         </Link>
       </p>
@@ -403,7 +403,7 @@ function MockConnect({ tile, demo }: { tile: TileView; demo: boolean }) {
         >
           <p>{fetcher.data.message}</p>
           <p className="flex gap-3">
-            <Link to="/transaktionen" className="underline underline-offset-2">
+            <Link to="/buchungen" className="underline underline-offset-2">
               Buchungen ansehen
             </Link>
             <Link to="/abos" className="underline underline-offset-2">

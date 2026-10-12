@@ -2,7 +2,6 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import type { Db } from "../../app/lib/db/client";
 import * as schema from "../../app/lib/db/schema";
 import { DEFAULT_CATEGORIES, seed } from "../../app/lib/db/seed";
 
@@ -23,7 +22,7 @@ export async function resetDb(): Promise<void> {
     );
     await pool.query("delete from accounts where name <> 'Girokonto (Demo)'");
     await pool.query("delete from categories where not (name = any($1))", [DEFAULT_CATEGORIES.map((c) => c.name)]);
-    await seed(drizzle(pool, { schema }) as unknown as Db);
+    await seed(drizzle(pool, { schema }));
   } finally {
     await pool.end();
   }

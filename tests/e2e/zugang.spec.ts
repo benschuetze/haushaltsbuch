@@ -26,7 +26,7 @@ test.describe("ohne Login", () => {
 
   test("Schreiben ohne Login wird abgelehnt", async ({ request }) => {
     // Same-origin, so the CSRF check passes and the missing login is what stops it.
-    const response = await request.post("/transaktionen", {
+    const response = await request.post("/buchungen", {
       form: { intent: "confirm", transactionId: crypto.randomUUID() },
       headers: { Origin: "http://127.0.0.1:5199" },
     });
@@ -38,7 +38,7 @@ test.describe("Demo-Modus", () => {
   test.use({ storageState: { cookies: [], origins: [] }, baseURL: DEMO_URL });
 
   test("lesen geht ohne Login", async ({ page }) => {
-    await page.goto("/transaktionen");
+    await page.goto("/buchungen");
     await expect(page.getByRole("heading", { name: "Buchungen" })).toBeVisible();
     await expect(page.getByText("Demo mit erfundenen Beispieldaten")).toBeVisible();
     await expect(page.getByRole("link", { name: "Code und Architektur auf GitHub" })).toHaveAttribute(
@@ -48,7 +48,7 @@ test.describe("Demo-Modus", () => {
   });
 
   test("jeder schreibende Request wird mit 403 abgelehnt", async ({ request }) => {
-    for (const path of ["/import", "/transaktionen", "/regeln", "/login", "/logout"]) {
+    for (const path of ["/import", "/buchungen", "/regeln", "/login", "/logout"]) {
       const response = await request.post(path, { form: { intent: "create" } });
       expect(response.status(), path).toBe(403);
     }

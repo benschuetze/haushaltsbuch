@@ -75,7 +75,7 @@ test("doppelt abgeschickt (Tastatur + Spracheingabe auf iOS) ergibt eine Frage u
 
 test("Assistent: doppelt abgeschickt ergibt eine Frage", async ({ page }) => {
   await importDemo(page);
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await page.getByRole("button", { name: "Assistent öffnen" }).last().click();
   const panel = page.getByRole("dialog", { name: "Assistent" });
   await panel.getByLabel("Frage an den Assistenten").fill("Wie stehen meine Budgets?");
@@ -100,6 +100,6 @@ test("Startseite: ein Weg zum Fragen, kein zweiter Chat daneben", async ({ page 
     await expect(page.getByRole("dialog", { name: "Assistent" })).toHaveCount(0);
   }
   // Elsewhere the chat stays one tap away.
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await expect(page.getByRole("button", { name: "Assistent öffnen" }).last()).toBeVisible();
 });

@@ -25,7 +25,7 @@ test("Bank verbinden: zur Bank und zurück, Konto entsteht, Umsätze sind da, er
   await expect(connection).toContainText("Testbank ··5678");
   await expect(connection.getByTestId("connection-status")).toHaveText("aktiv");
 
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await expect(page.getByTestId("transaction")).toHaveCount(4);
   await expect(page.getByTestId("counterparty").filter({ hasText: "Arbeitgeber Muster GmbH" })).toBeVisible();
 
@@ -60,7 +60,7 @@ test("Trennen: Zugang weg, Buchungen bleiben", async ({ page }) => {
   await page.getByRole("button", { name: "Trennen" }).click();
   await expect(page.getByRole("status")).toHaveText("Verbindung zu Testbank getrennt. Bisherige Buchungen bleiben.");
   await expect(page.getByTestId("connection-status")).toHaveText("getrennt");
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await expect(page.getByTestId("transaction")).toHaveCount(4);
 });
 
