@@ -118,6 +118,12 @@ function Confetti() {
 }
 
 /** This month and the following ones, as yyyy-mm. */
+function byYear(months: string[]): [string, string[]][] {
+  const groups = new Map<string, string[]>();
+  for (const m of months) groups.set(m.slice(0, 4), [...(groups.get(m.slice(0, 4)) ?? []), m]);
+  return [...groups.entries()];
+}
+
 function nextMonths(from: string, count: number): string[] {
   const [y, m] = from.split("-").map(Number) as [number, number];
   return Array.from({ length: count }, (_, i) => {
@@ -246,10 +252,15 @@ export default function Ziele({ loaderData, actionData }: Route.ComponentProps) 
                   className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                 >
                   <option value="">ohne festes Datum</option>
-                  {nextMonths(thisMonth, 60).map((m) => (
-                    <option key={m} value={m}>
-                      {formatMonth(m)}
-                    </option>
+                  {/* Grouped by year: 60 months in one flat list were a long scroll on the phone. */}
+                  {byYear(nextMonths(thisMonth, 60)).map(([year, months]) => (
+                    <optgroup key={year} label={year}>
+                      {months.map((m) => (
+                        <option key={m} value={m}>
+                          {formatMonth(m).split(" ")[0]}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

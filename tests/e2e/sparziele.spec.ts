@@ -61,12 +61,23 @@ test("ungültiger Betrag: verständlicher Hinweis", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText("Bitte einen Betrag wie 800 oder 49,90 eingeben.");
 });
 
-test("Zieldatum als Monatsauswahl, kein leerer Datums-Platzhalter", async ({ page }) => {
+test("Zieldatum: Monate nach Jahr gruppiert, Ziel mit Datum anlegen", async ({ page }) => {
   await page.goto("/ziele");
   const due = page.getByLabel("Bis wann? (optional)");
   await expect(due).toHaveValue("");
   await expect(due.locator("option").first()).toHaveText("ohne festes Datum");
-  await expect(due.locator("option").nth(1)).toHaveText(/^\w+ \d{4}$/);
+  // Five years in groups instead of one list of 60 entries.
+  const years = await due.locator("optgroup").evaluateAll((g) => g.map((x) => x.getAttribute("label")));
+  expect(years.length).toBeGreaterThanOrEqual(5);
+  expect(years.every((y) => /^\d{4}$/.test(y ?? ""))).toBe(true);
+  await expect(due.locator("optgroup").first().locator("option").first()).toHaveText(/^[A-ZÄÖÜ][a-zäöü]+$/);
+
+  const nextYear = String(Number(years[0]) + 1);
+  await page.getByLabel("Wofür?").fill("Fahrrad");
+  await page.getByLabel("Betrag (€)").fill("600");
+  await due.selectOption(`${nextYear}-06`);
+  await page.getByRole("button", { name: "Anlegen" }).click();
+  await expect(page.getByTestId("goal").filter({ hasText: "Fahrrad" })).toContainText(`bis Juni ${nextYear}`);
 });
 
 test("Sparauftrag wird zum Ziel: Vorschlag übernehmen, Tagesbudget bleibt gleich, Vorschlag verschwindet", async ({
