@@ -103,13 +103,13 @@ test("unbekannter Anbieter: Suche nach dem Kündigungsbutton statt geratener Adr
   await expect(page.getByRole("button", { name: "Kündigungsbutton suchen" })).toBeVisible();
 });
 
-test("Demo: Kündigen-Pop-up zeigt den Weg, speichert aber nichts", async ({ page }) => {
+test("Demo: Kündigen lässt sich bis zum Ende ausprobieren", async ({ page }) => {
   // In tests the demo server reads the same database.
   await importDemo(page);
   await page.goto(`${DEMO_URL}/abos`);
   await page.getByRole("button", { name: "Spotify AB kündigen" }).click();
   await page.getByRole("button", { name: "Schon gekündigt" }).click();
-  await expect(page.getByRole("button", { name: "In der Demo abgeschaltet" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Ja, gekündigt" })).toBeEnabled();
 });
 
 test("ohne Kündigungsseite: Kündigungsschreiben mit Nummern aus der Buchung, erst vollständig freigegeben", async ({

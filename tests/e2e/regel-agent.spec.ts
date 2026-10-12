@@ -66,10 +66,10 @@ test("unverständlicher Satz: freundlicher Hinweis statt geratener Regel", async
   await expect(page.getByTestId("rule-proposal")).toHaveCount(0);
 });
 
-test("Demo: Agent sichtbar, aber abgeschaltet", async ({ page }) => {
+test("Demo: der Agent ist zum Ausprobieren freigegeben", async ({ page }) => {
   await page.goto(`${DEMO_URL}/regeln`);
-  await expect(page.getByLabel("Was soll die Regel tun?")).toBeDisabled();
-  await expect(page.getByText("In der Demo lassen sich keine Regeln anlegen.")).toBeVisible();
+  await expect(page.getByLabel("Was soll die Regel tun?")).toBeEnabled();
+  await expect(page.getByText("In der Demo lassen sich keine Regeln anlegen.")).toHaveCount(0);
 });
 
 test("eingebaute Regeln sind sichtbar, damit das Badge „Regel“ ohne eigene Regel erklärt ist", async ({ page }) => {

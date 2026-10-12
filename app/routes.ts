@@ -22,6 +22,7 @@ export default [
   route("nutzungsbedingungen", "routes/nutzungsbedingungen.tsx"),
   route("impressum", "routes/impressum.tsx"),
   route("theme", "routes/theme.ts"),
+  route("demo/reset", "routes/demo.reset.ts"),
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
   route("favicon.ico", "routes/favicon.ts"),

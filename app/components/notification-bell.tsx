@@ -21,7 +21,7 @@ export type Notifications = {
  * A <details> panel: opens and closes without JavaScript and is reachable by keyboard.
  * JavaScript only adds closing on navigation and on a click outside.
  */
-export function NotificationBell({ notifications, demo }: { notifications: Notifications; demo: boolean }) {
+export function NotificationBell({ notifications, readOnly }: { notifications: Notifications; readOnly: boolean }) {
   const ref = useRef<HTMLDetailsElement>(null);
   const [cancel, setCancel] = useState<CancelTarget | null>(null);
   const location = useLocation();
@@ -66,7 +66,7 @@ export function NotificationBell({ notifications, demo }: { notifications: Notif
               {issue.title}
             </Link>
           ))}
-          {notifications.reviewCount > 0 && !demo ? (
+          {notifications.reviewCount > 0 && !readOnly ? (
             <Link
               to="/pruefen"
               className="flex items-center justify-between gap-3 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
@@ -118,7 +118,7 @@ export function NotificationBell({ notifications, demo }: { notifications: Notif
         </div>
       </details>
       {cancel ? (
-        <CancelDialog key={cancel.merchant} target={cancel} demo={demo} onClose={() => setCancel(null)} />
+        <CancelDialog key={cancel.merchant} target={cancel} readOnly={readOnly} onClose={() => setCancel(null)} />
       ) : null}
     </>
   );

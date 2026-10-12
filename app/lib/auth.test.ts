@@ -17,8 +17,16 @@ async function outcome(request: Request): Promise<number | "ok"> {
 }
 
 describe("guard", () => {
-  it("Demo: jeder schreibende Request wird mit 403 abgelehnt, lesen geht ohne Login", async () => {
+  it("Demo: ohne Login lesen und ausprobieren, auch schreiben", async () => {
     vi.stubEnv("DEMO_MODE", "true");
+    for (const method of ["GET", "POST", "PUT", "PATCH", "DELETE"]) {
+      expect(await outcome(new Request("http://x/buchungen", { method }))).toBe("ok");
+    }
+  });
+
+  it("Demo mit DEMO_READ_ONLY=1: jeder schreibende Request wird mit 403 abgelehnt", async () => {
+    vi.stubEnv("DEMO_MODE", "true");
+    vi.stubEnv("DEMO_READ_ONLY", "1");
     for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
       expect(await outcome(new Request("http://x/buchungen", { method }))).toBe(403);
     }
@@ -150,9 +158,10 @@ describe("Favicon", () => {
   });
 });
 
-describe("Assistent in der Demo", () => {
+describe("Assistent in der schreibgeschützten Demo", () => {
   it("darf gefragt werden, alles andere Schreibende bleibt gesperrt", async () => {
     vi.stubEnv("DEMO_MODE", "true");
+    vi.stubEnv("DEMO_READ_ONLY", "1");
     expect(await outcome(new Request("http://x/assistent", { method: "POST" }))).toBe("ok");
     expect(await outcome(new Request("http://x/assistent.data", { method: "POST" }))).toBe("ok");
     expect(await outcome(new Request("http://x/regeln", { method: "POST" }))).toBe(403);

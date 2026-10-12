@@ -13,17 +13,17 @@ type Account = {
 };
 
 /** Accounts the import created, with their balance where the export carries one; renaming stays on /konten. */
-export function AccountsList({ accounts, demo }: { accounts: Account[]; demo: boolean }) {
+export function AccountsList({ accounts, readOnly }: { accounts: Account[]; readOnly: boolean }) {
   return (
     <ul className="space-y-3">
       {accounts.map((a) => (
-        <AccountRow key={a.id} account={a} demo={demo} />
+        <AccountRow key={a.id} account={a} readOnly={readOnly} />
       ))}
     </ul>
   );
 }
 
-function AccountRow({ account: a, demo }: { account: Account; demo: boolean }) {
+function AccountRow({ account: a, readOnly }: { account: Account; readOnly: boolean }) {
   const fetcher = useFetcher<{ ok: true; name: string } | { ok: false; error: string }>();
   const busy = fetcher.state !== "idle";
   return (
@@ -49,10 +49,10 @@ function AccountRow({ account: a, demo }: { account: Account; demo: boolean }) {
             key={a.name}
             required
             maxLength={60}
-            disabled={demo}
+            disabled={readOnly}
           />
         </div>
-        <Button type="submit" variant="outline" disabled={demo || busy}>
+        <Button type="submit" variant="outline" disabled={readOnly || busy}>
           Umbenennen
         </Button>
       </fetcher.Form>

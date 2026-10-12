@@ -33,7 +33,8 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
           Kontoumsätze (Datum, Betrag, Gegenpartei, Verwendungszweck) aus hochgeladenen Kontoauszügen oder, nach
           ausdrücklicher Freigabe bei der Bank, über den Kontoinformationsdienst Enable Banking Oy (Espoo, Finnland;
           beaufsichtigt von der finnischen Finanzaufsicht FIN-FSA). Die öffentliche Demo hat keine Bankanbindung und
-          enthält nur erfundene Daten.
+          enthält erfundene Daten. Was Besucher dort eingeben oder hochladen, sehen alle anderen Besucher auch; es wird
+          jede Nacht gelöscht. Deshalb dort keine echten Kontoauszüge hochladen.
         </li>
         <li>Eigene Einstellungen: Kategorien, Regeln, Budgets.</li>
         <li>

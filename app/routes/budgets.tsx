@@ -6,7 +6,7 @@ import { z } from "zod";
 import { BudgetBar } from "~/components/progress";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { isDemo } from "~/lib/auth.server";
+import { isReadOnly } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
 import { budgets, categories } from "~/lib/db/schema";
 import { formatMonth } from "~/lib/format";
@@ -27,7 +27,7 @@ export async function loader() {
     .orderBy(categories.sortOrder);
   const expenseOnly = await db.select({ id: categories.id, kind: categories.kind }).from(categories);
   const kinds = new Map(expenseOnly.map((c) => [c.id, c.kind]));
-  return { ...status, free: free.filter((c) => kinds.get(c.id) === "expense"), demo: isDemo() };
+  return { ...status, free: free.filter((c) => kinds.get(c.id) === "expense"), readOnly: isReadOnly() };
 }
 
 const euros = z
@@ -102,7 +102,7 @@ function euroInput(cents: number) {
 }
 
 export default function Budgets({ loaderData, actionData }: Route.ComponentProps) {
-  const { month, items, free, demo } = loaderData;
+  const { month, items, free, readOnly } = loaderData;
   const busy = useNavigation().state !== "idle";
   // The form sits right under the heading, opened by the button; open from the start when there is no budget yet.
   const [adding, setAdding] = useState(items.length === 0);
@@ -145,7 +145,7 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
               </h2>
               <Form method="post" className="space-y-3">
                 <input type="hidden" name="intent" value="set" />
-                <fieldset disabled={demo || busy} className="space-y-3">
+                <fieldset disabled={readOnly || busy} className="space-y-3">
                   <div className="space-y-1">
                     <label htmlFor="add-category" className="block text-sm">
                       Kategorie
@@ -184,7 +184,7 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
             <summary className="cursor-pointer font-semibold">Kategorie fehlt? Neue anlegen</summary>
             <Form method="post" className="space-y-3">
               <input type="hidden" name="intent" value="createCategory" />
-              <fieldset disabled={demo || busy} className="space-y-3">
+              <fieldset disabled={readOnly || busy} className="space-y-3">
                 <div className="space-y-1">
                   <label htmlFor="category-name" className="block text-sm">
                     Name
@@ -248,13 +248,13 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
                   defaultValue={euroInput(b.budgetCents)}
                   key={b.budgetCents}
                   className="w-28"
-                  disabled={demo}
+                  disabled={readOnly}
                 />
               </div>
-              <Button type="submit" name="intent" value="set" size="sm" variant="outline" disabled={demo || busy}>
+              <Button type="submit" name="intent" value="set" size="sm" variant="outline" disabled={readOnly || busy}>
                 Speichern
               </Button>
-              <Button type="submit" name="intent" value="delete" size="sm" variant="ghost" disabled={demo || busy}>
+              <Button type="submit" name="intent" value="delete" size="sm" variant="ghost" disabled={readOnly || busy}>
                 Entfernen
               </Button>
             </Form>

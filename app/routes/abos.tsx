@@ -6,7 +6,7 @@ import { z } from "zod";
 import { Amount } from "~/components/amount";
 import { CancelDialog, type CancelTarget } from "~/components/cancel-dialog";
 import { Button } from "~/components/ui/button";
-import { isDemo } from "~/lib/auth.server";
+import { isReadOnly } from "~/lib/auth.server";
 import { type Db, getDb } from "~/lib/db/client";
 import { transactions } from "~/lib/db/schema";
 import { formatDate } from "~/lib/format";
@@ -44,7 +44,7 @@ export async function loader() {
     }),
   );
   return {
-    demo: isDemo(),
+    readOnly: isReadOnly(),
     recurring,
     cancellations: overview.cancellations.map((c) => ({ ...c, cancelLink: cancelLinkFor(c.merchant) })),
   };
@@ -127,7 +127,7 @@ function List({ items, label, onCancel }: { items: Item[]; label: string; onCanc
 
 export default function Abos({ loaderData, actionData }: Route.ComponentProps) {
   const [target, setTarget] = useState<CancelTarget | null>(null);
-  const { demo, cancellations } = loaderData;
+  const { readOnly, cancellations } = loaderData;
   const current = loaderData.recurring.filter((r) => !r.cancelled);
   const active = current.filter((r) => r.active);
   const subscriptions = active.filter((r) => r.kind === "subscription");
@@ -183,7 +183,7 @@ export default function Abos({ loaderData, actionData }: Route.ComponentProps) {
                 ) : null}
                 <Form method="post">
                   <input type="hidden" name="merchantKey" value={c.merchantKey} />
-                  <Button type="submit" name="intent" value="undo" size="sm" variant="ghost" disabled={demo}>
+                  <Button type="submit" name="intent" value="undo" size="sm" variant="ghost" disabled={readOnly}>
                     Zurücknehmen
                   </Button>
                 </Form>
@@ -205,7 +205,7 @@ export default function Abos({ loaderData, actionData }: Route.ComponentProps) {
         </section>
       ) : null}
       {target ? (
-        <CancelDialog key={target.merchant} target={target} demo={demo} onClose={() => setTarget(null)} />
+        <CancelDialog key={target.merchant} target={target} readOnly={readOnly} onClose={() => setTarget(null)} />
       ) : null}
     </div>
   );

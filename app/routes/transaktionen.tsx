@@ -7,7 +7,7 @@ import { Amount } from "~/components/amount";
 import { DemoNotice } from "~/components/demo-notice";
 import { SourceBadges } from "~/components/source-badge";
 import { Button } from "~/components/ui/button";
-import { isDemo } from "~/lib/auth.server";
+import { isReadOnly } from "~/lib/auth.server";
 import { categorizeOpen, confirmTransaction, reapplyRules, setManualCategory } from "~/lib/categorize/apply";
 import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
@@ -44,7 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     monthsWithData(db),
     db.$count(transactions, isNull(transactions.categoryId)),
   ]);
-  return { rows, total, categories, months, filter, uncategorized, demo: isDemo() };
+  return { rows, total, categories, months, filter, uncategorized, readOnly: isReadOnly() };
 }
 
 const actionSchema = z.discriminatedUnion("intent", [
@@ -114,9 +114,9 @@ async function handle({ request }: Route.ActionArgs) {
 const selectClass = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
 export default function Transaktionen({ loaderData, actionData }: Route.ComponentProps) {
-  const { rows, total, categories, months, filter, demo } = loaderData;
+  const { rows, total, categories, months, filter, readOnly } = loaderData;
   const [params] = useSearchParams();
-  // The demo cannot save; trying it should still answer, visibly, wherever on the page the tap was.
+  // The read-only demo cannot save; trying it should still answer, visibly, wherever on the page the tap was.
   const [demoNote, setDemoNote] = useState<string | null>(null);
   const more = new URLSearchParams(params);
   more.set("anzahl", String(Math.min(rows.length + PAGE_SIZE, 1000)));
@@ -161,7 +161,7 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
         </Button>
       </Form>
 
-      {result?.kind === "suggestRule" && !demo ? (
+      {result?.kind === "suggestRule" && !readOnly ? (
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/50 p-4 text-sm">
           <p className="min-w-0 flex-1">
             Regel für „{result.counterparty}“ anlegen? Alle Buchungen dieses Empfängers kommen dann in{" "}
@@ -197,7 +197,7 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
             : ""}
         </p>
       ) : null}
-      {loaderData.uncategorized > 0 && !demo && result?.kind !== "categorized" ? (
+      {loaderData.uncategorized > 0 && !readOnly && result?.kind !== "categorized" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4 text-sm">
           <p className="min-w-0 flex-1">
             {countLabel(loaderData.uncategorized, "Buchung hat", "Buchungen haben")} noch keine Kategorie.
@@ -257,7 +257,7 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
                         method="post"
                         className="flex flex-wrap gap-2"
                         onSubmit={
-                          demo
+                          readOnly
                             ? (e) => {
                                 e.preventDefault();
                                 const id = new FormData(e.currentTarget).get("categoryId");
@@ -299,7 +299,7 @@ export default function Transaktionen({ loaderData, actionData }: Route.Componen
                     <Form
                       method="post"
                       onSubmit={
-                        demo
+                        readOnly
                           ? (e) => {
                               e.preventDefault();
                               setDemoNote(

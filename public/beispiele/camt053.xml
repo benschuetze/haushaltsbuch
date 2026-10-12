@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
+  <BkToCstmrStmt>
+    <GrpHdr><MsgId>2026100900001</MsgId><CreDtTm>2026-10-09T06:00:00</CreDtTm></GrpHdr>
+    <Stmt>
+      <Id>2026-10-09-001</Id>
+      <Acct>
+        <Id><IBAN>DE02120300000000202051</IBAN></Id>
+        <Ccy>EUR</Ccy>
+        <Svcr><FinInstnId><BICFI>BYLADEM1001</BICFI><Nm>Musterbank Sparkasse</Nm></FinInstnId></Svcr>
+      </Acct>
+      <Ntry>
+        <Amt Ccy="EUR">3612.40</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-10-01</Dt></BookgDt>
+        <ValDt><Dt>2026-10-01</Dt></ValDt>
+        <NtryDtls><TxDtls>
+          <RltdPties><Dbtr><Pty><Nm>Arbeitgeber Muster GmbH</Nm></Pty></Dbtr></RltdPties>
+          <RmtInf><Ustrd>Gehalt 10/2026</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">890.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-10-01</Dt></BookgDt>
+        <NtryDtls><TxDtls>
+          <RltdPties><Cdtr><Pty><Nm>Hausverwaltung Sonnenhof</Nm></Pty></Cdtr><CdtrAcct><Id><IBAN>DE89370400440532013000</IBAN></Id></CdtrAcct></RltdPties>
+          <RmtInf><Ustrd>Miete 10/2026</Ustrd><Ustrd>Whg 3</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">63.12</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-10-04</Dt></BookgDt>
+        <AddtlNtryInf>Kartenzahlung girocard REWE Markt Köln</AddtlNtryInf>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">10.99</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts><Cd>PDNG</Cd></Sts>
+        <BookgDt><Dt>2026-10-08</Dt></BookgDt>
+        <NtryDtls><TxDtls>
+          <RltdPties><Cdtr><Pty><Nm>Spotify AB</Nm></Pty></Cdtr></RltdPties>
+          <RmtInf><Ustrd>Spotify Premium</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

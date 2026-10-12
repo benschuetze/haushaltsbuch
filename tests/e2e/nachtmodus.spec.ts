@@ -46,7 +46,7 @@ test("Schalter: Dunkel bei hellem System, Hell bei dunklem System, die Wahl blei
   await expectNoSeriousA11yViolations(page);
 });
 
-test("auch die schreibgeschützte Demo lässt umschalten, es ist nur ein Cookie", async ({ page }) => {
+test("auch in der Demo lässt sich umschalten, es ist nur ein Cookie", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.goto(`${DEMO_URL}/`);
   await page.getByRole("button", { name: "Dunkel" }).click();
