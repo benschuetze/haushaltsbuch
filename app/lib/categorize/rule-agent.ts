@@ -1,4 +1,4 @@
-import { generateText, type LanguageModel, Output } from "ai";
+import { generateText, type LanguageModel, NoObjectGeneratedError, Output } from "ai";
 import { z } from "zod";
 import type { Rule } from "~/lib/db/schema";
 import { safeError } from "~/lib/security.server";
@@ -132,17 +132,24 @@ export async function proposeRule(
     .slice(0, 15)
     .map(redactIbans);
   try {
-    const { output } = await generateText({
-      model,
-      system: SYSTEM,
-      prompt: JSON.stringify({
-        wunsch: text.slice(0, 300),
-        kategorien: categories.map((c) => c.name),
-        bekannteEmpfaenger: hints,
-      }),
-      output: Output.object({ schema: answerSchema }),
-      maxRetries: 1,
-      maxOutputTokens: 200,
+    const ask = () =>
+      generateText({
+        model,
+        system: SYSTEM,
+        prompt: JSON.stringify({
+          wunsch: text.slice(0, 300),
+          kategorien: categories.map((c) => c.name),
+          bekannteEmpfaenger: hints,
+        }),
+        output: Output.object({ schema: answerSchema }),
+        maxRetries: 1,
+        // Room for a longer answer: at 200 a verbose reply was cut off mid-JSON and nothing could be read.
+        maxOutputTokens: 400,
+      });
+    // maxRetries covers network errors only. An answer that is not valid JSON gets exactly one more try.
+    const { output } = await ask().catch((error) => {
+      if (NoObjectGeneratedError.isInstance(error)) return ask();
+      throw error;
     });
     if (!output.understood) return [];
     const category = categories.find((c) => fold(c.name) === fold(output.category));
