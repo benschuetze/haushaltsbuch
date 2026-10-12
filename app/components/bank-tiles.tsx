@@ -118,28 +118,31 @@ function Tile({ tile, onOpen }: { tile: TileView; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="group flex w-full flex-col items-center gap-1.5 rounded-xl border bg-card p-2 transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring active:translate-y-0 sm:gap-2 sm:p-3"
+      className="group flex h-full w-full flex-col items-center gap-1.5 rounded-xl border bg-card p-2 transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring active:translate-y-0 sm:gap-2 sm:p-3"
       aria-label={`${tile.name} hinzufügen`}
     >
       <BankLogo tile={tile} className="size-10 transition group-hover:scale-105 sm:size-14" />
       <span className="flex min-h-[2.5em] w-full items-center justify-center text-center text-[0.7rem] leading-tight font-medium break-words sm:text-[0.8rem]">
         {tile.name}
       </span>
-      {badge ? (
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem]",
-            live ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-950",
-          )}
-        >
-          {live ? (
-            <Zap className="size-3" aria-hidden="true" />
-          ) : (
-            <FlaskConical className="size-3" aria-hidden="true" />
-          )}
-          {badge}
-        </span>
-      ) : null}
+      {/* The slot is there with or without a badge: otherwise "Live" tiles stand taller than their neighbours. */}
+      <span className="flex h-5 items-center">
+        {badge ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem]",
+              live ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-950",
+            )}
+          >
+            {live ? (
+              <Zap className="size-3" aria-hidden="true" />
+            ) : (
+              <FlaskConical className="size-3" aria-hidden="true" />
+            )}
+            {badge}
+          </span>
+        ) : null}
+      </span>
     </button>
   );
 }
