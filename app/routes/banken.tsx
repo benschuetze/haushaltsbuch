@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
 import { data, Form, redirect, useNavigation, useSearchParams } from "react-router";
 import { z } from "zod";
+import { AccountsList } from "~/components/accounts-list";
 import { BankTiles } from "~/components/bank-tiles";
 import { Button } from "~/components/ui/button";
+import { accountOverview } from "~/lib/account-overview.server";
 import { isDemo } from "~/lib/auth.server";
 import { BANK_TILES, tileState } from "~/lib/bank/catalog";
 import { BankApiError } from "~/lib/bank/enable-banking.server";
@@ -64,6 +66,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     countries: COUNTRIES,
     banks,
     listError,
+    accounts: await accountOverview(getDb()),
     connections: (await listConnections(getDb())).map((c) => ({
       ...c,
       validUntil: c.validUntil.toISOString().slice(0, 10),
@@ -165,7 +168,8 @@ const NOTICES: Record<string, string> = {
 };
 
 export default function Banken({ loaderData, actionData }: Route.ComponentProps) {
-  const { configured, demo, tiles, mockAccounts, country, countries, banks, listError, connections } = loaderData;
+  const { configured, demo, tiles, mockAccounts, country, countries, banks, listError, connections, accounts } =
+    loaderData;
   const [params] = useSearchParams();
   const busy = useNavigation().state !== "idle";
   // Messages from the return URL belong to that moment; a newer action result replaces them.
@@ -338,6 +342,16 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
           </div>
         </details>
       ) : null}
+      {/* Formerly its own page "Konten": accounts belong with the banks they come from. */}
+      <section id="konten" aria-labelledby="accounts-title" className="space-y-3">
+        <h2 id="accounts-title" className="text-lg font-semibold">
+          Deine Konten
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Konten legt die App beim Import oder Verbinden selbst an. Hier kannst du ihnen einen besseren Namen geben.
+        </p>
+        <AccountsList accounts={accounts} demo={demo} />
+      </section>
     </div>
   );
 }

@@ -122,8 +122,17 @@ export async function parseForProfile(db: Db, profileKey: string, bytes: Uint8Ar
   return parseWithMapping(table, format.mapping);
 }
 
+/** A readable bank name for any account. Never throws: one odd account must not take a whole page down. */
 export async function profileLabel(db: Db, profileKey: string): Promise<string> {
-  if (!profileKey.startsWith("format:")) return getBankProfile(profileKey).label;
+  if (profileKey.startsWith("bank:")) return `${profileKey.slice("bank:".length)} (Bankanbindung)`;
+  if (profileKey === "mock") return "Mockdaten";
+  if (!profileKey.startsWith("format:")) {
+    try {
+      return getBankProfile(profileKey).label;
+    } catch {
+      return "Unbekannte Bank";
+    }
+  }
   const [format] = await db
     .select({ label: bankFormats.label })
     .from(bankFormats)
