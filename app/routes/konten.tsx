@@ -1,33 +1,13 @@
-import { count, eq } from "drizzle-orm";
-import { data, Form, useNavigation } from "react-router";
+import { eq } from "drizzle-orm";
+import { data, redirect } from "react-router";
 import { z } from "zod";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { isDemo } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
-import { accounts, transactions } from "~/lib/db/schema";
-import { profileLabel } from "~/lib/import/formats/detect";
+import { accounts } from "~/lib/db/schema";
 import type { Route } from "./+types/konten";
 
-export const meta: Route.MetaFunction = () => [{ title: "Konten · Haushaltsbuch" }];
-
-export async function loader() {
-  const db = getDb();
-  const rows = await db
-    .select({
-      id: accounts.id,
-      name: accounts.name,
-      bankProfile: accounts.bankProfile,
-      bookings: count(transactions.id),
-    })
-    .from(accounts)
-    .leftJoin(transactions, eq(transactions.accountId, accounts.id))
-    .groupBy(accounts.id)
-    .orderBy(accounts.name);
-  return {
-    demo: isDemo(),
-    accounts: await Promise.all(rows.map(async (r) => ({ ...r, bank: await profileLabel(db, r.bankProfile) }))),
-  };
+/** Accounts are a section of the bank page now; the old address leads there. Renaming is still handled here. */
+export function loader() {
+  return redirect("/banken#konten");
 }
 
 const renameSchema = z.object({
@@ -55,58 +35,4 @@ export async function action({ request }: Route.ActionArgs) {
   }
   await db.update(accounts).set({ name: parsed.data.name }).where(eq(accounts.id, parsed.data.accountId));
   return data<ActionData>({ ok: true, name: parsed.data.name });
-}
-
-export default function Konten({ loaderData, actionData }: Route.ComponentProps) {
-  const { demo, accounts: rows } = loaderData;
-  const busy = useNavigation().state === "submitting";
-  return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Konten</h1>
-        <p className="text-sm text-muted-foreground">
-          Konten legt die App beim Import selbst an. Hier kannst du ihnen einen besseren Namen geben.
-        </p>
-      </div>
-      {actionData?.ok ? (
-        <p role="status" className="rounded-lg border bg-muted/50 p-4 text-sm">
-          Umbenannt in „{actionData.name}“.
-        </p>
-      ) : null}
-      {actionData && !actionData.ok ? (
-        <p role="alert" className="rounded-lg border border-destructive p-4 text-sm text-destructive">
-          {actionData.error}
-        </p>
-      ) : null}
-      <ul className="space-y-3">
-        {rows.map((a) => (
-          <li key={a.id} className="space-y-2 rounded-lg border p-3" data-testid="account">
-            <p className="text-sm text-muted-foreground">
-              {a.bank} · {a.bookings === 1 ? "1 Buchung" : `${a.bookings} Buchungen`}
-            </p>
-            <Form method="post" className="flex flex-wrap items-end gap-2">
-              <input type="hidden" name="accountId" value={a.id} />
-              <div className="min-w-0 flex-1 space-y-1">
-                <label htmlFor={`name-${a.id}`} className="block text-sm font-medium">
-                  Name
-                </label>
-                <Input
-                  id={`name-${a.id}`}
-                  name="name"
-                  defaultValue={a.name}
-                  key={a.name}
-                  required
-                  maxLength={60}
-                  disabled={demo}
-                />
-              </div>
-              <Button type="submit" variant="outline" disabled={demo || busy}>
-                Umbenennen
-              </Button>
-            </Form>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }

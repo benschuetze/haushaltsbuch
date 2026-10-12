@@ -14,7 +14,6 @@ const PAGES = [
   { path: "/monat/2026-09", heading: "September 2026", action: { role: "link" as const, name: /August 2026/ } },
   { path: "/import", heading: "Kontoauszug importieren", action: { role: "button" as const, name: "Importieren" } },
   { path: "/regeln", heading: "Regeln", action: { role: "button" as const, name: "Lieferando ist Restaurant" } },
-  { path: "/konten", heading: "Konten", action: { role: "button" as const, name: "Umbenennen" } },
   { path: "/budgets", heading: "Budgets", action: { role: "button" as const, name: "Budget hinzufügen" } },
   { path: "/abos", heading: "Abos und feste Kosten", action: { role: "button" as const, name: /kündigen$/ } },
   { path: "/hinweise", heading: "Hinweise", action: { role: "link" as const, name: "Übersicht" } },

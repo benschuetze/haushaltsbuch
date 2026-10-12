@@ -11,7 +11,6 @@ const MORE = [
   { to: "/import", label: "Import" },
   { to: "/banken", label: "Banken" },
   { to: "/regeln", label: "Regeln" },
-  { to: "/konten", label: "Konten" },
 ];
 
 const tab =
