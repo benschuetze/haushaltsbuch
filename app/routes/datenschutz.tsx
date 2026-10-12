@@ -56,6 +56,11 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
         </li>
         <li>Fragen an den Assistenten gehen ebenfalls an Anthropic; die Antwort nutzt Zahlen aus deinen Buchungen.</li>
         <li>
+          Übermittlung in die USA: Grundlage sind die EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO), die
+          Anthropic in seinem Auftragsverarbeitungsvertrag (Data Processing Addendum zu den Commercial Terms)
+          vereinbart. Laut diesen Bedingungen trainiert Anthropic keine Modelle mit Inhalten aus der API-Nutzung.
+        </li>
+        <li>
           Spracheingabe (Mikrofon-Knopf, freiwillig): Die Erkennung übernimmt dein Browser bzw. dessen Hersteller (z. B.
           Apple bei Safari, Google bei Chrome). Das Haushaltsbuch erhält nur den erkannten Text, keine Audioaufnahme.
         </li>
@@ -65,6 +70,21 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
         Ausschließlich die eigene Haushaltsführung. Keine Weitergabe an Dritte zu Werbe- oder sonstigen Zwecken, kein
         Tracking, keine Analyse-Cookies.
       </p>
+      <ul className="list-disc space-y-1 pl-5">
+        <li>
+          Buchungen, Kategorien, Budgets, Ziele und die Bankanbindung: Art. 6 Abs. 1 lit. b DSGVO, weil die App genau
+          dafür genutzt wird. Ohne diese Daten gibt es keine Übersicht.
+        </li>
+        <li>
+          Automatische Zuordnung und Assistent über Anthropic: ebenfalls Art. 6 Abs. 1 lit. b DSGVO. Was eigene Regeln
+          oder die eingebaute Händlerliste schon zuordnen, geht gar nicht erst an das Modell.
+        </li>
+        <li>
+          Anmelde-Cookie und gehashte IP-Adressen fehlgeschlagener Anmeldungen: Art. 6 Abs. 1 lit. f DSGVO, berechtigtes
+          Interesse am Schutz des Zugangs vor Passwort-Raten. Das Cookie ist technisch notwendig (§ 25 Abs. 2 Nr. 2
+          TDDDG) und braucht keine Einwilligung.
+        </li>
+      </ul>
       <h2 className="text-lg font-semibold">Speicherdauer und Rechte</h2>
       <p>
         Daten bleiben gespeichert, bis sie gelöscht werden. Der Zugriff auf Bankkonten endet spätestens nach 180 Tagen

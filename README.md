@@ -12,7 +12,7 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 
 **Frag zuerst**
 - **Tagesbudget:** Die Startseite zeigt eine Zahl: was bis zum nächsten Gehalt pro Tag bleibt. Die App erkennt Gehalt und Zahltag selbst, zieht kommende Fixkosten, Sparraten und offene Sparziel-Anteile ab und rundet ab. Unter „Wie gerechnet?“ steht die Rechnung Zeile für Zeile.
-- **Assistent:** Fragen tippen oder sprechen („Kann ich mir ein Fahrrad für 600 € leisten?“, „Wann kann ich mir das leisten?“, „Habe ich versteckte Abo-Kosten?“). Claude Haiku antwortet über 13 lesende Werkzeuge (`heute_verfuegbar`, `leisten`, `wann_leisten`, `naechste_zahlungen`, `buchungen_suchen`, `abos_und_fixkosten` …) mit echten Zahlen aus der Datenbank. Er kann nichts ändern; höchstens 60 Fragen am Tag. Der Ton ist wählbar: freundlich oder frech („Schon wieder Lieferando?“), die Zahlen bleiben gleich.
+- **Assistent:** Fragen tippen oder sprechen („Kann ich mir ein Fahrrad für 600 € leisten?“, „Wann kann ich mir das leisten?“, „Habe ich versteckte Abo-Kosten?“). Claude Haiku antwortet über 13 lesende Werkzeuge (`heute_verfuegbar`, `leisten`, `wann_leisten`, `naechste_zahlungen`, `buchungen_suchen`, `abos_und_fixkosten` …) mit echten Zahlen aus der Datenbank. Er kann nichts ändern; höchstens 60 Fragen am Tag.
 
 **Weniger Arbeit**
 - **Import ohne Einstellungen:** CSV, CAMT.053 oder MT940 hochladen, auch mehrere Dateien. Die App erkennt Bank und Konto (über die eigene IBAN). Unbekannte CSV-Formate lernt sie beim ersten Upload, erst kostenlos über Spaltennamen, dann per LLM, das nur Spaltennamen und maskierte Muster sieht.
@@ -21,12 +21,53 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 - **Regel-Agent:** „Alles von Rewe ist Lebensmittel“ in normaler Sprache. Der Agent baut die Regel, zeigt vorher, welche Buchungen sie trifft, und legt sie erst nach Bestätigung an.
 
 **Überblick und Motivation**
-- **Sparziele** mit Rate pro Monat, die das Tagesbudget schon einplant, und Konfetti beim Erreichen.
+- **Sparziele** mit Rate pro Monat, die das Tagesbudget schon einplant, und Konfetti beim Erreichen. Ein laufender Sparauftrag (gleicher Betrag ans Tagesgeld, Monat für Monat) wird erkannt und lässt sich mit einem Klick zum Ziel machen; seine Überweisungen zählen dann automatisch als Einzahlung.
 - **Wochenrückblick** mit Vergleich zu denselben Wochentagen und Serien; **Monatsrückblick** als Karten zum Durchwischen.
 - **Abos und Fixkosten** werden erkannt. „Kündigen“ öffnet die Kündigungsseite des Anbieters. Die Glocke meldet Preiserhöhungen und ablaufende Bankzugänge.
 - **Budgets** je Kategorie, Monatsübersicht mit Vormonatsvergleich. Umbuchungen zwischen eigenen Konten, PayPal-Aufladungen und Kreditkartenausgleich zählen nicht doppelt.
 
 **Design:** „E-Ink-Kassenbuch“, Papier und Tinte wie ein E-Paper-Display, eine Akzentfarbe (Kugelschreiber-Blau) für die eine wichtige Zahl, doppelt unterstrichen wie eine Summe in der Buchhaltung. Am Handy eine Tab-Leiste mit der Frage in der Mitte.
+
+## Architektur
+
+```mermaid
+flowchart LR
+  subgraph Eingang
+    CSV[CSV / CAMT.053 / MT940] --> Detect[Format erkennen<br/>Bankprofil oder gelerntes Format]
+    Bank[Enable Banking<br/>PSD2, täglicher Cron] --> Norm
+    Detect --> Norm[NormalizedRow<br/>Zod, Cent, Datum ohne Zeitzone]
+  end
+  Norm --> Dedupe[Dedupe-Hash] --> Transfers[Umbuchungen verknüpfen]
+  Transfers --> Rules[Eigene Regeln] --> Known[Bekannte Händler] --> LLM[Claude Haiku<br/>nur 4 Felder, IBAN geschwärzt]
+  LLM -->|Konfidenz ≥ 0,7| DB[(Postgres<br/>Neon Frankfurt)]
+  LLM -->|unsicher| Review[„prüfen“] --> DB
+  DB --> Loaders[React-Router-Loader<br/>Tagesbudget, Monat, Abos, Ziele]
+  DB --> Agent[Assistent<br/>13 lesende Werkzeuge, Tageslimit]
+  Loaders --> UI[UI, serverseitig gerendert]
+  Agent --> UI
+```
+
+Alles läuft in einer React-Router-App auf Vercel: Loader und Actions sind der Server, `app/lib` enthält die Logik ohne UI. Datenzugriff gibt es nur dort, nie in Komponenten.
+
+## Entscheidungen
+
+| Entscheidung | Warum |
+|---|---|
+| Geld als Integer in Cent, Parsing nur in `money.ts` | Floats runden falsch (0,1 + 0,2). Jeder Betrag kommt als Text aus der Bank und wird ohne `parseFloat` gelesen. |
+| Das Günstigste zuerst: Regeln, Händlerliste, dann LLM | Jeder Modellaufruf kostet Geld und ist nicht deterministisch. Was eine Regel weiß, fragt man kein Modell. |
+| Unsicher heißt „prüfen“, nie geraten | Eine falsche Kategorie mit hoher Konfidenz sieht niemand. Eine Frage kostet den Nutzer zwei Sekunden. |
+| `manual` schlägt alles, in der SQL-Bedingung | Eine Korrektur des Nutzers darf kein späterer Import und keine neue Regel überschreiben, auch nicht durch einen Bug im App-Code. |
+| Tagesbudget statt Kontostand | CSV-Exporte enthalten selten einen Saldo. Die App rechnet pro Gehaltsperiode: was kam, was ging, was noch fällig ist. |
+| Assistent nur mit lesenden Werkzeugen | Ein Sprachmodell soll rechnen lassen, nicht selbst rechnen, und nichts ändern können. Jede Zahl in der Antwort kommt aus einem Werkzeug. |
+| Tageslimits atomar in der Datenbank | Ein `UPDATE … FOR UPDATE` statt Zählen im Speicher: Serverless-Instanzen teilen keinen Speicher, zwei gleichzeitige Anfragen können das Limit nicht überholen. |
+| Unbekannte CSV-Formate lernen statt nur feste Profile | Es gibt Hunderte Banken. Die Zuordnung der Spalten sieht das Modell nur als Spaltennamen und maskierte Muster und wird pro Format gespeichert. |
+| Erwartungswerte von Hand nachgerechnet | Ein Test, der seine Erwartung aus dem App-Code holt, prüft nichts. [`beispieldaten/erwartet.json`](beispieldaten/erwartet.json) ist unabhängig. |
+
+## Typsicherheit
+
+- **Eine Quelle:** Tabellen und Typen kommen aus [`schema.ts`](app/lib/db/schema.ts) (`$inferSelect`, `$inferInsert`), es gibt keine doppelten Interfaces.
+- **Grenzen geprüft:** Formulare, CSV-Zeilen, Bank-API-Antworten und jede einzelne LLM-Antwort laufen durch Zod. Was nicht passt, wird mit Grund abgelehnt oder landet in „prüfen“.
+- **Ende zu Ende:** React Router erzeugt Typen pro Route (`+types/…`), Loader-Daten sind in der Komponente typisiert. `tsc --noEmit` im strikten Modus ist Teil von `pnpm check` und der CI.
 
 ## Kategorisierung einer Buchung
 
