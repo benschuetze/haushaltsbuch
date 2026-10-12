@@ -10,7 +10,7 @@ import {
 
 const PAGES = [
   { path: "/", heading: "Übersicht", action: { role: "link" as const, name: "Alle Kategorien" } },
-  { path: "/transaktionen", heading: "Buchungen", action: { role: "button" as const, name: "Filtern" } },
+  { path: "/buchungen", heading: "Buchungen", action: { role: "button" as const, name: "Filtern" } },
   { path: "/monat/2026-09", heading: "September 2026", action: { role: "link" as const, name: /August 2026/ } },
   { path: "/import", heading: "Kontoauszug importieren", action: { role: "button" as const, name: "Importieren" } },
   { path: "/regeln", heading: "Regeln", action: { role: "button" as const, name: "Lieferando ist Restaurant" } },
@@ -68,7 +68,7 @@ test("Navigation lädt die Zielseite schon beim Zeigen vor, Hinweise aber nicht 
     await page.getByRole("link", { name: "Hinweise", exact: true }).hover();
   } else {
     await page.getByRole("navigation").getByRole("link", { name: "Buchungen" }).first().hover();
-    await expect(page.locator('link[rel="prefetch"][href*="/transaktionen.data"]')).toHaveCount(1);
+    await expect(page.locator('link[rel="prefetch"][href*="/buchungen.data"]')).toHaveCount(1);
   }
   await expect(page.locator('link[rel="prefetch"][href*="/hinweise"]')).toHaveCount(0);
 });
@@ -81,8 +81,10 @@ test("unbekannte Adresse: verständliche 404 statt rohem Fehler, mit Weg zurück
   await expect(page.getByRole("link", { name: "Zur Übersicht" })).toBeVisible();
 });
 
-test("/buchungen führt zur Buchungsliste, wie der Menüpunkt heißt", async ({ page }) => {
-  await page.goto("/buchungen?monat=2026-09");
-  await expect(page).toHaveURL(/\/transaktionen\?monat=2026-09$/);
+test("die Buchungsliste heißt wie der Menüpunkt, alte /transaktionen-Links leiten samt Filter weiter", async ({
+  page,
+}) => {
+  await page.goto("/transaktionen?monat=2026-09");
+  await expect(page).toHaveURL(/\/buchungen\?monat=2026-09$/);
   await expect(page.getByRole("heading", { name: "Buchungen" })).toBeVisible();
 });

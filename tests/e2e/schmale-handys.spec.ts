@@ -14,7 +14,7 @@ for (const width of [320, 390]) {
       const fits = await amount.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
       expect(fits, `${id} passt in die Kachel`).toBe(true);
     }
-    for (const path of ["/", "/transaktionen", "/budgets", "/ziele", "/abos", "/banken", "/monat/2026-09"]) {
+    for (const path of ["/", "/buchungen", "/budgets", "/ziele", "/abos", "/banken", "/monat/2026-09"]) {
       await page.goto(path);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `${path} scrollt seitwärts`).toBeLessThanOrEqual(0);

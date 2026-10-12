@@ -9,7 +9,7 @@ test("Kategorie ändern, Regel anlegen: alle Buchungen des Empfängers sind umka
   await importDemo(page);
 
   // August-Buchung von Telekom bewusst manuell anders setzen. Die neue Regel darf sie nicht anfassen.
-  await page.goto("/transaktionen?monat=2026-08");
+  await page.goto("/buchungen?monat=2026-08");
   await openCategory(page, "Telekom Deutschland", "10.08.2026");
   await page.getByLabel("Kategorie für Telekom Deutschland am 10.08.2026").selectOption({ label: "Haushalt" });
   await page
@@ -21,7 +21,7 @@ test("Kategorie ändern, Regel anlegen: alle Buchungen des Empfängers sind umka
   await page.getByRole("link", { name: "Nein, danke" }).click();
   await expect(page.getByRole("status")).toHaveCount(0);
 
-  await page.goto("/transaktionen?monat=2026-09");
+  await page.goto("/buchungen?monat=2026-09");
   await openCategory(page, "Telekom Deutschland", "10.09.2026");
   const september = page.getByLabel("Kategorie für Telekom Deutschland am 10.09.2026");
   await september.selectOption({ label: "Versicherungen" });
@@ -29,7 +29,7 @@ test("Kategorie ändern, Regel anlegen: alle Buchungen des Empfängers sind umka
   await page.getByRole("button", { name: "Regel anlegen" }).click();
   await expect(page.getByRole("status")).toContainText("Regel angelegt: „Telekom Deutschland“ → Versicherungen");
 
-  await page.goto("/transaktionen");
+  await page.goto("/buchungen");
   await expect(page.getByLabel("Kategorie für Telekom Deutschland am 10.09.2026")).toHaveValue(
     await optionValue(page, "Versicherungen"),
   );
