@@ -16,6 +16,7 @@ export type TodayView = {
   missingIncome: { name: string; date: string; amountCents: number } | null;
   incomeCents: number;
   spentCents: number;
+  savedCents: number;
   upcoming: { name: string; date: string; amountCents: number }[];
 };
 
@@ -205,6 +206,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
           <ul className="mt-2 space-y-1 font-mono text-xs">
             <Line label="Eingenommen seit Gehalt" cents={today.incomeCents} />
             <Line label="Ausgegeben" cents={-today.spentCents} />
+            {today.savedCents > 0 ? <Line label="Schon gespart" cents={-today.savedCents} /> : null}
             {today.upcoming.map((u) => (
               <Line key={`${u.name}-${u.date}`} label={`${u.name} (${longDate(u.date)})`} cents={-u.amountCents} />
             ))}
@@ -232,6 +234,7 @@ export function AskToday({ today, assistant }: { today: TodayView; assistant: bo
             />
             <input
               ref={inputRef}
+              id="ask-today-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Frag einfach: Kann ich mir … leisten?"

@@ -272,6 +272,11 @@ export const savingsGoals = pgTable("savings_goals", {
   /** yyyy-mm; null when the user prefers a fixed monthly amount instead of a deadline. */
   dueMonth: text("due_month"),
   monthlyCents: integer("monthly_cents"),
+  /**
+   * merchantKey of a standing savings order that feeds this goal: its transfers count as deposits, and the
+   * goal's rate replaces the order in the daily budget instead of being reserved a second time.
+   */
+  fundedBy: text("funded_by"),
   achievedAt: timestamp("achieved_at", { withTimezone: true }),
   createdAt: createdAt(),
 });

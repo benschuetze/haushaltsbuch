@@ -8,6 +8,8 @@ export type GoalInput = {
   targetCents: number;
   dueMonth: string | null;
   monthlyCents: number | null;
+  /** merchantKey of the standing order that feeds the goal; its transfers are already among the deposits. */
+  fundedBy: string | null;
   deposits: { amountCents: number; depositedOn: string }[];
 };
 
@@ -24,6 +26,7 @@ export type GoalStatus = {
   depositedThisPeriodCents: number;
   /** What this pay period still has to put aside; reserved in the daily budget. */
   stillToReserveCents: number;
+  fundedBy: string | null;
   done: boolean;
 };
 
@@ -61,6 +64,7 @@ export function goalStatus(goal: GoalInput, today: string, periodStart: string):
     monthsLeft,
     depositedThisPeriodCents,
     stillToReserveCents: done ? 0 : Math.max(0, Math.min(perMonthCents, remainingCents) - depositedThisPeriodCents),
+    fundedBy: goal.fundedBy,
     done,
   };
 }

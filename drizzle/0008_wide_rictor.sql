@@ -1,0 +1,1 @@
+ALTER TABLE "savings_goals" ADD COLUMN "funded_by" text;
