@@ -104,7 +104,7 @@ function phrase(toolName: string, value: Row): string {
     const abos = all.filter((z) => z.art === "Abo");
     if (all.length === 0)
       return "Ich habe keine wiederkehrenden Zahlungen gefunden. Dafür braucht es Auszüge aus mehreren Monaten.";
-    const hidden = abos.filter((z) => z.kategorie !== "Abos & Software");
+    const hidden = abos.filter((z) => z.kategorie !== "Abos & Verträge");
     const list = abos.map((z) => `${z.name} (${z.proJahr} im Jahr)`).join(", ");
     return `Ich habe ${abos.length} laufende Abos gefunden: ${list}.${
       hidden.length > 0

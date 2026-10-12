@@ -17,7 +17,7 @@ export const KNOWN_MERCHANTS: { category: string; examples: string; pattern: Reg
     pattern: /\b(rewe|edeka|aldi|lidl|netto|penny|kaufland|tegut|globus|norma|denns|alnatura|bäckerei|baeckerei)\b/i,
   },
   {
-    category: "Abos & Software",
+    category: "Abos & Verträge",
     examples: "Netflix, Disney+, Spotify, Amazon Prime, Apple, Telekom, Vodafone, FitX",
     pattern:
       /\b(netflix|disney\s*(plus|\+)?|spotify|amazon prime|prime video|audible|dazn|sky deutschland|rtl\+|joyn|deezer|tidal|youtube premium|apple\.com|itunes|icloud|microsoft|adobe|dropbox|openai|chatgpt|anthropic|playstation|xbox|telekom|vodafone|o2|telef[oó]nica|1\s*&\s*1|1und1|congstar|fitx|mcfit|urban sports)\b/i,

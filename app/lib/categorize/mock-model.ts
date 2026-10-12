@@ -8,7 +8,7 @@ const KEYWORDS: [RegExp, string, number][] = [
   [/rewe|aldi|lidl|edeka|baeckerei|bäckerei/i, "Lebensmittel", 0.93],
   [/kita|kindergarten/i, "Kind & Kita", 0.9],
   [/versicherung/i, "Versicherungen", 0.9],
-  [/spotify|anthropic|netflix|telekom/i, "Abos & Software", 0.85],
+  [/spotify|anthropic|netflix|telekom/i, "Abos & Verträge", 0.85],
   [/thomann|bandcamp/i, "Hobbys", 0.85],
   [/aral|shell|bahn|tankstelle/i, "Mobilität", 0.88],
   [/apotheke/i, "Gesundheit", 0.85],

@@ -70,14 +70,14 @@
       "counterparty": "Spotify AB",
       "purpose": "Spotify Premium",
       "amount_cents": -1099,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e009",
       "counterparty": "Netflix International",
       "purpose": "Netflix Monatsabo",
       "amount_cents": -1399,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e010",
@@ -420,7 +420,7 @@
       "counterparty": "Kabel Deutschland Vodafone",
       "purpose": "Kabelanschluss Wohnung",
       "amount_cents": -1999,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e059",
@@ -546,105 +546,105 @@
       "counterparty": "Disney Plus",
       "purpose": "Disney+ Monatsabo",
       "amount_cents": -999,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e077",
       "counterparty": "Amazon Prime",
       "purpose": "Prime Mitgliedschaft",
       "amount_cents": -899,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e078",
       "counterparty": "APPLE.COM/BILL",
       "purpose": "iCloud+ 200 GB",
       "amount_cents": -299,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e079",
       "counterparty": "Microsoft Ireland",
       "purpose": "Microsoft 365 Family",
       "amount_cents": -1299,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e080",
       "counterparty": "Adobe Systems Software",
       "purpose": "Creative Cloud Foto Abo",
       "amount_cents": -1189,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e081",
       "counterparty": "Telekom Deutschland GmbH",
       "purpose": "Mobilfunk Rechnung 10/2026",
       "amount_cents": -3995,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e082",
       "counterparty": "Vodafone GmbH",
       "purpose": "Rechnung Kundennr 99887",
       "amount_cents": -2999,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e083",
       "counterparty": "o2 Telefonica",
       "purpose": "Handyvertrag Oktober",
       "amount_cents": -1999,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e084",
       "counterparty": "1&1 Telecom",
       "purpose": "DSL Rechnung",
       "amount_cents": -3999,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e085",
       "counterparty": "Audible GmbH",
       "purpose": "Audible Abo",
       "amount_cents": -995,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e086",
       "counterparty": "YouTube Premium Google",
       "purpose": "YouTube Premium Familie",
       "amount_cents": -2399,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e087",
       "counterparty": "Dropbox",
       "purpose": "Dropbox Plus jährlich",
       "amount_cents": -11988,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e088",
       "counterparty": "OpenAI",
       "purpose": "ChatGPT Plus subscription",
       "amount_cents": -2300,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e089",
       "counterparty": "FitX Deutschland",
       "purpose": "Mitgliedsbeitrag Oktober",
       "amount_cents": -2499,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e090",
       "counterparty": "Urban Sports Club",
       "purpose": "Mitgliedschaft M",
       "amount_cents": -5900,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e091",
@@ -1218,7 +1218,7 @@
       "counterparty": "PayPal Europe",
       "purpose": "PP.8812.PP . Spotify AB",
       "amount_cents": -1099,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e173",
@@ -1239,7 +1239,7 @@
       "counterparty": "SEPA Lastschrift",
       "purpose": "EREF+ 77812 MREF+ M-2231 CRED+ DE98ZZZ09999999999 SVWZ+ Netflix",
       "amount_cents": -1399,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e176",
@@ -1267,7 +1267,7 @@
       "counterparty": "GOOGLE *YouTube",
       "purpose": "Google Payment",
       "amount_cents": -1299,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e180",
@@ -1323,7 +1323,7 @@
       "counterparty": "Mobilcom Debitel",
       "purpose": "Rechnung Mobilfunk",
       "amount_cents": -1499,
-      "expected": "Abos & Software"
+      "expected": "Abos & Verträge"
     },
     {
       "id": "e188",

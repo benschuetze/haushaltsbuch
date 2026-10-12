@@ -89,7 +89,7 @@ describe("Kategorisierung in der Datenbank", () => {
       field: "counterparty",
       matchType: "contains",
       pattern: "spotify",
-      categoryId: cat["Abos & Software"] as string,
+      categoryId: cat["Abos & Verträge"] as string,
     });
     await reapplyRules(db);
     const { model } = modelSaying("Sonstiges");
@@ -154,7 +154,7 @@ describe("eingebaute Händlerliste", () => {
     const { model, calls } = modelSaying("Sonstiges");
     await importCsv(db, { accountId, filename: "d.csv", bytes: demoCsv, model });
     const spotify = await txBy("Spotify AB");
-    expect(spotify.every((t) => t.categoryId === cat["Abos & Software"] && t.categorySource === "rule")).toBe(true);
+    expect(spotify.every((t) => t.categoryId === cat["Abos & Verträge"] && t.categorySource === "rule")).toBe(true);
     expect((await txBy("ALDI SUED")).every((t) => t.categoryId === cat.Lebensmittel)).toBe(true);
     const asked = JSON.stringify(calls.map((c) => c.prompt));
     expect(asked).not.toContain("Spotify");
@@ -184,7 +184,7 @@ describe("eingebaute Händlerliste", () => {
     await reapplyRules(db);
     const after = Object.fromEntries((await txBy("Spotify AB")).map((t) => [t.id, t]));
     expect(after[first.id]).toMatchObject({
-      categoryId: cat["Abos & Software"],
+      categoryId: cat["Abos & Verträge"],
       categorySource: "rule",
       needsReview: false,
     });
