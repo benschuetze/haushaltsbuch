@@ -5,7 +5,7 @@ import { isDemo } from "~/lib/auth.server";
 import { getDb } from "~/lib/db/client";
 import { formatMonth } from "~/lib/format";
 import { dismissInsight, markInsightsRead, openInsights } from "~/lib/insights";
-import { formatCents } from "~/lib/money";
+import { savingsText } from "~/lib/insights/savings";
 import type { Route } from "./+types/hinweise";
 
 export const meta: Route.MetaFunction = () => [{ title: "Hinweise · Haushaltsbuch" }];
@@ -28,14 +28,14 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Hinweise({ loaderData }: Route.ComponentProps) {
   const { items, demo } = loaderData;
   const busy = useNavigation().state !== "idle";
-  const savings = items.reduce((s, i) => s + (i.savingsCentsPerYear ?? 0), 0);
+  const savings = savingsText(items);
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Hinweise</h1>
         <p className="text-sm text-muted-foreground">
           Die App rechnet nach jedem Import nach: Budgets, Abos, Preiserhöhungen, doppelte Dienste, Ausreißer, Gebühren.
-          {savings > 0 ? ` Zusammen bis zu ${formatCents(savings)} im Jahr Sparpotenzial.` : ""}
+          {savings ? ` Zusammen ${savings} Sparpotenzial.` : ""}
         </p>
       </div>
       {items.length === 0 ? <p className="rounded-lg border p-4">Gerade gibt es nichts zu melden.</p> : null}
@@ -50,7 +50,7 @@ export default function Hinweise({ loaderData }: Route.ComponentProps) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               {i.savingsCentsPerYear ? (
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
-                  bis zu {formatCents(i.savingsCentsPerYear)} im Jahr
+                  {savingsText([i])}
                 </span>
               ) : (
                 <span />

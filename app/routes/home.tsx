@@ -16,6 +16,7 @@ import {
   spendingToday,
   weekToday,
 } from "~/lib/insights";
+import { savingsText } from "~/lib/insights/savings";
 import { formatCents } from "~/lib/money";
 import { currentMonth, monthSummary, monthsWithData } from "~/lib/queries";
 import type { Route } from "./+types/home";
@@ -55,7 +56,7 @@ export async function loader() {
       .sort((a, b) => b.ratio - a.ratio)
       .slice(0, 5),
     insights: insights.slice(0, 3),
-    savingsCents: insights.reduce((s, i) => s + (i.savingsCentsPerYear ?? 0), 0),
+    savings: savingsText(insights),
     subscriptions: { count: subscriptions.length, yearlyCents: subscriptions.reduce((s, r) => s + r.yearlyCents, 0) },
   } as const;
 }
@@ -145,7 +146,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     insightCount,
     budgets,
     insights,
-    savingsCents,
+    savings,
     subscriptions,
   } = loaderData;
   const topExpenses = summary.byCategory
@@ -190,13 +191,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       </dl>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card
-          title={savingsCents > 0 ? "Sparpotenzial" : "Hinweise"}
-          link={{ to: "/hinweise", label: "Alle Hinweise" }}
-        >
+        <Card title={savings ? "Sparpotenzial" : "Hinweise"} link={{ to: "/hinweise", label: "Alle Hinweise" }}>
           <p className="text-2xl font-semibold text-emerald-700" data-testid="savings">
-            {savingsCents > 0
-              ? `bis zu ${formatCents(savingsCents)} im Jahr`
+            {savings
+              ? savings
               : insightCount > 0
                 ? `${insightCount === 1 ? "1 Hinweis" : `${insightCount} Hinweise`} offen`
                 : "Alles im grünen Bereich"}
