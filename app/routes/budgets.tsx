@@ -224,9 +224,15 @@ export default function Budgets({ loaderData, actionData }: Route.ComponentProps
               </p>
             </div>
             <BudgetBar spent={b.spentCents} budget={b.budgetCents} label={`${b.categoryName}: Anteil des Budgets`} />
-            {b.projectedCents !== null && b.projectedCents > b.budgetCents && b.spentCents <= b.budgetCents ? (
-              <p className="text-xs text-amber-700">
-                Hochgerechnet etwa {formatCents(b.projectedCents)} bis Monatsende.
+            {/* Also once the budget is gone: "68 € of 50 €" next to "117 € a month" on Abos would look like a contradiction. */}
+            {b.projectedCents !== null && b.projectedCents > b.spentCents ? (
+              <p
+                className={
+                  b.projectedCents > b.budgetCents ? "text-xs text-amber-700" : "text-xs text-muted-foreground"
+                }
+                data-testid="budget-projection"
+              >
+                Bis Monatsende etwa {formatCents(b.projectedCents)}.
               </p>
             ) : null}
             <Form method="post" className="flex flex-wrap items-end gap-2">
