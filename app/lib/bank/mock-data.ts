@@ -17,7 +17,7 @@ type Purchase = { counterparty: string; purpose: string; min: number; max: numbe
 const PROFILES: Record<string, { monthly: Monthly[]; purchases: Purchase[] }> = {
   paypal: {
     monthly: [
-      { counterparty: "Netflix", purpose: "Netflix Standard", cents: 1399, day: 12, category: "Abos & Software" },
+      { counterparty: "Netflix", purpose: "Netflix Standard", cents: 1399, day: 12, category: "Abos & Verträge" },
     ],
     purchases: [
       { counterparty: "Zalando SE", purpose: "Bestellung", min: 2990, max: 8990, category: "Kleidung" },
@@ -45,13 +45,13 @@ const PROFILES: Record<string, { monthly: Monthly[]; purchases: Purchase[] }> = 
   },
   amex: {
     monthly: [
-      { counterparty: "Disney Plus", purpose: "Disney+ Monatsabo", cents: 999, day: 3, category: "Abos & Software" },
+      { counterparty: "Disney Plus", purpose: "Disney+ Monatsabo", cents: 999, day: 3, category: "Abos & Verträge" },
       {
         counterparty: "Amazon Prime",
         purpose: "Prime Mitgliedschaft",
         cents: 899,
         day: 21,
-        category: "Abos & Software",
+        category: "Abos & Verträge",
       },
     ],
     purchases: [
@@ -65,7 +65,7 @@ const PROFILES: Record<string, { monthly: Monthly[]; purchases: Purchase[] }> = 
 
 const CARD = {
   monthly: [
-    { counterparty: "Apple iCloud", purpose: "iCloud+ 200 GB", cents: 299, day: 15, category: "Abos & Software" },
+    { counterparty: "Apple iCloud", purpose: "iCloud+ 200 GB", cents: 299, day: 15, category: "Abos & Verträge" },
   ],
   purchases: [
     { counterparty: "Booking.com", purpose: "Hotel", min: 8900, max: 24900, category: "Freizeit" },

@@ -8,7 +8,7 @@ const netflix = (date: string, amount = -1799) => ({
   amountCents: amount,
   counterparty: "NETFLIX.COM",
   purpose: "Netflix Abo",
-  categoryName: "Abos & Software",
+  categoryName: "Abos & Verträge",
 });
 const history = [netflix("2026-07-03"), netflix("2026-08-03"), netflix("2026-09-03")];
 const cancel = { merchantKey: "netflix com", merchant: "NETFLIX.COM", cancelledOn: "2026-09-10" };

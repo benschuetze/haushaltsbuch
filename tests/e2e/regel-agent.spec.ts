@@ -32,7 +32,7 @@ test("mehrere Händler in einem Satz, Kategorie vor dem Übernehmen änderbar", 
   await expect(page.getByRole("status")).toContainText("2 Regeln gespeichert.");
   await expect(page.getByTestId("rule")).toHaveCount(2);
   await expect(page.getByTestId("rule").filter({ hasText: "„Netflix“" })).toContainText("→ Freizeit");
-  await expect(page.getByTestId("rule").filter({ hasText: "„Spotify“" })).toContainText("→ Abos & Software");
+  await expect(page.getByTestId("rule").filter({ hasText: "„Spotify“" })).toContainText("→ Abos & Verträge");
 });
 
 test("ein neuer Wunsch schlägt eine ältere, widersprechende Regel", async ({ page }) => {
@@ -48,14 +48,14 @@ test("ein neuer Wunsch schlägt eine ältere, widersprechende Regel", async ({ p
   await expect(page.getByTestId("rule-preview")).toContainText("2 bekommen dadurch die neue Kategorie");
   // The category box must show the new proposal, not the one from the previous sentence about Spotify.
   await expect(page.getByTestId("rule-proposal").getByLabel("Kategorie").locator("option:checked")).toHaveText(
-    "Abos & Software",
+    "Abos & Verträge",
   );
   await page.getByTestId("rule-proposal").getByRole("button", { name: "Übernehmen" }).click();
   await expect(page.getByTestId("rule")).toHaveCount(2);
 
   await page.goto("/transaktionen?monat=2026-09");
   const spotify = page.getByLabel("Kategorie für Spotify AB am 07.09.2026");
-  await expect(spotify.locator("option:checked")).toHaveText("Abos & Software");
+  await expect(spotify.locator("option:checked")).toHaveText("Abos & Verträge");
 });
 
 test("unverständlicher Satz: freundlicher Hinweis statt geratener Regel", async ({ page }) => {
@@ -77,5 +77,5 @@ test("eingebaute Regeln sind sichtbar, damit das Badge „Regel“ ohne eigene R
   const builtin = page.getByTestId("builtin-rules");
   await expect(builtin).toContainText("Umbuchung");
   await expect(builtin).toContainText("Restaurant & Lieferdienst: Lieferando");
-  await expect(builtin).toContainText("Abos & Software: Netflix, Disney+, Spotify");
+  await expect(builtin).toContainText("Abos & Verträge: Netflix, Disney+, Spotify");
 });

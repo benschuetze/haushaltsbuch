@@ -29,7 +29,7 @@ function fold(s: string): string {
     .replace(/[̀-ͯ]/g, "");
 }
 
-/** "Hobby" finds "Hobbys", "Restaurant" finds "Restaurant & Lieferdienst", "Abo" finds "Abos & Software". */
+/** "Hobby" finds "Hobbys", "Restaurant" finds "Restaurant & Lieferdienst", "Abo" finds "Abos & Verträge". */
 export function findCategory(text: string, categories: Category[]): Category | null {
   const words = fold(text)
     .split(/[^a-z0-9]+/)

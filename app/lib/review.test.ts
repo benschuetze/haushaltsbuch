@@ -66,10 +66,10 @@ describe("Prüfen", () => {
       .update(transactions)
       .set({ needsReview: true, categorySource: null })
       .where(eq(transactions.id, second.id));
-    await decideReview(db, second.id, cat["Abos & Software"] as string);
+    await decideReview(db, second.id, cat["Abos & Verträge"] as string);
     const all = await db.select().from(rules);
     expect(all).toHaveLength(1);
-    expect(all[0]?.categoryId).toBe(cat["Abos & Software"]);
+    expect(all[0]?.categoryId).toBe(cat["Abos & Verträge"]);
   });
 
   it("nextReview liefert die neueste offene Buchung, Übersprungene nicht", async () => {

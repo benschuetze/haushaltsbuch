@@ -59,7 +59,7 @@ export const CATEGORY_HINTS: Record<string, string> = {
   "Kind & Kita": "Kita- und Schulbeiträge, Babysitter, Kinderkurse, Spielzeug, Kinderkleidung, Klassenfahrt",
   Mobilität: "Tanken, Bus und Bahn, Taxi und Fahrdienste, E-Scooter, Werkstatt, Parken, Kfz-Steuer",
   Versicherungen: "Beiträge zu Versicherungen und Krankenkasse",
-  "Abos & Software": "Streaming, Software, Cloud, Mobilfunk, Internet, Fitnessstudio-Mitgliedschaft",
+  "Abos & Verträge": "Streaming, Software, Cloud, Mobilfunk, Internet, Fitnessstudio-Mitgliedschaft",
   Hobbys:
     "Sport und Kurse (Kletterhalle, Tanzschule, Musikschule), Sportausrüstung, Instrumente, Bastelbedarf, Spiele, Bücher",
   Gesundheit: "Apotheke, Arzt, Zahnarzt, Physiotherapie, Optiker, Zuzahlungen",

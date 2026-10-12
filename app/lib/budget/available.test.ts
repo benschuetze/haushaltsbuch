@@ -21,11 +21,11 @@ for (const m of ["08", "09", "10"]) {
   HOUSEHOLD.push(
     b(`2026-${m}-01`, "Arbeitgeber Muster GmbH", 300000, "income", "Einkommen"),
     b(`2026-${m}-01`, "Hausverwaltung Sonnenhof", -90000, "expense", "Wohnen"),
-    b(`2026-${m}-07`, "Spotify AB", -1099, "expense", "Abos & Software"),
+    b(`2026-${m}-07`, "Spotify AB", -1099, "expense", "Abos & Verträge"),
   );
   if (m !== "10") {
     HOUSEHOLD.push(
-      b(`2026-${m}-12`, "Netflix", -1399, "expense", "Abos & Software"),
+      b(`2026-${m}-12`, "Netflix", -1399, "expense", "Abos & Verträge"),
       b(`2026-${m}-15`, "Eigenes Tagesgeld", -30000, "transfer", "Umbuchung"),
       b(`2026-${m}-20`, "REWE Markt", -8000, "expense", "Lebensmittel"),
     );
@@ -120,8 +120,8 @@ describe("Tagesbudget: wie viel ist heute drin?", () => {
   it("eine Abbuchung, die auf einen Sonntag fällt, kommt am Montag: heute (So) ist sie noch nicht weg", () => {
     const withPhone = [
       ...HOUSEHOLD,
-      b("2026-08-11", "Telekom Deutschland", -3495, "expense", "Abos & Software"),
-      b("2026-09-11", "Telekom Deutschland", -3495, "expense", "Abos & Software"),
+      b("2026-08-11", "Telekom Deutschland", -3495, "expense", "Abos & Verträge"),
+      b("2026-09-11", "Telekom Deutschland", -3495, "expense", "Abos & Verträge"),
     ];
     const r = availableToSpend(withPhone, "2026-10-11");
     expect(r.upcoming.find((u) => u.name === "Telekom Deutschland")).toEqual({

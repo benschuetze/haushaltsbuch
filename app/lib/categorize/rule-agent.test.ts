@@ -6,7 +6,7 @@ const CATS = [
   "Wohnen",
   "Lebensmittel",
   "Kind & Kita",
-  "Abos & Software",
+  "Abos & Verträge",
   "Hobbys",
   "Restaurant & Lieferdienst",
   "Umbuchung",
@@ -18,8 +18,8 @@ describe("Regel-Wunsch ohne KI verstehen", () => {
   it.each([
     ["Lieferando ist immer Restaurant", "Lieferando", "Restaurant & Lieferdienst"],
     ["Alles von Thomann ist Hobby", "Thomann", "Hobbys"],
-    ["Zahlungen an Netflix sind Abos", "Netflix", "Abos & Software"],
-    ["„Spotify“ → Abos & Software", "Spotify", "Abos & Software"],
+    ["Zahlungen an Netflix sind Abos", "Netflix", "Abos & Verträge"],
+    ["„Spotify“ → Abos & Verträge", "Spotify", "Abos & Verträge"],
     ["Edeka gehört zu Lebensmittel.", "Edeka", "Lebensmittel"],
     ["Tagesgeld als Umbuchung", "Tagesgeld", "Umbuchung"],
   ])("„%s“", (text, pattern, category) => {

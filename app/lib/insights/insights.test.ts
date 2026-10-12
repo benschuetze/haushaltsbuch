@@ -18,7 +18,7 @@ const monthly = (counterparty: string, cents: number[], category: string, startM
 describe("detectRecurring", () => {
   it("nach einer Preiserhöhung bleibt ein Abo ein fester, planbarer Betrag; ständig andere Beträge nicht", () => {
     const rows = [
-      ...monthly("Spotify AB", [-1099, -1099, -1099, -1199], "Abos & Software"),
+      ...monthly("Spotify AB", [-1099, -1099, -1099, -1199], "Abos & Verträge"),
       ...monthly("Aral Station", [-5820, -6390, -5510, -6100], "Mobilität"),
     ];
     const found = detectRecurring(rows, "2026-06-20");
@@ -28,7 +28,7 @@ describe("detectRecurring", () => {
 
   it("erkennt ein Monatsabo mit Jahreskosten und Preiserhöhung", () => {
     const [spotify] = detectRecurring(
-      monthly("Spotify AB", [-999, -999, -999, -1099], "Abos & Software"),
+      monthly("Spotify AB", [-999, -999, -999, -1099], "Abos & Verträge"),
       "2026-06-20",
     );
     expect(spotify).toMatchObject({
@@ -53,7 +53,7 @@ describe("detectRecurring", () => {
   it("bekannte Dienste und die Abo-Kategorie reichen schon mit zwei Zahlungen", () => {
     const rows = [
       ...monthly("Netflix", [-1399, -1399], "Freizeit"),
-      ...monthly("Kleiner Dienst", [-499, -499], "Abos & Software"),
+      ...monthly("Kleiner Dienst", [-499, -499], "Abos & Verträge"),
     ];
     expect(
       detectRecurring(rows, "2026-05-10")
@@ -81,7 +81,7 @@ describe("detectRecurring", () => {
   });
 
   it("gilt als beendet, wenn die letzte Zahlung lange her ist", () => {
-    expect(detectRecurring(monthly("Netflix", [-1399, -1399, -1399], "Abos & Software"), "2026-10-01")[0]?.active).toBe(
+    expect(detectRecurring(monthly("Netflix", [-1399, -1399, -1399], "Abos & Verträge"), "2026-10-01")[0]?.active).toBe(
       false,
     );
   });
@@ -113,15 +113,15 @@ describe("computeInsights", () => {
     // Three monthly subscriptions, all paid by the 11th: 10,99 + 13,99 + 9,99 = 34,97 €.
     // Linear would say 34,97 / 11 × 30 = 95,37 € and warn; really the month ends at 34,97 €.
     const abos = [
-      ...monthly("Spotify AB", [-1099, -1099, -1099, -1099], "Abos & Software", 3, "05"),
-      ...monthly("Netflix", [-1399, -1399, -1399, -1399], "Abos & Software", 3, "07"),
-      ...monthly("Disney Plus", [-999, -999, -999, -999], "Abos & Software", 3, "09"),
+      ...monthly("Spotify AB", [-1099, -1099, -1099, -1099], "Abos & Verträge", 3, "05"),
+      ...monthly("Netflix", [-1399, -1399, -1399, -1399], "Abos & Verträge", 3, "07"),
+      ...monthly("Disney Plus", [-999, -999, -999, -999], "Abos & Verträge", 3, "09"),
     ];
     const drafts = computeInsights({
       ...base,
       dayOfMonth: 11,
       bookings: abos,
-      budgets: [{ categoryId: "id-Abos & Software", categoryName: "Abos & Software", amountCents: 5000 }],
+      budgets: [{ categoryId: "id-Abos & Verträge", categoryName: "Abos & Verträge", amountCents: 5000 }],
     });
     expect(drafts.find((d) => d.kind === "budget_warning")).toBeUndefined();
   });
@@ -164,8 +164,8 @@ describe("computeInsights", () => {
     const drafts = computeInsights({
       ...base,
       bookings: [
-        ...monthly("Netflix", [-1399, -1399, -1399, -1399], "Abos & Software"),
-        ...monthly("Disney Plus", [-899, -899, -899, -899], "Abos & Software"),
+        ...monthly("Netflix", [-1399, -1399, -1399, -1399], "Abos & Verträge"),
+        ...monthly("Disney Plus", [-899, -899, -899, -899], "Abos & Verträge"),
       ],
     });
     expect(drafts.find((d) => d.kind === "duplicate_service")).toMatchObject({
@@ -181,7 +181,7 @@ describe("computeInsights", () => {
   it("Preiserhöhung im betrachteten Monat mit Mehrkosten pro Jahr", () => {
     const drafts = computeInsights({
       ...base,
-      bookings: monthly("Spotify AB", [-999, -999, -999, -1099], "Abos & Software"),
+      bookings: monthly("Spotify AB", [-999, -999, -999, -1099], "Abos & Verträge"),
     });
     // Extra cost per year in the text, but not counted as savings: paying more is not money one could save.
     const increase = drafts.find((d) => d.kind === "price_increase");

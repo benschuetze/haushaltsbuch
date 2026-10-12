@@ -8,7 +8,7 @@ export const DEFAULT_CATEGORIES: Omit<NewCategory, "sortOrder">[] = [
   { name: "Kind & Kita", kind: "expense", color: "#e0892b" },
   { name: "Mobilität", kind: "expense", color: "#7a5cd6" },
   { name: "Versicherungen", kind: "expense", color: "#5b6b7f" },
-  { name: "Abos & Software", kind: "expense", color: "#d6457a" },
+  { name: "Abos & Verträge", kind: "expense", color: "#d6457a" },
   { name: "Hobbys", kind: "expense", color: "#b8862a" },
   { name: "Gesundheit", kind: "expense", color: "#2aa5b8" },
   { name: "Freizeit", kind: "expense", color: "#6aa82a" },
@@ -27,7 +27,8 @@ export const DEFAULT_BUDGETS: Record<string, number> = {
   Lebensmittel: 450,
   "Restaurant & Lieferdienst": 120,
   Freizeit: 150,
-  "Abos & Software": 50,
+  // Mobile and gym contracts belong here too, so 50 € could never hold.
+  "Abos & Verträge": 120,
   Kleidung: 80,
   Mobilität: 180,
   Haushalt: 70,
@@ -39,6 +40,7 @@ export const DEMO_ACCOUNT = { name: "Girokonto (Demo)", bankProfile: "demo", acc
 
 /** Idempotent: safe on every deploy and before every test run. */
 export async function seed(db: Db): Promise<void> {
+  await renameSubscriptionCategory(db);
   await db
     .insert(categories)
     .values(DEFAULT_CATEGORIES.map((c, i) => ({ ...c, sortOrder: i })))
@@ -53,6 +55,24 @@ export async function seed(db: Db): Promise<void> {
     });
 
   await seedBudgetsOnce(db);
+}
+
+/**
+ * "Abos & Software" held mobile and gym contracts as well, so it became "Abos & Verträge". Renamed in place: the id
+ * stays, so bookings, rules and budgets keep pointing at it. The old default budget of 50 € is raised to the new
+ * default; a budget the user chose stays.
+ */
+async function renameSubscriptionCategory(db: Db): Promise<void> {
+  const renamed = await db.execute(sql`
+    update ${categories} set name = 'Abos & Verträge'
+    where name = 'Abos & Software'
+      and not exists (select 1 from ${categories} where name = 'Abos & Verträge')
+    returning id
+  `);
+  const rows = (renamed as unknown as { rows: { id: string }[] }).rows;
+  for (const { id } of rows) {
+    await db.execute(sql`update ${budgets} set amount_cents = 12000 where category_id = ${id} and amount_cents = 5000`);
+  }
 }
 
 async function seedBudgetsOnce(db: Db): Promise<void> {

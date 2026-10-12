@@ -63,7 +63,7 @@ Regeln:
 6. Korrektur in der UI → `category_source = manual`, Dialog „Regel für diesen Empfänger anlegen?“
 7. Eval-Set (`evals/kategorisierung.json`) misst die Trefferquote bei jeder Prompt-Änderung
 
-Standardkategorien: Wohnen, Lebensmittel, Kind & Kita, Mobilität, Versicherungen, Abos & Software, Hobbys, Gesundheit, Freizeit, Kleidung, Haushalt, Einkommen, Umbuchung, Sonstiges.
+Standardkategorien: Wohnen, Lebensmittel, Kind & Kita, Mobilität, Versicherungen, Abos & Verträge, Hobbys, Gesundheit, Freizeit, Kleidung, Haushalt, Einkommen, Umbuchung, Sonstiges.
 
 ## Import ohne Transaktion
 

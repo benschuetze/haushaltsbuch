@@ -119,7 +119,7 @@ export function detectRecurring(bookings: Booking[], referenceDate: string): Rec
     const last0 = items.at(-1) as Booking;
     if (
       items.length < 3 &&
-      last0.categoryName !== "Abos & Software" &&
+      last0.categoryName !== "Abos & Verträge" &&
       !serviceGroupOf(merchantOf(last0), last0.purpose)
     ) {
       continue;
