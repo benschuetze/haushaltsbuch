@@ -87,6 +87,22 @@ test("Demo ohne Bankzugang verspricht keinen automatischen Abruf, sagt, was die 
   await expect(intro).not.toContainText("jeden Morgen");
 });
 
+test("von der Banken-Seite direkt zum Datei-Import", async ({ page }) => {
+  await page.goto("/banken");
+  await page.getByRole("link", { name: "Kontoauszug importieren" }).click();
+  await expect(page).toHaveURL(/\/import$/);
+  await expect(page.getByLabel("Kontoauszüge")).toBeVisible();
+});
+
+test("nur Institute, deren Umsätze die App wirklich bekommen kann: keine Kartennetzwerke, kein Versicherer", async ({
+  page,
+}) => {
+  await page.goto("/banken");
+  for (const name of ["Visa", "Mastercard", "CosmosDirekt"]) {
+    await expect(page.getByText(name, { exact: true })).toHaveCount(0);
+  }
+});
+
 test("mit Bankzugang: automatischer Abruf, Anmeldung bei der Bank", async ({ page }) => {
   await page.goto("/banken");
   await expect(page.getByTestId("banks-intro")).toContainText("jeden Morgen automatisch ab");

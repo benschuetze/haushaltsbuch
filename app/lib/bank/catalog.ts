@@ -115,13 +115,6 @@ export const BANK_TILES: BankTile[] = [
     fileHint: CSV,
   },
   { id: "c24", name: "C24", group: "bank", match: /^c24\b/i, fileHint: CSV },
-  {
-    id: "cosmosdirekt",
-    name: "CosmosDirekt",
-    group: "bank",
-    match: /cosmos/i,
-    fileHint: "Mein CosmosDirekt → Konto → Umsätze exportieren.",
-  },
 
   {
     id: "n26",

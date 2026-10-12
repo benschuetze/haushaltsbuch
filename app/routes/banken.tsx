@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { data, Form, redirect, useNavigation, useSearchParams } from "react-router";
+import { data, Form, Link, redirect, useNavigation, useSearchParams } from "react-router";
 import { z } from "zod";
 import { AccountsList } from "~/components/accounts-list";
 import { BankTiles } from "~/components/bank-tiles";
@@ -186,6 +186,9 @@ export default function Banken({ loaderData, actionData }: Route.ComponentProps)
             ? "Verbundene Konten ruft die App jeden Morgen automatisch ab. Die Anmeldung läuft direkt bei deiner Bank; die App sieht dein Bank-Passwort nie und hat nur Lesezugriff."
             : "Hier ist keine Bank angebunden. Die Kacheln zeigen den Ablauf mit Mockdaten, echte Umsätze kommen über den Import."}
         </p>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/import">Kontoauszug importieren</Link>
+        </Button>
       </div>
       {notice ? (
         <p role="alert" className="rounded-lg border border-destructive p-4 text-sm text-destructive">
