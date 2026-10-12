@@ -3,6 +3,8 @@ import { formatCents } from "~/lib/money";
 import { type Cancellation, cancellationStatus } from "~/lib/subscriptions/status";
 import { type Booking, detectRecurring, merchantKey, merchantOf, type Recurring, serviceGroupOf } from "./recurring";
 
+const MIN_SPIKE_MONTHS = 2;
+
 export type BudgetInput = { categoryId: string; categoryName: string; amountCents: number };
 
 export type InsightDraft = {
@@ -223,7 +225,8 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
     });
   }
 
-  // Compared with the average of up to three earlier months that have data.
+  // Compared with the average of up to three earlier months that have data. A category needs spending in at least
+  // MIN_SPIKE_MONTHS of them: one takeaway in three months is no "usual" to deviate from.
   const months = [...new Set(input.bookings.map((b) => monthOf(b.bookingDate)))]
     .filter((m) => m < month)
     .sort()
@@ -234,12 +237,18 @@ export function computeInsights(input: InsightInput, recurring?: Recurring[]): I
     for (const [categoryId, now] of spent) {
       const avg = history.reduce((s, h) => s + (h.get(categoryId) ?? 0), 0) / months.length;
       const kind = input.bookings.find((b) => b.categoryId === categoryId)?.categoryKind;
-      if (kind === "income" || avg <= 0 || now < avg * 1.3 || now - avg < 5000) continue;
+      const monthsWithSpending = history.filter((h) => (h.get(categoryId) ?? 0) > 0).length;
+      if (kind === "income" || monthsWithSpending < MIN_SPIKE_MONTHS || now < avg * 1.3 || now - avg < 5000) continue;
+      const percent = Math.round((now / avg - 1) * 100);
       drafts.push({
         key: `spike:${categoryId}:${month}`,
         kind: "spending_spike",
         title: `Mehr als sonst für ${names.get(categoryId) ?? "eine Kategorie"}`,
-        body: `${euro(now)} in diesem Monat, sonst im Schnitt ${euro(avg)} (+${Math.round((now / avg - 1) * 100)} %).`,
+        // Past +200 % a percentage reads like an alarm; the amount says more.
+        body:
+          percent > 200
+            ? `${euro(now)} in diesem Monat, sonst im Schnitt ${euro(avg)}: ${euro(now - avg)} mehr.`
+            : `${euro(now)} in diesem Monat, sonst im Schnitt ${euro(avg)} (+${percent} %).`,
         savingsCentsPerYear: null,
         month,
       });
