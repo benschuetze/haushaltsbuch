@@ -53,6 +53,9 @@ export async function resetDemo(db: Db): Promise<void> {
   await refreshInsights(db);
 }
 
+/** Name of the button's daily allowance. Not "demo_reset": that prefix is taken by the nightly claim. */
+export const RESET_BUDGET = "demo_reset_button";
+
 let checkedDay: string | null = null;
 
 /**
