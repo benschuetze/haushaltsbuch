@@ -5,7 +5,7 @@ import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import { importDemoData } from "~/lib/db/demo-data";
 import { budgets, categories, meta, rules, savingsGoals, transactions } from "~/lib/db/schema";
 import { createTestDb } from "../../tests/helpers/db";
-import { resetDemo, resetDemoNightly } from "./demo-reset.server";
+import { RESET_BUDGET, resetDemo, resetDemoNightly } from "./demo-reset.server";
 
 async function counts(db: Awaited<ReturnType<typeof createTestDb>>["db"]) {
   const n = async (t: typeof transactions | typeof rules | typeof budgets | typeof savingsGoals) =>
@@ -53,5 +53,13 @@ describe("Demo zurücksetzen", () => {
     expect(await resetDemoNightly(db, night)).toBe(false);
     const claims = await db.select().from(meta).where(sql`${meta.key} like 'demo_reset_%'`);
     expect(claims).toHaveLength(1);
+  });
+
+  it("nach dem nächtlichen Reset funktioniert der Knopf am selben Tag", async () => {
+    const { db } = await createTestDb();
+    const morning = new Date("2026-10-20T06:00:00Z");
+    expect(await resetDemoNightly(db, morning)).toBe(true);
+    // The button's daily allowance must not trip over the nightly claim of the same day.
+    expect(await takeFromDailyBudget(db, RESET_BUDGET, 1, 100, morning)).toBe(1);
   });
 });
