@@ -122,14 +122,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body className="min-h-dvh">
         {root?.demo ? (
-          <p className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-950">
+          // A note, not a warning: pen blue on pale paper like every other demo hint, short enough for a phone.
+          <p
+            data-testid="demo-banner"
+            className="border-b-2 border-pen bg-pen/5 px-4 py-2 text-center text-sm text-pen"
+          >
             {root.readOnly ? (
               "Demo mit erfundenen Beispieldaten. Nur lesen, Änderungen sind abgeschaltet. "
             ) : (
               <>
-                Demo mit erfundenen Beispieldaten: Probier alles aus, auch Import und Regeln. Alle Besucher sehen
-                dieselben Daten, deshalb keine echten Kontoauszüge hochladen. Jede Nacht geht es zurück auf die
-                Beispiele. {resetDone ? <strong role="status">Zurückgesetzt. </strong> : null}
+                Demo mit erfundenen Daten: probier alles aus. Alle sehen dasselbe, also keine echten Auszüge; nachts
+                geht es zurück auf die Beispiele. {resetDone ? <strong role="status">Zurückgesetzt. </strong> : null}
                 <Form method="post" action="/demo/reset" className="inline">
                   <button type="submit" className="font-medium underline underline-offset-2">
                     Jetzt zurücksetzen
@@ -144,7 +147,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               rel="noopener noreferrer"
               target="_blank"
             >
-              Code und Architektur auf GitHub
+              Code auf GitHub
             </a>
           </p>
         ) : null}
