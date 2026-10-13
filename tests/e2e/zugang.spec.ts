@@ -1,5 +1,5 @@
 import { expect, test } from "./fixtures";
-import { DEMO_URL, resetDb } from "./helpers";
+import { DEMO_URL, expectNoSeriousA11yViolations, resetDb } from "./helpers";
 
 // Failed logins from other specs would otherwise trip the throttle here.
 test.beforeEach(resetDb);
@@ -40,11 +40,20 @@ test.describe("Demo-Modus", () => {
   test("lesen geht ohne Login", async ({ page }) => {
     await page.goto("/buchungen");
     await expect(page.getByRole("heading", { name: "Buchungen" })).toBeVisible();
-    await expect(page.getByText("Demo mit erfundenen Beispieldaten")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Code und Architektur auf GitHub" })).toHaveAttribute(
+    await expect(page.getByTestId("demo-banner")).toContainText("Demo mit erfundenen Daten");
+    await expect(page.getByRole("link", { name: "Code auf GitHub" })).toHaveAttribute(
       "href",
       "https://github.com/benschuetze/haushaltsbuch",
     );
+  });
+
+  test("der Demo-Hinweis lässt auf dem Handy Platz für die Seite und ist gut lesbar", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    const banner = page.getByTestId("demo-banner");
+    // At most four lines at 390 px; it used to take six before the page even started.
+    expect((await banner.boundingBox())?.height ?? 999).toBeLessThan(110);
+    await expectNoSeriousA11yViolations(page);
   });
 
   test("zum Ausprobieren: eine Regel anlegen geht, „Jetzt zurücksetzen“ räumt sie wieder weg", async ({ page }) => {
