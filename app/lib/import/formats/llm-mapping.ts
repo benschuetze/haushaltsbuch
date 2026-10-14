@@ -1,6 +1,7 @@
 import { generateText, type LanguageModel, Output } from "ai";
 import { z } from "zod";
 import { detectDecimalStyle } from "~/lib/money";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import { dataRows, type Table } from "./generic";
 import { type ColumnMapping, columnMappingSchema } from "./mapping";
@@ -55,7 +56,7 @@ export async function guessMappingWithLlm(
   model: LanguageModel,
   table: Table,
   onError: (error: unknown) => void = (error) =>
-    console.error(`Spaltenzuordnung per LLM fehlgeschlagen: ${safeError(error)}`),
+    log.error({ event: "column_mapping_llm_failed", err: safeError(error) }, "Spaltenzuordnung per LLM fehlgeschlagen"),
 ): Promise<{ mapping: ColumnMapping; bank: string } | null> {
   let answer: z.infer<typeof answerSchema>;
   try {

@@ -5,6 +5,7 @@ import { completeConnection, consumeAuthState, syncConnection } from "~/lib/bank
 import { getModel } from "~/lib/categorize/model";
 import { getDb } from "~/lib/db/client";
 import { refreshInsights } from "~/lib/insights";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import type { Route } from "./+types/bank.callback";
 
@@ -29,7 +30,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     await refreshInsights(db);
     return redirect(`/banken?verbunden=${result.inserted}`, { headers: clear });
   } catch (error) {
-    console.error(`Bankverbindung nicht abgeschlossen: ${safeError(error)}`);
+    log.error({ event: "bank_callback_failed", err: safeError(error) }, "Bankverbindung nicht abgeschlossen");
     return redirect("/banken?fehler=fehler", { headers: clear });
   }
 }

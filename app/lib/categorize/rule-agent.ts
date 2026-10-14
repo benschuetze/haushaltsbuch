@@ -1,6 +1,7 @@
 import { generateText, type LanguageModel, NoObjectGeneratedError, Output } from "ai";
 import { z } from "zod";
 import type { Rule } from "~/lib/db/schema";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import { redactIbans } from "./llm";
 import { firstMatchingRule, ruleMatches } from "./rules";
@@ -119,7 +120,8 @@ export async function proposeRule(
   categories: Category[],
   knownCounterparties: string[],
   model: LanguageModel | null,
-  onError: (error: unknown) => void = (error) => console.error(`Regel-Agent fehlgeschlagen: ${safeError(error)}`),
+  onError: (error: unknown) => void = (error) =>
+    log.error({ event: "rule_agent_failed", err: safeError(error) }, "Regel-Agent fehlgeschlagen"),
 ): Promise<RuleProposal[]> {
   const local = parseRuleWish(text, categories);
   if (local.length > 0) return local;

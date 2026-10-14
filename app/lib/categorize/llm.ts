@@ -1,5 +1,6 @@
 import { generateText, type LanguageModel, Output } from "ai";
 import { z } from "zod";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import type { LlmExample } from "./examples";
 
@@ -144,7 +145,10 @@ export async function categorizeWithLlm(
   categories: LlmCategory[],
   items: LlmInput[],
   onError: (error: unknown) => void = (error) =>
-    console.error(`LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“: ${safeError(error)}`),
+    log.error(
+      { event: "categorize_llm_failed", err: safeError(error) },
+      "LLM-Kategorisierung fehlgeschlagen, Batch landet in „prüfen“",
+    ),
   /** Tokens per batch; the eval uses it to report what a booking costs. */
   onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void,
   /** Confirmed bookings like the ones in a batch, see pickExamples. */

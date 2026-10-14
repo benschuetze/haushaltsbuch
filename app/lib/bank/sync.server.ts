@@ -8,6 +8,7 @@ import { resolveAccount } from "~/lib/import/accounts";
 import { storeParsed } from "~/lib/import/run";
 import type { NormalizedRow, ParseResult } from "~/lib/import/types";
 import { parseEnglishAmount } from "~/lib/money";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import {
   BankApiError,
@@ -228,7 +229,7 @@ export async function disconnect(db: Db, client: EnableBankingClient, connection
     await client.deleteSession(decryptSecret(c.sessionIdEncrypted));
   } catch (error) {
     // Already gone at the bank is fine; anything else is logged without details.
-    console.error(`Bankzugang beim Trennen nicht widerrufen: ${safeError(error)}`);
+    log.error({ event: "bank_revoke_failed", err: safeError(error) }, "Bankzugang beim Trennen nicht widerrufen");
   }
   // The secret is removed even if the bank call failed; bookings already imported stay.
   await db
