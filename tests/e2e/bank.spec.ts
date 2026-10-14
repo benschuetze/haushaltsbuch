@@ -77,7 +77,7 @@ test("täglicher Abruf: ohne Geheimnis 401, mit Geheimnis nur Zahlen, keine Buch
   const ok = await request.get("/bank/sync", { headers: { Authorization: `Bearer ${process.env.E2E_CRON_SECRET}` } });
   expect(ok.status()).toBe(200);
   const body = await ok.text();
-  expect(JSON.parse(body)).toEqual({ ok: true, connections: 1, inserted: 0, failed: 0 });
+  expect(JSON.parse(body)).toEqual({ ok: true, reviewAlarm: false, connections: 1, inserted: 0, failed: 0 });
   expect(body).not.toMatch(/REWE|Gehalt|DE00/);
 });
 
