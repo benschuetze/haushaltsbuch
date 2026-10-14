@@ -1,0 +1,10 @@
+# Paths from "Nicht ohne Rückfrage ändern" in CLAUDE.md, plus everything that controls CI and the guardrails.
+# GitHub requests a review from the owner automatically when a PR touches them.
+# Later rules win, so the specific paths come after the catch-all for .github/.
+
+/.github/                       @benschuetze
+/drizzle/                       @benschuetze
+/beispieldaten/erwartet.json    @benschuetze
+/.claude/settings.json          @benschuetze
+/.claude/hooks/                 @benschuetze
+/CLAUDE.md                      @benschuetze
