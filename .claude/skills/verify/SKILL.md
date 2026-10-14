@@ -60,6 +60,16 @@ description: Use for every code change before calling it done - writing the righ
 - Vor dem Lauf: Datenbank leeren, migrieren, seeden. Jede Testdatei startet mit bekanntem Zustand.
 - „Sichtbar“ reicht nicht, wenn etwas überdeckt sein kann (Sticky Header, Dialog): mit `elementFromPoint` prüfen, dass das Element wirklich oben liegt.
 
+## Leitplanken (Claude Code Hooks)
+
+- Neue Regel der Art „nicht ohne Rückfrage“ oder „nie von Hand“: nicht nur in CLAUDE.md schreiben, sondern in
+  `.claude/hooks/protect-paths.mjs` (Regel) und `.claude/settings.json` (`deny`/`ask`) eintragen. Eine Bitte in
+  CLAUDE.md wird übersehen, ein Hook nicht.
+- Jede Hook-Änderung mit Test in `tests/hooks/`: erlaubt, blockiert bzw. gefragt, kaputte Eingabe (kein Werfen, Exit 0).
+  Gegenprobe: Regel abschalten, Test muss rot werden.
+- Hooks ohne Abhängigkeiten, nur `node:`-Module, Pfade mit `path` normalisieren und klein schreiben (macOS/Windows).
+- Blockiert der Commit-Hook: aufteilen statt umgehen. Kein `--no-verify`-Ersatz über andere Werkzeuge.
+
 ## CI
 
 - Job `check`: typecheck, lint, `pnpm test`.
