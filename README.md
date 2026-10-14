@@ -6,6 +6,7 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 |---|---|
 | **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, zum Ausprobieren: Import (mit Beispieldateien), Regeln, Budgets, Ziele, Prüfen. Jede Nacht und per Knopf zurück auf die Beispiele. Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
 | **Code** | [github.com/benschuetze/haushaltsbuch](https://github.com/benschuetze/haushaltsbuch) |
+| **Eval** | 203 von Hand beschriftete Buchungen gegen das echte Modell (`claude-haiku-5-5`, 12.10.2026): **0 stille Fehler** (falsch mit Konfidenz ≥ 0,7; im ersten Lauf 7), 99,0 % richtig, 91 davon ohne Modell über die Händlerliste, 9,4 % gehen nach „prüfen“ statt geraten zu werden. [Details](#wie-gut-ist-die-kategorisierung) |
 
 <p>
   <img src="docs/uebersicht.png" alt="Übersicht: Tagesbudget 113,25 € bis zum Gehalt, darunter das Eingabefeld für Fragen an den Assistenten" width="68%">

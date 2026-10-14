@@ -21,3 +21,6 @@ test-results/
 # Persönliche Notizen
 .pglite/
 playwright/.auth/
+
+# Private Architekturmappe, nie pushen
+/.architektur/
