@@ -17,6 +17,7 @@ import { getDb } from "~/lib/db/client";
 import { bankConnections } from "~/lib/db/schema";
 import { formatDate } from "~/lib/format";
 import { refreshInsights } from "~/lib/insights";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import type { Route } from "./+types/banken";
 
@@ -39,7 +40,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     try {
       banks = (await client.listAspsps(country)).map((a) => a.name).sort((a, b) => a.localeCompare(b, "de"));
     } catch (error) {
-      console.error(`Bankenliste nicht abrufbar: ${safeError(error)}`);
+      log.error({ event: "bank_list_failed", err: safeError(error) }, "Bankenliste nicht abrufbar");
       // A freshly registered production app answers 403 until its owner links own accounts in the portal.
       listError =
         error instanceof BankApiError && error.status === 403
@@ -131,7 +132,7 @@ export async function action({ request }: Route.ActionArgs) {
       });
       return redirect(auth.url, { headers: { "Set-Cookie": await bankStateCookie().serialize(state) } });
     } catch (error) {
-      console.error(`Bankanmeldung nicht gestartet: ${safeError(error)}`);
+      log.error({ event: "bank_auth_start_failed", err: safeError(error) }, "Bankanmeldung nicht gestartet");
       return data(
         { ok: false as const, message: "Die Anmeldung bei der Bank konnte nicht gestartet werden." },
         { status: 502 },

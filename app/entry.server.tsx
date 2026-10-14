@@ -3,11 +3,25 @@ import { createReadableStreamFromReadable } from "@react-router/node";
 import { isbot } from "isbot";
 import { createElement } from "react";
 import { renderToPipeableStream } from "react-dom/server";
-import { type EntryContext, ServerRouter } from "react-router";
-import { contentSecurityPolicy, createNonce } from "~/lib/security.server";
+import { type EntryContext, type HandleErrorFunction, ServerRouter } from "react-router";
+import { log } from "~/lib/observability/log.server";
+import { contentSecurityPolicy, createNonce, safeError } from "~/lib/security.server";
 import { NonceProvider } from "./nonce";
 
 export const streamTimeout = 5_000;
+
+/**
+ * Every uncaught loader, action or render error ends here, also when an error boundary shows a friendly page.
+ * Only the path goes along, never the query: it can contain search terms from the bookings.
+ */
+export const handleError: HandleErrorFunction = (error, { request }) => {
+  // A user who navigates away aborts the request; that is not a bug.
+  if (request.signal.aborted) return;
+  log.error(
+    { event: "request_failed", path: new URL(request.url).pathname, err: safeError(error) },
+    "Anfrage fehlgeschlagen",
+  );
+};
 
 /** Like the default entry, plus a fresh CSP nonce per response that reaches every inline script. */
 export default function handleRequest(
@@ -49,7 +63,7 @@ export default function handleRequest(
         },
         onError(error: unknown) {
           responseStatusCode = 500;
-          if (shellRendered) console.error(error);
+          if (shellRendered) log.error({ event: "render_failed", err: safeError(error) }, "Rendern fehlgeschlagen");
         },
       },
     );

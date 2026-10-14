@@ -2,6 +2,7 @@ import { generateText, isStepCount, type LanguageModel, type ModelMessage } from
 import { z } from "zod";
 import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
+import { log } from "~/lib/observability/log.server";
 import { safeError } from "~/lib/security.server";
 import { createAssistantTools } from "./tools.server";
 
@@ -112,7 +113,7 @@ export async function askAssistant(
     }
     return { answer: answer || "Dazu habe ich keine Antwort gefunden.", tools };
   } catch (error) {
-    console.error(`Assistent fehlgeschlagen: ${safeError(error)}`);
+    log.error({ event: "assistant_failed", err: safeError(error) }, "Assistent fehlgeschlagen");
     return { answer: "Gerade kann ich nicht antworten. Bitte später noch einmal versuchen.", tools: [] };
   }
 }
