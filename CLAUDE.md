@@ -90,6 +90,8 @@ Details und Pflichtfälle: Skill `verify`.
   Der Hook `.claude/hooks/commit-size.mjs` blockiert `git commit` über 400 geänderten Zeilen (ohne Lockfile,
   `drizzle/`, Eval-Daten, CSV-Beispiele). Aufteilen; nur nach Bens Ja ein Trailer `Large-Commit: <Grund>`, dann fragt der Hook ihn.
 - Arbeit auf Feature-Branches (`feat/…`, `fix/…`), Merge nach `main` per Pull Request mit grüner CI.
+  Erzwungen per GitHub-Ruleset „main“: PR Pflicht, Checks `check`, `e2e`, `gitleaks`, `analyze (…)` grün,
+  kein Force-Push, kein Löschen. Ein neuer Pflicht-Check muss erst einmal auf einem PR gelaufen sein, bevor er ins Ruleset kommt.
 - Jeder Push läuft durch CI. `main` deployt automatisch auf Vercel, Branches bekommen eine Preview.
 - Schema-Änderungen nur über den Skill `db-change`.
 
