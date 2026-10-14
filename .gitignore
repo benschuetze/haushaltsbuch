@@ -22,3 +22,6 @@ test-results/
 BEWERBUNG.md
 .pglite/
 playwright/.auth/
+
+# Personal Claude Code overrides
+.claude/settings.local.json

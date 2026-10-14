@@ -87,13 +87,19 @@ Details und Pflichtfälle: Skill `verify`.
 ## Commits und Deploy
 
 - Kleine Commits nach jedem Schritt, Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`).
+  Der Hook `.claude/hooks/commit-size.mjs` blockiert `git commit` über 400 geänderten Zeilen (ohne Lockfile,
+  `drizzle/`, Eval-Daten, CSV-Beispiele). Aufteilen; nur nach Bens Ja ein Trailer `Large-Commit: <Grund>`, dann fragt der Hook ihn.
 - Arbeit auf Feature-Branches (`feat/…`, `fix/…`), Merge nach `main` per Pull Request mit grüner CI.
 - Jeder Push läuft durch CI. `main` deployt automatisch auf Vercel, Branches bekommen eine Preview.
 - Schema-Änderungen nur über den Skill `db-change`.
 
 ## Nicht ohne Rückfrage ändern
 
-- `drizzle/` (generiert)
+Gilt technisch, nicht nur als Bitte: `.claude/settings.json` (Berechtigungen) und der Hook `.claude/hooks/protect-paths.mjs`.
+`drizzle/` und `.env*` (außer `.env.example`) sind gesperrt, die übrigen Pfade lösen eine Rückfrage an Ben aus.
+Die Hooks selbst und `.claude/settings.json` stehen ebenfalls unter Rückfrage, damit niemand die Leitplanke still abschaltet.
+
+- `drizzle/` (generiert, nur über `pnpm db:generate`)
 - `.github/workflows/` (Actions auf Commit-SHA gepinnt, minimale Rechte)
 - `beispieldaten/erwartet.json` (von Hand nachgerechnet; wenn ein Test dagegen fehlschlägt, ist zuerst der Code verdächtig)
 
