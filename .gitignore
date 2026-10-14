@@ -19,6 +19,8 @@ playwright-report/
 test-results/
 
 # Persönliche Notizen
-BEWERBUNG.md
 .pglite/
 playwright/.auth/
+
+# Private Architekturmappe, nie pushen
+/.architektur/
