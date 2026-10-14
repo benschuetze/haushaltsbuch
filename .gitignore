@@ -19,6 +19,5 @@ playwright-report/
 test-results/
 
 # Persönliche Notizen
-BEWERBUNG.md
 .pglite/
 playwright/.auth/

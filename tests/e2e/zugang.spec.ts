@@ -14,6 +14,8 @@ test.describe("ohne Login", () => {
     await expect(page.getByRole("heading", { name: "Impressum" })).toBeVisible();
     // The test instance has no operator configured, as a fresh install would not.
     await expect(page.getByTestId("imprint-missing")).toBeVisible();
+    // Without details there is no "person named above" to point to.
+    await expect(page.getByText("oben genannte Person")).toHaveCount(0);
   });
 
   test("jede Seite leitet auf den Login und danach zurück", async ({ page }) => {
