@@ -5,11 +5,15 @@ export const meta: Route.MetaFunction = () => [{ title: "Datenschutz · Haushalt
 
 export function loader() {
   const o = operatorInfo();
-  return { contact: o.email, operator: o.name ? [o.name, ...o.address].join(", ") : null };
+  return {
+    contact: o.email,
+    operator: o.name ? [o.name, ...o.address].join(", ") : null,
+    errorReports: Boolean(process.env.SENTRY_DSN),
+  };
 }
 
 export default function Datenschutz({ loaderData }: Route.ComponentProps) {
-  const { contact, operator } = loaderData;
+  const { contact, operator, errorReports } = loaderData;
   return (
     <article className="prose max-w-2xl space-y-4 text-sm leading-relaxed">
       <h1 className="text-2xl font-semibold">Datenschutzerklärung</h1>
@@ -49,6 +53,14 @@ export default function Datenschutz({ loaderData }: Route.ComponentProps) {
           läuft direkt bei der Bank.
         </li>
         <li>Anwendung: Vercel (Region Frankfurt).</li>
+        {errorReports ? (
+          <li>
+            Fehlerberichte: Sentry (Functional Software Inc.). Bei einem technischen Fehler gehen Fehlername, eine
+            gekürzte Fehlermeldung und die aufgerufene Seite ohne Suchbegriffe dorthin, keine Buchungen, keine
+            IP-Adresse und keine Cookies. Grundlage: berechtigtes Interesse am fehlerfreien Betrieb (Art. 6 Abs. 1 lit.
+            f DSGVO).
+          </li>
+        ) : null}
         <li>
           Kategorisierung: Gegenpartei, Verwendungszweck, Betrag und Datum einzelner Buchungen gehen an Anthropic (USA)
           zur automatischen Zuordnung. IBANs werden vorher entfernt. Kontonummern und Zugangsdaten werden nie

@@ -112,6 +112,13 @@ Korrektur in der UI ──► manuell (nie wieder überschrieben) ──► opti
 - Die Demo ist zum Ausprobieren offen, ohne Login: Alle Besucher teilen dieselben erfundenen Daten, die jede Nacht und per Knopf zurückgesetzt werden. Die Kategorisierung läuft dort auf einem kostenlosen Testmodell; nur der Assistent nutzt das echte Modell, mit Tageslimit. Mit `DEMO_READ_ONLY=1` ist sie wieder schreibgeschützt, dann blockiert eine Middleware jeden Schreibzugriff.
 - Jeder Produktions-Build schickt eine Mini-Anfrage an die echte Claude-API und an die Bank-API und bricht ab, wenn Key, Modell oder Schlüssel nicht stimmen.
 
+## Betrieb: Logs und Alarme
+
+- **Logs:** pino schreibt eine JSON-Zeile pro Ereignis, jede mit Feld `event` (z. B. `categorize_llm_failed`, `request_failed`, `review_share_high`). In Vercel unter Logs nach `event` filtern. Bankdaten (`iban`, `raw`, `purpose`, `counterparty`) und Header werden geschwärzt, falls Code sie versehentlich mitgibt.
+- **Fehlerberichte:** Mit `SENTRY_DSN` gehen Warnungen und Fehler an Sentry, nur serverseitig, ohne Anfrage, Cookies, IP und Buchungsinhalte. Ohne DSN wird das SDK nicht einmal geladen.
+- **Alarm Fehlerrate:** Sentry-Alarmregel „Number of events > 10 in 1 hour“ für das Projekt, Aktion E-Mail. Einrichten unter Alerts → Create Alert → Issues (einmalig, im Sentry-Konto).
+- **Alarm Anteil „prüfen“:** Der tägliche Cron (`/bank/sync`, 5 Uhr) prüft, welcher Anteil der Buchungen der letzten 7 Tage, die beim Modell lagen, noch in „prüfen“ wartet. Über 50 % (ab 10 Buchungen) schreibt er `review_share_high` als Warnung, die in Sentry als eigenes Issue mit E-Mail ankommt. Begründung der Schwelle in [`review-alarm.ts`](app/lib/observability/review-alarm.ts): Ein ausgefallenes Modell (Key abgelaufen, Modell-ID abgeschaltet) schickt sonst still alles in „prüfen“.
+
 ## Datenmodell
 
 `accounts` · `imports` · `categories` · `transactions` · `rules`, Details in [`PLAN.md`](PLAN.md) und [`app/lib/db/schema.ts`](app/lib/db/schema.ts). Das Drizzle-Schema ist die einzige Quelle für Typen, Zod prüft alle Eingänge (Formulare, CSV-Zeilen, LLM-Antworten).

@@ -37,6 +37,7 @@ Das Haushaltsbuch verarbeitet Kontoumsätze. Diese Seite beschreibt, wie die App
 - Nur im Build, nicht ausgeliefert: `braces@3.0.3` (GHSA-vfj7-8cjw-p6xm, noch kein Patch) und `esbuild@0.18.20` über drizzle-kit (GHSA-67mh-4wv8-2f99, betrifft nur dessen Entwicklungsserver).
 - Die private Instanz baut nur für die Produktion, nie als Preview (`scripts/vercel-ignore.mjs`): Eine Preview bekäme eine Kopie der Datenbank und damit echte Kontodaten. Previews gibt es nur für die Demo mit erfundenen Daten.
 - Was an die KI geht (Empfänger, Verwendungszweck), verarbeitet Anthropic außerhalb der EU.
+- Sentry (falls `SENTRY_DSN` gesetzt) bekommt Fehlername, gekürzte Meldung, Pfad ohne Query und eigene Zählwerte, keine Buchungsinhalte. Ein Bericht kurz vor dem Einfrieren einer Serverless-Funktion kann verloren gehen; der Cron und die Fehlerseite warten nicht überall auf das Senden.
 - Die Leitplanken für Claude Code (`.claude/settings.json`, `.claude/hooks/`) greifen bei den Datei-Werkzeugen und bei `git commit`. Ein Shell-Befehl wie `sed -i drizzle/…` umgeht den Pfadschutz; dafür bleiben Review und CODEOWNERS.
 
 ## Lücke melden
