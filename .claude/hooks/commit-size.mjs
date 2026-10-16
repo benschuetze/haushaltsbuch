@@ -8,7 +8,9 @@
 //
 // The hook runs before the command, so it predicts each commit in it: what is staged now, plus what `git add`/`rm`/
 // `mv` earlier in the same command, `-a`, `--amend` (measured against HEAD~1) and pathspecs will add, also inside
-// `sh -c '...'`. shell.mjs does the parsing. For staging by pathspec the prediction counts more rather than less.
+// `sh -c '...'`. shell.mjs does the parsing. A rename counts once. Each git call is read-only and the whole
+// prediction has ~8 s; a measurement that fails or runs out of time is skipped, so the result is at least the
+// index: a limit can be missed under load, never invented. Clean filters set in the repo still run on worktree diffs.
 // Not covered: merge, cherry-pick, revert, rebase, am, stash, git aliases, `eval`, variables holding commands or
 // paths, staging through `xargs` or `--pathspec-from-file`, commits from inside scripts. CI and review see those.
 //
@@ -16,7 +18,7 @@
 // missing git must never crash the hook or block unrelated Bash commands.
 
 import { execFileSync } from "node:child_process";
-import { closeSync, existsSync, openSync, readSync, realpathSync, statSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, openSync, readSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { gitCommands, parseCommitArgs, parseStageArgs, writtenPaths } from "./shell.mjs";
 
@@ -82,16 +84,38 @@ function resolveExisting(p) {
   }
 }
 
-function git(root, args) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+const BUDGET_MS = 8000;
+let deadline = Date.now() + BUDGET_MS;
+const outOfTime = () => Date.now() > deadline;
+
+/**
+ * Read-only git call. The -c options keep the repo's config from starting a daemon or touching its caches;
+ * GIT_OPTIONAL_LOCKS stops `git diff` from refreshing the index.
+ */
+const SAFE = ["-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false"];
+function git(root, args, input) {
+  return execFileSync("git", [...SAFE, ...args], {
+    cwd: root,
+    encoding: "utf8",
+    input,
+    timeout: Math.max(1000, deadline - Date.now()),
+    maxBuffer: 256 << 20,
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
+    stdio: ["pipe", "pipe", "ignore"],
+  });
 }
 
 function emptyTree(root) {
-  return execFileSync("git", ["hash-object", "-t", "tree", "--stdin"], {
-    cwd: root,
-    input: "",
-    encoding: "utf8",
-  }).trim();
+  return git(root, ["hash-object", "-t", "tree", "--stdin"], "").trim();
+}
+
+/** Runs one measurement; a git error in it (bad pathspec, outside the repo) loses that part, not the verdict. */
+function safely(fn) {
+  try {
+    fn();
+  } catch {
+    // The index was measured first, so the prediction still counts at least that.
+  }
 }
 
 /** What the commit is compared against: HEAD, its parent for --amend, or the empty tree for a first commit. */
@@ -105,13 +129,23 @@ function baseFor(root, amend) {
   }
 }
 
-/** `git diff --numstat` without rename detection, so a moved file shows both its old and its new path. */
+/**
+ * `git diff --numstat -M`. A rename counts once, under its new path, with only the lines that changed; its old path
+ * is recorded with 0 so a moved guarded file is still seen.
+ */
 function numstat(root, args, into) {
-  const out = git(root, ["diff", "--numstat", "-z", "--no-renames", ...args]);
-  for (const record of out.split("\0")) {
-    const [added, deleted, ...rest] = record.split("\t");
-    const file = rest.join("\t");
-    if (!file) continue;
+  const tokens = git(root, ["diff", "--numstat", "-z", "-M", "--no-ext-diff", "--no-textconv", ...args]).split("\0");
+  for (let i = 0; i < tokens.length; i++) {
+    const [added, deleted, ...rest] = tokens[i].split("\t");
+    let file = rest.join("\t");
+    if (!added) continue;
+    if (!file) {
+      const [from, to] = [tokens[i + 1], tokens[i + 2]];
+      i += 2;
+      if (!from || !to) continue;
+      into.set(from, into.get(from) ?? 0);
+      file = to;
+    }
     // Binary files report "-" and have no meaningful line count.
     const n = added === "-" || deleted === "-" ? 0 : Number(added) + Number(deleted);
     into.set(file, Math.max(into.get(file) ?? 0, n));
@@ -119,10 +153,11 @@ function numstat(root, args, into) {
 }
 
 /** Line count of a file on disk, read in chunks so size does not matter. Binary files (a NUL byte) count 0. */
+const BUFFER = Buffer.alloc(1 << 20);
 function countLines(full) {
   const fd = openSync(full, "r");
   try {
-    const buf = Buffer.alloc(1 << 20);
+    const buf = BUFFER;
     let lines = 0;
     let last = 0x0a;
     let first = true;
@@ -141,27 +176,34 @@ function countLines(full) {
   }
 }
 
-/** Untracked files that `git add` would pick up. `force` (`git add -f`) includes ignored files. */
+/**
+ * Untracked files that `git add` would pick up. `force` (`git add -f`) includes ignored files. Stops once the files
+ * counted here alone pass LIMIT (the commit is too big anyway) or the time budget is used up.
+ */
 function untracked(root, pathspecs, into, force) {
   const args = ["ls-files", "--others", "--full-name", "-z"];
   if (!force) args.push("--exclude-standard");
+  let sum = 0;
   for (const file of git(root, [...args, "--", ...pathspecs]).split("\0")) {
     if (!file) continue;
+    if (sum > LIMIT || outOfTime()) break;
     let n = 0;
     try {
       const full = path.join(root, file);
-      if (statSync(full).isFile()) n = countLines(full);
+      if (lstatSync(full).isFile()) n = countLines(full);
     } catch {
       // Unreadable: count as 0 rather than fail.
     }
+    sum += n;
     into.set(file, Math.max(into.get(file) ?? 0, n));
   }
 }
 
 /** Files that `git rm`/`git mv` will take out of the index, with their committed size (not yet visible on disk). */
 function removedFromBase(root, base, specs, into) {
+  if (specs.length === 0) return;
   const empty = emptyTree(root);
-  if (specs.length === 0 || base === empty) return;
+  if (base === empty) return;
   numstat(root, [empty, base, "--", ...specs], into);
 }
 
@@ -175,44 +217,53 @@ function isDirectory(p) {
 
 const absolute = (dir, specs) => specs.map((s) => (s.startsWith(":") ? s : path.resolve(dir, s)));
 
-/** Predicts the files of one commit. `indexCounts` is false after an earlier commit in the same line emptied it. */
+/**
+ * Predicts the files of one commit. `indexCounts` is false after an earlier commit in the same repo in this line
+ * emptied the index. Each measurement is wrapped on its own, so a git error in one costs only that part.
+ */
 function predict(root, commit, staging, indexCounts) {
   const opts = parseCommitArgs(commit.args);
   const base = baseFor(root, opts.amend);
   const files = new Map();
-  if (indexCounts) numstat(root, ["--cached", base], files);
-  else if (opts.amend) numstat(root, [base, "HEAD"], files);
-  if (opts.all) numstat(root, [base], files);
-  if (opts.pathspecs.length > 0) numstat(root, [base, "--", ...absolute(commit.dir, opts.pathspecs)], files);
+  if (indexCounts) safely(() => numstat(root, ["--cached", base], files));
+  else if (opts.amend) safely(() => numstat(root, [base, "HEAD"], files));
+  if (opts.all) safely(() => numstat(root, [base], files));
+  if (opts.pathspecs.length > 0) {
+    safely(() => numstat(root, [base, "--", ...absolute(commit.dir, opts.pathspecs)], files));
+  }
 
   for (const stage of staging) {
     const s = parseStageArgs(stage.args);
+    // -p, -i and -e stage parts the hook cannot see; -N adds empty entries; -n stages nothing.
+    if (s.partial) continue;
     const specs = absolute(stage.dir, s.pathspecs);
     if (stage.sub === "rm" || stage.sub === "mv") {
-      // `git mv a b` or `git mv a b dir/`: the sources leave, the destination arrives with the same content.
-      const sources = stage.sub === "mv" ? specs.slice(0, -1) : specs;
-      removedFromBase(root, base, sources, files);
-      if (stage.sub === "mv") {
+      safely(() => {
+        // `git mv a b` or `git mv a b dir/`: the sources leave, the destination arrives with the same content, so a
+        // plain move changes no lines. `git rm` counts the deleted lines.
+        const sources = stage.sub === "mv" ? specs.slice(0, -1) : specs;
+        if (stage.sub === "rm") return removedFromBase(root, base, sources, files);
         const dest = specs.at(-1) ?? root;
         const intoDir = sources.length > 1 || isDirectory(dest);
         for (const source of sources) {
           const moved = new Map();
           removedFromBase(root, base, [source], moved);
           const target = intoDir ? path.join(dest, path.basename(source)) : dest;
-          for (const [file, n] of moved) {
-            const name = toRel(root, path.join(target, path.relative(source, path.join(root, file))));
-            files.set(name, Math.max(files.get(name) ?? 0, n));
+          for (const file of moved.keys()) {
+            files.set(file, files.get(file) ?? 0);
+            files.set(toRel(root, path.join(target, path.relative(source, path.join(root, file)))), 0);
           }
         }
-      }
+      });
       continue;
     }
-    if (s.everything || (s.trackedOnly && s.pathspecs.length === 0)) numstat(root, [base], files);
-    if (specs.length > 0) numstat(root, [base, "--", ...specs], files);
-    if (s.everything && s.pathspecs.length === 0) untracked(root, [], files, s.force);
-    else if (!s.trackedOnly && specs.length > 0) untracked(root, specs, files, s.force);
+    // With pathspecs, `-A` and `-u` act on those paths only; the pathspec measurement below covers them.
+    if ((s.everything || s.trackedOnly) && s.pathspecs.length === 0) safely(() => numstat(root, [base], files));
+    if (specs.length > 0) safely(() => numstat(root, [base, "--", ...specs], files));
+    if (s.everything && s.pathspecs.length === 0) safely(() => untracked(root, [], files, s.force));
+    else if (!s.trackedOnly && specs.length > 0) safely(() => untracked(root, specs, files, s.force));
   }
-  return files;
+  return { files, opts };
 }
 
 /**
@@ -235,7 +286,9 @@ function guardedWrites(line, cwd, root) {
 function check(command, cwd) {
   let verdict = null;
   let staging = [];
-  let commitsSeen = 0;
+  /** Per repo root: files an earlier commit of this line already counted. */
+  const seen = new Map();
+  const rootOf = (dir) => (dir === null ? null : findRepoRoot(resolveExisting(dir)));
   for (const cmd of gitCommands(command, cwd)) {
     if (STAGING.has(cmd.sub)) {
       staging.push(cmd);
@@ -255,23 +308,22 @@ function check(command, cwd) {
     cmd.dir = resolveExisting(cmd.dir);
     const root = findRepoRoot(cmd.dir);
     if (!root) continue;
-    let files;
+    let prediction;
     try {
-      files = predict(
-        root,
-        cmd,
-        staging.filter((s) => s.dir !== null && findRepoRoot(resolveExisting(s.dir)) === root),
-        commitsSeen === 0,
-      );
+      const mine = staging.filter((s) => rootOf(s.dir) === root);
+      prediction = predict(root, cmd, mine, !seen.has(root));
+      // The next commit in this repo starts from what this one leaves behind.
+      staging = staging.filter((s) => !mine.includes(s));
     } catch {
       // Not a repo, no HEAD, or git missing: git itself will report the real problem.
       continue;
     }
-    // The next commit in this line starts from what this one leaves behind.
-    staging = [];
-    commitsSeen++;
+    const earlier = seen.get(root) ?? new Set();
+    seen.set(root, new Set([...earlier, ...prediction.files.keys()]));
 
-    const entries = [...files].map(([file, n]) => ({ file, n }));
+    const entries = [...prediction.files]
+      .filter(([file]) => prediction.opts.amend || !earlier.has(file))
+      .map(([file, n]) => ({ file, n }));
     const counted = entries.filter((e) => !IGNORED.some((re) => re.test(e.file)));
     const total = counted.reduce((sum, e) => sum + e.n, 0);
     const written = guardedWrites(command, cwd, root);
@@ -322,6 +374,7 @@ async function readStdin() {
 }
 
 async function main() {
+  deadline = Date.now() + BUDGET_MS;
   let input;
   try {
     input = JSON.parse(await readStdin());

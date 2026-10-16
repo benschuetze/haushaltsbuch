@@ -171,6 +171,59 @@ describe("commit-size hook", () => {
     });
   });
 
+  describe("prediction edge cases from the review", () => {
+    const commitHere = (...args: string[]) =>
+      git("-c", "user.email=t@example.test", "-c", "user.name=t", "commit", "-q", ...args);
+
+    it("counts a rename once, staged or still to be made by `git mv`", () => {
+      stage("app/big.ts", 300);
+      commitHere("-m", "big");
+      expect(commit("git mv app/big.ts app/big2.ts && git commit -m x").decision).toBeUndefined();
+      git("mv", "app/big.ts", "app/big2.ts");
+      expect(commit("git commit -m x").decision).toBeUndefined();
+    });
+
+    it("still measures the index when a git call in the prediction fails", () => {
+      stage("app/big.ts", 500);
+      expect(commit("git add /etc/hosts; git commit -m x").decision).toBe("deny");
+    });
+
+    it("measures the staged index of every repo the line commits in", () => {
+      const other = mkdtempSync(path.join(tmpdir(), "commit-size-other-"));
+      try {
+        execFileSync("git", ["init", "-q"], { cwd: other, stdio: "ignore" });
+        writeFileSync(path.join(other, "big.ts"), lines(500));
+        execFileSync("git", ["add", "big.ts"], { cwd: other, stdio: "ignore" });
+        stage("app/small.ts", 5);
+        expect(commit(`git commit -q -m x && git -C ${other} commit -m y`).decision).toBe("deny");
+      } finally {
+        rmSync(other, { recursive: true, force: true });
+      }
+    });
+
+    it("does not count the whole tree for `git add -A <path>` or partial adds", () => {
+      stage("app/a.ts", 5);
+      commitHere("-m", "a");
+      writeFileSync(path.join(repo, "app/a.ts"), lines(600).replaceAll("line", "row"));
+      stage("docs/n.md", 1);
+      for (const c of [
+        "git add -A docs && git commit -m x",
+        "git add -p && git commit -m x",
+        "git add -N docs && git commit -m x",
+      ]) {
+        expect(commit(c).decision, c).toBeUndefined();
+      }
+      expect(commit("git add -A && git commit -m x").decision).toBe("deny");
+    });
+
+    it("sees commits behind timeout and nice", () => {
+      stage("app/big.ts", 500);
+      for (const c of ["timeout 30 git commit -m x", "nice -n 5 git commit -m x"]) {
+        expect(commit(c).decision, c).toBe("deny");
+      }
+    });
+  });
+
   it("does not throw on broken input or outside a repo", () => {
     for (const stdin of ["", "not json", "null", "{}", '{"tool_name":"Bash","tool_input":{"command":7}}']) {
       const result = runHook("commit-size.mjs", stdin);

@@ -8,7 +8,18 @@ import path from "node:path";
 
 const OPERATORS = ["&&", "||", ";;", "$(", ";", "&", "|", "(", ")", "\n", "`"];
 const SEGMENT_WORDS = new Set(["{", "}", "!", "then", "do", "else", "elif", "if", "while", "until", "fi", "done"]);
-const PREFIX_WORDS = new Set(["time", "command", "builtin", "exec", "nohup", "nice", "env", "sudo", "xargs"]);
+const PREFIX_WORDS = new Set([
+  "time",
+  "command",
+  "builtin",
+  "exec",
+  "nohup",
+  "nice",
+  "timeout",
+  "env",
+  "sudo",
+  "xargs",
+]);
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 const DYNAMIC = /[$`]/;
 
@@ -173,6 +184,7 @@ const PREFIX_OPTIONS_WITH_VALUE = {
   ]),
   env: new Set(["-u", "-C", "-S", "--unset", "--chdir", "--split-string"]),
   nice: new Set(["-n"]),
+  timeout: new Set(["-s", "-k", "--signal", "--kill-after"]),
   exec: new Set(["-a"]),
   xargs: new Set(["-I", "-L", "-n", "-P", "-s", "-d", "-E", "-a"]),
 };
@@ -182,9 +194,12 @@ export function stripPrefixes(words) {
   let i = 0;
   while (i < words.length && (ASSIGNMENT.test(words[i]) || PREFIX_WORDS.has(words[i]))) {
     if (PREFIX_WORDS.has(words[i])) {
-      const withValue = PREFIX_OPTIONS_WITH_VALUE[words[i]] ?? new Set();
+      const prefix = words[i];
+      const withValue = PREFIX_OPTIONS_WITH_VALUE[prefix] ?? new Set();
       i++;
       while (i < words.length && words[i].startsWith("-")) i += withValue.has(words[i]) ? 2 : 1;
+      // `timeout 30 git commit`: the duration is a positional argument.
+      if (prefix === "timeout") i++;
     } else i++;
   }
   return words.slice(i);
@@ -221,6 +236,8 @@ function cdTarget(dir, word) {
   if (dir === null) return null;
   if (word === undefined || word === "~") return os.homedir();
   if (/^\$\(\s*git\s+rev-parse\s+--show-toplevel\s*\)$/.test(word)) return findRepoRoot(dir);
+  const home = /^(\$HOME|\$\{HOME\})(\/|$)/.exec(word);
+  if (home) return path.join(os.homedir(), word.slice(home[0].length));
   if (DYNAMIC.test(word)) return null;
   if (word.startsWith("~/")) return path.join(os.homedir(), word.slice(2));
   return path.resolve(dir, word);
@@ -416,14 +433,16 @@ export function parseCommitArgs(args) {
 
 /** Parses `git add/rm/mv/stage` arguments: pathspecs, and whether the whole tree is staged. */
 export function parseStageArgs(args) {
-  const out = { everything: false, trackedOnly: false, force: false, pathspecs: [] };
+  const out = { everything: false, trackedOnly: false, force: false, partial: false, pathspecs: [] };
   let afterDashes = false;
   for (const a of args) {
     if (!afterDashes && a === "--") afterDashes = true;
     else if (!afterDashes && (a === "-A" || a === "--all" || a === "--no-ignore-removal")) out.everything = true;
     else if (!afterDashes && (a === "-u" || a === "--update")) out.trackedOnly = true;
     else if (!afterDashes && (a === "-f" || a === "--force")) out.force = true;
+    else if (!afterDashes && /^--(patch|interactive|edit|intent-to-add|dry-run)$/.test(a)) out.partial = true;
     else if (!afterDashes && a.startsWith("-")) {
+      if (/^-[a-zA-Z]+$/.test(a) && /[pieNn]/.test(a)) out.partial = true;
       if (/^-[a-zA-Z]*A/.test(a)) out.everything = true;
       else if (/^-[a-zA-Z]*u/.test(a)) out.trackedOnly = true;
     } else out.pathspecs.push(a);
