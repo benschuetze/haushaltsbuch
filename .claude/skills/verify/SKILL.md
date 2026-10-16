@@ -69,6 +69,15 @@ description: Use for every code change before calling it done - writing the righ
   Gegenprobe: Regel abschalten, Test muss rot werden.
 - Hooks ohne Abhängigkeiten, nur `node:`-Module, Pfade mit `path` normalisieren und klein schreiben (macOS/Windows).
 - Blockiert der Commit-Hook: aufteilen statt umgehen. Kein `--no-verify`-Ersatz über andere Werkzeuge.
+- Prüfpunkte für den Commit-Hook (aus zwei Reviews, Fälle in `tests/hooks/commit-size.test.ts`):
+  - Renames zählen einmal (`git mv`, gestagt, auch ein früheres `mv` plus `git add -A`); `git commit <pfad>` ohne `-i`
+    misst nur diese Pfade, nicht den Rest des Index; `git add -A <pfad>`, `-p`, `-N` zählen nicht den ganzen Baum.
+  - Ein scheiternder git-Aufruf kostet nur seinen Teil, der Index wird immer gemessen; Zustand je Repo, nicht je Zeile.
+  - Shell-Zerlegung: `cd $(…)`/Backticks ohne Anführungszeichen, `cd -`/`popd` (unbekannt → Rückfrage), `timeout`,
+    `nice`, `$HOME`, Globs gegen das Dateisystem auflösen, Interpreter mit Inline-Code oder Heredoc sind unbekannt.
+  - Schreibt ein Befehl vor dem Commit Dateien, die der Commit aus dem Arbeitsbaum nimmt (`git add`, bei `-a` nur
+    getrackte), fragt der Hook: deren Größe ist vorher nicht sichtbar.
+  - Laufzeit: ein Zeitbudget für alle git-Aufrufe, Zeilen zählen bricht ab, sobald die Grenze überschritten ist.
 
 ## CI
 

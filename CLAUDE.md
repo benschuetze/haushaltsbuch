@@ -89,6 +89,9 @@ Details und Pflichtfälle: Skill `verify`.
 - Kleine Commits nach jedem Schritt, Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`).
   Der Hook `.claude/hooks/commit-size.mjs` blockiert `git commit` über 400 geänderten Zeilen (ohne Lockfile,
   `drizzle/`, Eval-Daten, CSV-Beispiele). Aufteilen; nur nach Bens Ja ein Trailer `Large-Commit: <Grund>`, dann fragt der Hook ihn.
+  Er sagt den Commit voraus, bevor der Befehl läuft: `git add`/`rm`/`mv` davor im selben Befehl, `-a`, `--amend`,
+  Pfade und `sh -c` zählen mit (Parser in `shell.mjs`). Ändert oder nennt ein Commit-Befehl Workflows, Hooks,
+  Settings oder `beispieldaten/erwartet.json`, fragt er Ben.
 - Arbeit auf Feature-Branches (`feat/…`, `fix/…`), Merge nach `main` per Pull Request mit grüner CI.
   Erzwungen per GitHub-Ruleset „main“: PR Pflicht, Checks `check`, `e2e`, `gitleaks`, `analyze (…)` grün,
   kein Force-Push, kein Löschen. Ein neuer Pflicht-Check muss erst einmal auf einem PR gelaufen sein, bevor er ins Ruleset kommt.
