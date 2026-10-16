@@ -2,7 +2,7 @@
 // paths the commands before a commit may write. Not a shell: no expansion beyond `~`, no aliases, no functions.
 // Unparseable input yields fewer commands, never a crash; what cannot be known is reported as unknown.
 
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -27,7 +27,9 @@ const DYNAMIC = /[$`]/;
  * Splits a command line into simple commands (arrays of words), respecting quotes. Each command array carries
  * `targets`: the files its output redirections (`>`, `>>`, `&>`, `>|`) write. Input redirections, here-strings and
  * heredoc bodies are dropped. With `groups`, a subshell or command substitution adds an empty array with
- * `group: "open"` or `"close"`, so a `cd` inside it can be scoped.
+ * `group: "open"` or `"close"`, so a `cd` inside it can be scoped. An unquoted `$( )` or backtick substitution is
+ * both: its commands are listed before the command that uses it, and in that command it stays one word with its
+ * raw text (`cd $(git rev-parse --show-toplevel)`), so a `cd` or `git -C` to it is not mistaken for a bare `cd`.
  */
 export function splitCommands(line, { groups = false } = {}) {
   const commands = [];
@@ -61,6 +63,8 @@ export function splitCommands(line, { groups = false } = {}) {
   const mark = (group) => {
     if (groups) commands.push(Object.assign([], { targets: [], group }));
   };
+  /** Open `(`, `$(` and backticks; a substitution keeps the outer command's state to resume after it. */
+  const open = [];
 
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
@@ -143,11 +147,39 @@ export function splitCommands(line, { groups = false } = {}) {
       continue;
     }
     const op = OPERATORS.find((o) => line.startsWith(o, i));
+    const closesTick = op === "`" && open.at(-1)?.kind === "`";
+    if (op === "$(" || (op === "`" && !closesTick)) {
+      open.push({ kind: op, start: i, words, targets, word, inWord, quoted, next });
+      words = [];
+      targets = [];
+      word = "";
+      inWord = false;
+      quoted = false;
+      next = "arg";
+      mark("open");
+      i += op.length - 1;
+      continue;
+    }
+    if ((op === ")" && open.at(-1)?.kind === "$(") || closesTick) {
+      endWord();
+      endCommand();
+      mark("close");
+      const outer = open.pop();
+      ({ words, targets, quoted, next } = outer);
+      word = outer.word + line.slice(outer.start, i + 1);
+      inWord = true;
+      continue;
+    }
     if (op) {
       endWord();
       endCommand();
-      if (op === "(" || op === "$(") mark("open");
-      else if (op === ")") mark("close");
+      if (op === "(") {
+        open.push({ kind: "(" });
+        mark("open");
+      } else if (op === ")") {
+        if (open.at(-1)?.kind === "(") open.pop();
+        mark("close");
+      }
       i += op.length - 1;
       continue;
     }
@@ -235,7 +267,9 @@ function findRepoRoot(start) {
 function cdTarget(dir, word) {
   if (dir === null) return null;
   if (word === undefined || word === "~") return os.homedir();
-  if (/^\$\(\s*git\s+rev-parse\s+--show-toplevel\s*\)$/.test(word)) return findRepoRoot(dir);
+  if (/^(\$\(\s*git\s+rev-parse\s+--show-toplevel\s*\)|`\s*git\s+rev-parse\s+--show-toplevel\s*`)$/.test(word)) {
+    return findRepoRoot(dir);
+  }
   const home = /^(\$HOME|\$\{HOME\})(\/|$)/.exec(word);
   if (home) return path.join(os.homedir(), word.slice(home[0].length));
   if (DYNAMIC.test(word)) return null;
@@ -294,9 +328,14 @@ function walk(line, cwd, visit) {
       walk(script, dir, visit);
       continue;
     }
-    if (words[0] === "cd") {
+    if (words[0] === "cd" || words[0] === "pushd") {
+      // `cd -` and `popd` go back to a directory this parser does not track.
       const target = words.find((w, k) => k > 0 && !w.startsWith("-"));
-      dir = cdTarget(dir, target);
+      dir = words[1] === "-" ? null : cdTarget(dir, target);
+      continue;
+    }
+    if (words[0] === "popd") {
+      dir = null;
       continue;
     }
     visit(Object.assign(words, { targets: raw.targets }), dir);
@@ -390,7 +429,7 @@ const COMMIT_SHORT_OPTIONAL_VALUE = new Set(["S", "u"]);
 
 /** Parses `git commit` arguments into the parts that decide what gets committed. */
 export function parseCommitArgs(args) {
-  const out = { all: false, amend: false, pathspecs: [], messages: [], files: [], trailers: [] };
+  const out = { all: false, amend: false, include: false, pathspecs: [], messages: [], files: [], trailers: [] };
   const take = (key, value) => {
     if (key === "-m" || key === "--message") out.messages.push(value);
     else if (key === "-F" || key === "--file") out.files.push(value);
@@ -407,6 +446,7 @@ export function parseCommitArgs(args) {
       const key = resolveLongOption(eq === -1 ? a : a.slice(0, eq));
       if (key === "--all") out.all = true;
       else if (key === "--amend") out.amend = true;
+      else if (key === "--include") out.include = true;
       if (key && COMMIT_LONG_WITH_VALUE.has(key)) {
         const value = eq === -1 ? (args[++i] ?? "") : a.slice(eq + 1);
         take(key, value);
@@ -423,6 +463,7 @@ export function parseCommitArgs(args) {
         }
         if (COMMIT_SHORT_OPTIONAL_VALUE.has(ch)) break;
         if (ch === "a") out.all = true;
+        if (ch === "i") out.include = true;
       }
       continue;
     }
@@ -473,6 +514,42 @@ const INTERPRETERS = new Set(["node", "python", "python3", "ruby", "perl", "deno
 
 const plainArgs = (args) => args.filter((a) => !a.startsWith("-"));
 
+/**
+ * The files an unquoted glob in a written path matches now, the way the shell expands it (`*` and `?` do not match
+ * a leading dot). No match: the shell passes the word on literally, so it is returned as it is.
+ */
+export function expandGlob(absolute) {
+  if (!/[*?[]/.test(absolute)) return [absolute];
+  let found = [path.parse(absolute).root];
+  for (const part of absolute.split(path.sep).filter(Boolean)) {
+    if (!/[*?[]/.test(part)) {
+      found = found.map((base) => path.join(base, part));
+      continue;
+    }
+    const re = new RegExp(
+      `^${part
+        .replace(/[.+^${}()|\\]/g, "\\$&")
+        .replace(/\[!/g, "[^")
+        .replace(/\*/g, ".*")
+        .replace(/\?/g, ".")}$`,
+    );
+    const next = [];
+    for (const base of found) {
+      let names = [];
+      try {
+        names = readdirSync(base);
+      } catch {
+        // Not a directory: nothing below it matches.
+      }
+      for (const name of names) {
+        if (re.test(name) && (part.startsWith(".") || !name.startsWith("."))) next.push(path.join(base, name));
+      }
+    }
+    found = next.slice(0, 1000);
+  }
+  return found.length > 0 ? found : [absolute];
+}
+
 /** The path words a command writes, or "unknown" when it may write files it does not name. */
 function writes(words) {
   const program = (words[0] ?? "").split("/").pop();
@@ -481,8 +558,9 @@ function writes(words) {
   if (WRITES_AFTER_FIRST.has(program)) return plainArgs(args).slice(1);
   if (WRITES_LAST.has(program)) return plainArgs(args).slice(-1);
   if (program === "dd") return args.filter((a) => a.startsWith("of=")).map((a) => a.slice(3));
-  if (program === "sed" || program === "perl") {
-    if (!args.some((a) => /^-[a-zA-Z]*i/.test(a) || a.startsWith("--in-place"))) return [];
+  const inPlace = args.some((a) => /^-[a-zA-Z]*i/.test(a) || a.startsWith("--in-place"));
+  if (program === "sed" || (program === "perl" && inPlace)) {
+    if (!inPlace) return [];
     return plainArgs(args).filter((a) => !/^s(.).*\1.*\1[a-z]*$/.test(a));
   }
   if (program === "awk" || program === "gawk") return args.includes("inplace") ? plainArgs(args).slice(1) : [];
@@ -496,7 +574,12 @@ function writes(words) {
     return roots;
   }
   if (program === "patch" || program === "unzip" || program === "tar") return "unknown";
-  if (INTERPRETERS.has(program) && args.some((a) => /^-[a-zA-Z]*[ce]$/.test(a))) return "unknown";
+  // Inline code (`-c`, `-e`, `--eval`) or a script read from stdin (`python3 - <<EOF`, no script at all) may write
+  // anything. A named script is not seen.
+  if (INTERPRETERS.has(program)) {
+    const inline = args.some((a) => /^-[a-zA-Z]*[cepE]$/.test(a) || /^--(eval|print|command)\b/.test(a));
+    if (inline || args.includes("-") || plainArgs(args).length === 0) return "unknown";
+  }
   if (isGit(words[0])) {
     const git = gitSubcommand(words, ".");
     if (!git) return [];
@@ -518,10 +601,12 @@ function writes(words) {
  * Paths that commands before the last `git commit` in the line may write: arguments of known writers (rm, mv,
  * cp/ln/rsync targets, tee, touch, dd of=, sed/perl -i, awk inplace, find -delete/-exec, git rm/mv/checkout/restore)
  * and every output redirection. `unknown` is set when a command may write files it does not name (patch, git
- * apply/pull/merge, inline interpreter code) or a path cannot be resolved (variables, unknown directory). Writes
- * after the last commit do not change it and are ignored. Programs not listed (formatters, build tools) are not
- * seen.
- * @returns {{ paths: string[], unknown: string | null }}
+ * apply/pull/merge, inline interpreter code) or a path cannot be resolved (variables, unknown directory). Globs
+ * are expanded against the file system as it is now. Writes after the last commit do not change it and are
+ * ignored. Programs not listed (formatters, build tools, named scripts) are not seen.
+ * `staged` holds what `git rm`/`git mv` write (their redirections included), which the commit prediction counts
+ * itself.
+ * @returns {{ paths: string[], staged: string[], unknown: string | null }}
  */
 export function writtenPaths(line, cwd) {
   const steps = [];
@@ -531,9 +616,11 @@ export function writtenPaths(line, cwd) {
     if (isGit(s.words[0]) && gitSubcommand(s.words, s.dir)?.sub === "commit") last = k;
   });
   const paths = [];
+  const staged = [];
   let unknown = null;
   for (const { words, dir } of steps.slice(0, Math.max(last, 0))) {
     const named = writes(words);
+    const into = isGit(words[0]) && GIT_WRITES_PATHS.has(gitSubcommand(words, dir)?.sub ?? "") ? staged : paths;
     if (named === "unknown") {
       unknown ??= words.slice(0, 2).join(" ");
       continue;
@@ -544,10 +631,10 @@ export function writtenPaths(line, cwd) {
         unknown ??= word;
         continue;
       }
-      paths.push(
-        word === "~" || word.startsWith("~/") ? path.join(os.homedir(), word.slice(2)) : path.resolve(dir, word),
-      );
+      const full =
+        word === "~" || word.startsWith("~/") ? path.join(os.homedir(), word.slice(2)) : path.resolve(dir, word);
+      into.push(...expandGlob(full));
     }
   }
-  return { paths, unknown };
+  return { paths, staged, unknown };
 }

@@ -6,11 +6,15 @@
 // study of 2,500 reviews), and in this repo the last 60 squash merges have a median of 88 and a p90 of about
 // 430 counted lines, so 400 only stops the outliers. Counted = added + deleted, without the files below.
 //
-// The hook runs before the command, so it predicts each commit in it: what is staged now, plus what `git add`/`rm`/
-// `mv` earlier in the same command, `-a`, `--amend` (measured against HEAD~1) and pathspecs will add, also inside
-// `sh -c '...'`. shell.mjs does the parsing. A rename counts once. Each git call is read-only and the whole
-// prediction has ~8 s; a measurement that fails or runs out of time is skipped, so the result is at least the
-// index: a limit can be missed under load, never invented. Clean filters set in the repo still run on worktree diffs.
+// The hook runs before the command, so it predicts each commit in it: what is staged now (only the named paths for
+// `git commit <paths>` without -i), plus what `git add`/`rm`/`mv` earlier in the same command, `-a`, `--amend`
+// (measured against HEAD~1) and pathspecs will add, also inside `sh -c '...'` and `$( )`. shell.mjs does the
+// parsing. A rename counts once, also one made earlier with plain `mv` (matched by content). It asks instead of
+// guessing when a command before the commit writes a guarded path or a folder holding one (globs expanded), writes
+// other files the commit takes from the working tree, or may write files it does not name. Each git call is
+// read-only and the whole prediction has ~8 s; a measurement that fails or runs out of time is skipped, so under
+// load the hook counts at least the index and may miss the limit. Clean filters set in the repo still run when the
+// worktree is diffed or hashed.
 // Not covered: merge, cherry-pick, revert, rebase, am, stash, git aliases, `eval`, variables holding commands or
 // paths, staging through `xargs` or `--pathspec-from-file`, commits from inside scripts. CI and review see those.
 //
@@ -154,6 +158,7 @@ function numstat(root, args, into) {
 
 /** Line count of a file on disk, read in chunks so size does not matter. Binary files (a NUL byte) count 0. */
 const BUFFER = Buffer.alloc(1 << 20);
+/** Stops early once past LIMIT or out of time: the commit is too big anyway, or the hook must answer. */
 function countLines(full) {
   const fd = openSync(full, "r");
   try {
@@ -167,8 +172,9 @@ function countLines(full) {
       const chunk = buf.subarray(0, n);
       if (first && chunk.subarray(0, 8000).includes(0)) return 0;
       first = false;
-      for (const byte of chunk) if (byte === 0x0a) lines++;
+      for (let at = chunk.indexOf(0x0a); at !== -1; at = chunk.indexOf(0x0a, at + 1)) lines++;
       last = chunk[n - 1];
+      if (lines > LIMIT || outOfTime()) return lines;
     }
     return last === 0x0a ? lines : lines + 1;
   } finally {
@@ -180,7 +186,7 @@ function countLines(full) {
  * Untracked files that `git add` would pick up. `force` (`git add -f`) includes ignored files. Stops once the files
  * counted here alone pass LIMIT (the commit is too big anyway) or the time budget is used up.
  */
-function untracked(root, pathspecs, into, force) {
+function untracked(root, pathspecs, into, force, added = new Set()) {
   const args = ["ls-files", "--others", "--full-name", "-z"];
   if (!force) args.push("--exclude-standard");
   let sum = 0;
@@ -195,8 +201,44 @@ function untracked(root, pathspecs, into, force) {
       // Unreadable: count as 0 rather than fail.
     }
     sum += n;
+    added.add(file);
     into.set(file, Math.max(into.get(file) ?? 0, n));
   }
+}
+
+/**
+ * A file moved with plain `mv` shows as a deleted tracked file plus a new untracked one; git commits it as a rename.
+ * New files whose content equals a deleted file's blob count 0 lines, like the rename git records. (`hash-object`
+ * runs the repo's clean filters, as worktree diffs do.)
+ */
+function pairRenames(root, base, added, files) {
+  if (added.size === 0) return;
+  const deleted = new Map();
+  const raw = git(root, [
+    "diff",
+    "--raw",
+    "-z",
+    "--no-renames",
+    "--diff-filter=D",
+    "--no-abbrev",
+    "--no-ext-diff",
+    base,
+  ]).split("\0");
+  for (let i = 0; i + 1 < raw.length; i += 2) {
+    const blob = raw[i].split(" ")[2];
+    if (blob) deleted.set(blob, raw[i + 1]);
+  }
+  if (deleted.size === 0) return;
+  const names = [...added];
+  const hashes = git(root, ["hash-object", "--stdin-paths"], `${names.join("\n")}\n`)
+    .trim()
+    .split("\n");
+  names.forEach((name, k) => {
+    const from = deleted.get(hashes[k]);
+    if (from === undefined) return;
+    files.set(name, 0);
+    files.set(from, 0);
+  });
 }
 
 /** Files that `git rm`/`git mv` will take out of the index, with their committed size (not yet visible on disk). */
@@ -225,8 +267,11 @@ function predict(root, commit, staging, indexCounts) {
   const opts = parseCommitArgs(commit.args);
   const base = baseFor(root, opts.amend);
   const files = new Map();
-  if (indexCounts) safely(() => numstat(root, ["--cached", base], files));
+  // `git commit <paths>` without -i commits only those paths, not the rest of the index.
+  const only = opts.pathspecs.length > 0 && !opts.include;
+  if (indexCounts && !only) safely(() => numstat(root, ["--cached", base], files));
   else if (opts.amend) safely(() => numstat(root, [base, "HEAD"], files));
+  const added = new Set();
   if (opts.all) safely(() => numstat(root, [base], files));
   if (opts.pathspecs.length > 0) {
     safely(() => numstat(root, [base, "--", ...absolute(commit.dir, opts.pathspecs)], files));
@@ -260,27 +305,45 @@ function predict(root, commit, staging, indexCounts) {
     // With pathspecs, `-A` and `-u` act on those paths only; the pathspec measurement below covers them.
     if ((s.everything || s.trackedOnly) && s.pathspecs.length === 0) safely(() => numstat(root, [base], files));
     if (specs.length > 0) safely(() => numstat(root, [base, "--", ...specs], files));
-    if (s.everything && s.pathspecs.length === 0) safely(() => untracked(root, [], files, s.force));
-    else if (!s.trackedOnly && specs.length > 0) safely(() => untracked(root, specs, files, s.force));
+    if (s.everything && s.pathspecs.length === 0) safely(() => untracked(root, [], files, s.force, added));
+    else if (!s.trackedOnly && specs.length > 0) safely(() => untracked(root, specs, files, s.force, added));
   }
+  safely(() => pairRenames(root, base, added, files));
   return { files, opts };
 }
 
 /**
  * Guarded paths, or folders holding one (the repo root included), that commands before the commit write: known
  * writers (`rm`, `mv`, `cp`, `sed -i`, `tee`, `git rm`/`checkout` …) and output redirections, following `cd`. Their
- * effect is invisible before the command runs. `unknown` names a command or path whose writes could not be determined.
+ * effect is invisible before the command runs. `inside` lists other files in the repo they write (not `git rm`/`mv`,
+ * which the prediction counts). `unknown` names a command or path whose writes could not be determined.
  */
 function guardedWrites(line, cwd, root) {
-  const { paths, unknown } = writtenPaths(line, cwd);
+  const { paths, staged, unknown } = writtenPaths(line, cwd);
   const hits = new Set();
-  for (const absolute of paths) {
+  const inside = new Set();
+  const own = new Set(paths);
+  for (const absolute of [...paths, ...staged]) {
     const rel = toRel(root, resolveExisting(absolute));
     if (rel.startsWith("..") || path.isAbsolute(rel)) continue;
     const lower = rel.toLowerCase();
     if (isGuarded(lower) || holdsGuarded(lower)) hits.add(rel || ".");
+    else if (own.has(absolute)) inside.add(rel);
   }
-  return { hits: [...hits], unknown };
+  return { hits: [...hits], inside: [...inside], unknown };
+}
+
+/** The paths (files or folders) among `rels` that hold tracked files; all of them if git cannot tell. */
+function tracked(root, rels) {
+  if (rels.length === 0) return [];
+  try {
+    const files = git(root, ["ls-files", "-z", "--", ...rels])
+      .split("\0")
+      .filter(Boolean);
+    return rels.filter((rel) => files.some((f) => f === rel || f.startsWith(`${rel}/`)));
+  } catch {
+    return rels;
+  }
 }
 
 function check(command, cwd) {
@@ -309,9 +372,18 @@ function check(command, cwd) {
     const root = findRepoRoot(cmd.dir);
     if (!root) continue;
     let prediction;
+    /**
+     * Whether this commit takes content from the working tree, where shell writes before it land: everything after a
+     * `git add` in the line, only tracked files with -a or pathspecs.
+     */
+    let picksWorktree = false;
+    let picksAll = false;
     try {
       const mine = staging.filter((s) => rootOf(s.dir) === root);
+      picksAll = mine.some((s) => s.sub === "add" || s.sub === "stage");
+      picksWorktree = picksAll;
       prediction = predict(root, cmd, mine, !seen.has(root));
+      picksWorktree ||= prediction.opts.all || prediction.opts.pathspecs.length > 0;
       // The next commit in this repo starts from what this one leaves behind.
       staging = staging.filter((s) => !mine.includes(s));
     } catch {
@@ -354,6 +426,13 @@ function check(command, cwd) {
       questions.push(
         `It changes ${guarded.join(", ")}, or a command before it writes there: listed under "Nicht ohne ` +
           'Rückfrage ändern" or part of the guardrails. A change made through Bash was not shown to Ben when it was written.',
+      );
+    }
+    const growing = picksWorktree ? (picksAll ? written.inside : tracked(root, written.inside)) : [];
+    if (growing.length > 0) {
+      questions.push(
+        `A command before the commit writes ${growing.slice(0, 3).join(", ")}; what that adds to the commit ` +
+          "is not visible before the command runs. Run it in its own call, then commit.",
       );
     }
     if (written.unknown) {

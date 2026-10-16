@@ -159,7 +159,10 @@ describe("commit-size hook", () => {
       ]) {
         expect(commit(command).decision, command).toBe("ask");
       }
-      expect(commit("rm -rf app && git commit -am x").decision).toBeUndefined();
+      // A folder without guarded files is fine, unless the commit then takes its removal along (-a, tracked files).
+      expect(commit("rm -rf tmp && git commit -am x").decision).toBeUndefined();
+      expect(commit("rm -rf app && git commit -m x").decision).toBeUndefined();
+      expect(commit("rm -rf app && git commit -am x").decision).toBe("ask");
       expect(commit("git commit -m x && rm -rf .claude").decision).toBeUndefined();
     });
 
@@ -214,6 +217,37 @@ describe("commit-size hook", () => {
         expect(commit(c).decision, c).toBeUndefined();
       }
       expect(commit("git add -A && git commit -m x").decision).toBe("deny");
+    });
+
+    it("follows `cd $(…)` and backticks, and treats `cd -`/`popd` as unknown", () => {
+      writeFileSync(path.join(repo, "big.ts"), lines(500));
+      expect(commit("cd $(git rev-parse --show-toplevel) && git add -A && git commit -m x").decision).toBe("deny");
+      expect(commit("git add -A && git -C `git rev-parse --show-toplevel` commit -m x").decision).toBe("deny");
+      expect(commit("cd - && git add -A && git commit -m x").decision).toBe("ask");
+      expect(commit("popd && git commit -m x").decision).toBe("ask");
+    });
+
+    it("expands globs and treats inline interpreter code as unknown", () => {
+      stage(".claude/settings.json", 1);
+      commitHere("-m", "settings");
+      expect(commit("rm -rf .claude/* && git commit -am x").decision).toBe("ask");
+      expect(commit("sed -i '' 's/a/b/' .claude/settings*.json && git commit -am x").decision).toBe("ask");
+      expect(commit("perl -e 'print 1' && git commit -am x").decision).toBe("ask");
+      expect(commit("python3 - <<'EOF'\nprint(1)\nEOF\ngit commit -am x").decision).toBe("ask");
+    });
+
+    it("asks for writes the commit takes from the working tree, counts a plain mv once, and --only paths", () => {
+      stage("app/big.ts", 300);
+      commitHere("-m", "big");
+      expect(commit("sed -i '' 's/^/x/' app/big.ts && git add -A && git commit -m x").decision).toBe("ask");
+      execFileSync("mv", [path.join(repo, "app/big.ts"), path.join(repo, "app/renamed.ts")]);
+      expect(commit("git add -A && git commit -m mv").decision).toBeUndefined();
+      git("add", "-A");
+      commitHere("-m", "mv");
+      stage("app/other.ts", 500);
+      writeFileSync(path.join(repo, "app/renamed.ts"), "changed\n");
+      expect(commit("git commit -m x app/renamed.ts").decision).toBeUndefined();
+      expect(commit("git commit -i -m x app/renamed.ts").decision).toBe("deny");
     });
 
     it("sees commits behind timeout and nice", () => {
