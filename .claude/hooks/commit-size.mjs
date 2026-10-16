@@ -16,9 +16,9 @@
 // missing git must never crash the hook or block unrelated Bash commands.
 
 import { execFileSync } from "node:child_process";
-import { closeSync, existsSync, openSync, readSync, statSync } from "node:fs";
+import { closeSync, existsSync, openSync, readSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
-import { gitCommands, parseCommitArgs, parseStageArgs, splitCommands, stripPrefixes } from "./shell.mjs";
+import { gitCommands, parseCommitArgs, parseStageArgs, writtenPaths } from "./shell.mjs";
 
 const LIMIT = 400;
 const OVERRIDE_TRAILER = "Large-Commit:";
@@ -43,26 +43,16 @@ const GUARDED = [
   /^beispieldaten\/erwartet\.json$/,
 ];
 const isGuarded = (rel) => GUARDED.some((re) => re.test(rel.toLowerCase()));
-/** Directories that hold guarded files: removing or overwriting them removes the guardrails. */
-const GUARDED_DIRS = new Set([".claude", ".claude/hooks", ".github", ".github/workflows"]);
-
-/** Programs that only read their arguments; naming a guarded file there changes nothing. */
-const READ_ONLY = new Set([
-  "cat",
-  "less",
-  "more",
-  "head",
-  "tail",
-  "grep",
-  "rg",
-  "diff",
-  "wc",
-  "ls",
-  "stat",
-  "file",
-  "bat",
-]);
-const READ_ONLY_GIT = new Set(["commit", "diff", "log", "show", "status", "blame", "grep", "ls-files", "ls-tree"]);
+/** Guarded paths as plain prefixes, to tell whether a folder holds one: `rm -rf .claude` removes the guardrails. */
+const GUARDED_PREFIXES = [
+  ".claude/hooks/",
+  ".claude/settings.json",
+  ".claude/settings.local.json",
+  ".github/workflows/",
+  ".github/codeowners",
+  "beispieldaten/erwartet.json",
+];
+const holdsGuarded = (rel) => rel === "" || GUARDED_PREFIXES.some((p) => p.startsWith(`${rel}/`));
 
 const toRel = (root, absolute) => path.relative(root, absolute).split(path.sep).join("/");
 
@@ -73,6 +63,22 @@ function findRepoRoot(start) {
     const parent = path.dirname(dir);
     if (parent === dir) return null;
     dir = parent;
+  }
+}
+
+/** The real path of `p`, or of its longest existing ancestor with the rest appended (for files not written yet). */
+function resolveExisting(p) {
+  let head = p;
+  const tail = [];
+  for (;;) {
+    try {
+      return path.join(realpathSync(head), ...tail);
+    } catch {
+      const parent = path.dirname(head);
+      if (parent === head) return p;
+      tail.unshift(path.basename(head));
+      head = parent;
+    }
   }
 }
 
@@ -210,37 +216,20 @@ function predict(root, commit, staging, indexCounts) {
 }
 
 /**
- * Guarded paths named as literal paths by commands in the line that may write them (`sed -i`, `>`, `cp`, `rm`,
- * `git rm`/`mv`/`add`). Their effect is invisible before the command runs. Words resolve against the directory of
- * their own command, following `cd`; only words with a `/` or naming an existing path count.
+ * Guarded paths, or folders holding one (the repo root included), that commands before the commit write: known
+ * writers (`rm`, `mv`, `cp`, `sed -i`, `tee`, `git rm`/`checkout` …) and output redirections, following `cd`. Their
+ * effect is invisible before the command runs. `unknown` names a command or path whose writes could not be determined.
  */
-function guardedNamed(line, cwd, root) {
-  const named = new Set();
-  let dir = cwd;
-  for (const raw of splitCommands(line, { keepRedirects: true })) {
-    const words = stripPrefixes(raw);
-    const program = (words[0] ?? "").split("/").pop();
-    if (program === "cd") {
-      if (words[1] && !words[1].startsWith("-")) dir = path.resolve(dir, words[1]);
-      continue;
-    }
-    if (READ_ONLY.has(program)) continue;
-    let args = words.slice(1);
-    if (program === "git") {
-      const sub = args.findIndex((w) => !w.startsWith("-"));
-      if (sub === -1 || READ_ONLY_GIT.has(args[sub])) continue;
-      args = args.slice(sub + 1);
-    }
-    for (const word of args) {
-      if (word === "" || word.startsWith("-")) continue;
-      const target = path.resolve(dir, word);
-      if (!word.includes("/") && !existsSync(target)) continue;
-      const rel = toRel(root, target);
-      if (rel.startsWith("..") || path.isAbsolute(rel)) continue;
-      if (isGuarded(rel) || GUARDED_DIRS.has(rel.toLowerCase())) named.add(rel);
-    }
+function guardedWrites(line, cwd, root) {
+  const { paths, unknown } = writtenPaths(line, cwd);
+  const hits = new Set();
+  for (const absolute of paths) {
+    const rel = toRel(root, resolveExisting(absolute));
+    if (rel.startsWith("..") || path.isAbsolute(rel)) continue;
+    const lower = rel.toLowerCase();
+    if (isGuarded(lower) || holdsGuarded(lower)) hits.add(rel || ".");
   }
-  return [...named];
+  return { hits: [...hits], unknown };
 }
 
 function check(command, cwd) {
@@ -253,6 +242,17 @@ function check(command, cwd) {
       continue;
     }
     if (cmd.sub !== "commit") continue;
+    if (cmd.dir === null) {
+      verdict = {
+        decision: "ask",
+        reason:
+          "This commit runs in a directory taken from a variable or substitution, so its size and content could " +
+          "not be checked. Ben decides.",
+      };
+      continue;
+    }
+    // Resolved first, so git runs in the repo that is judged, not in one a symlink points into.
+    cmd.dir = resolveExisting(cmd.dir);
     const root = findRepoRoot(cmd.dir);
     if (!root) continue;
     let files;
@@ -260,7 +260,7 @@ function check(command, cwd) {
       files = predict(
         root,
         cmd,
-        staging.filter((s) => findRepoRoot(s.dir) === root),
+        staging.filter((s) => s.dir !== null && findRepoRoot(resolveExisting(s.dir)) === root),
         commitsSeen === 0,
       );
     } catch {
@@ -274,9 +274,8 @@ function check(command, cwd) {
     const entries = [...files].map(([file, n]) => ({ file, n }));
     const counted = entries.filter((e) => !IGNORED.some((re) => re.test(e.file)));
     const total = counted.reduce((sum, e) => sum + e.n, 0);
-    const guarded = [
-      ...new Set([...entries.map((e) => e.file).filter(isGuarded), ...guardedNamed(command, cmd.dir, root)]),
-    ];
+    const written = guardedWrites(command, cwd, root);
+    const guarded = [...new Set([...entries.map((e) => e.file).filter(isGuarded), ...written.hits])];
 
     if (total > LIMIT && !command.includes(OVERRIDE_TRAILER)) {
       const biggest = counted
@@ -301,8 +300,14 @@ function check(command, cwd) {
       questions.push(`This commit changes ${total} lines (limit ${LIMIT}) and carries a ${OVERRIDE_TRAILER} reason.`);
     if (guarded.length > 0) {
       questions.push(
-        `It changes or names ${guarded.join(", ")}: listed under "Nicht ohne Rückfrage ändern" or part of the ` +
-          "guardrails. A change made through Bash was not shown to Ben when it was written.",
+        `It changes ${guarded.join(", ")}, or a command before it writes there: listed under "Nicht ohne ` +
+          'Rückfrage ändern" or part of the guardrails. A change made through Bash was not shown to Ben when it was written.',
+      );
+    }
+    if (written.unknown) {
+      questions.push(
+        `\`${written.unknown}\` before the commit may change files it does not name, so the commit could not be ` +
+          "predicted. Run it in its own call, then commit.",
       );
     }
     if (questions.length > 0) verdict = { decision: "ask", reason: `${questions.join("\n")}\nBen decides.` };

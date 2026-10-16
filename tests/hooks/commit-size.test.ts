@@ -109,7 +109,7 @@ describe("commit-size hook", () => {
         'sh -c "git commit -am x"',
         "sudo -u me git commit -am x",
         "git commit app/a.ts -m x",
-        "git commit --al -m x",
+        "git commit --mess x --all",
       ]) {
         expect(commit(command).decision, command).toBe("deny");
       }
@@ -145,6 +145,29 @@ describe("commit-size hook", () => {
       git("mv", "moved.mjs", ".claude/hooks/protect-paths.mjs");
       expect(commit("echo x > .claude/hooks/protect-paths.mjs && git commit -am x").decision).toBe("ask");
       expect(commit("cat .claude/settings.json; git commit -am x").decision).toBeUndefined();
+      expect(commit("sort < .claude/settings.json > out.txt && git commit -am x").decision).toBeUndefined();
+    });
+
+    it("asks when a command before the commit removes a folder that holds guardrails, the repo root included", () => {
+      stage("app/a.ts", 3);
+      for (const command of [
+        "rm -rf .claude && git commit -am x",
+        "rm -rf . && git commit -am x",
+        "cd app && rm -rf .. && git commit -am x",
+        'cd "$(git rev-parse --show-toplevel)" && rm .claude/settings.json && git commit -am x',
+        "(cd app) && rm .claude/settings.json && git commit -am x",
+      ]) {
+        expect(commit(command).decision, command).toBe("ask");
+      }
+      expect(commit("rm -rf app && git commit -am x").decision).toBeUndefined();
+      expect(commit("git commit -m x && rm -rf .claude").decision).toBeUndefined();
+    });
+
+    it("asks when the commit's directory or the writes before it cannot be known", () => {
+      stage("app/a.ts", 3);
+      expect(commit('cd "$DIR" && git commit -m x').decision).toBe("ask");
+      expect(commit("patch -p1 < fix.diff && git commit -am x").decision).toBe("ask");
+      expect(commit('rm "$F" && git commit -am x').decision).toBe("ask");
     });
   });
 
