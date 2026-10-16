@@ -34,7 +34,7 @@
     "@neondatabase/serverless": "^1.2.0",
     "@react-router/node": "^7.18.4",
     "@react-router/serve": "^7.18.4",
-    "@sentry/node": "10.75.3",
+    "@sentry/node": "11.7.0",
     "ai": "^7.0.133",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
