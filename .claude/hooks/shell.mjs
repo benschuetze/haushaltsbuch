@@ -526,13 +526,19 @@ export function expandGlob(absolute) {
       found = found.map((base) => path.join(base, part));
       continue;
     }
-    const re = new RegExp(
-      `^${part
-        .replace(/[.+^${}()|\\]/g, "\\$&")
-        .replace(/\[!/g, "[^")
-        .replace(/\*/g, ".*")
-        .replace(/\?/g, ".")}$`,
-    );
+    let re;
+    try {
+      re = new RegExp(
+        `^${part
+          .replace(/[.+^${}()|\\]/g, "\\$&")
+          .replace(/\[!/g, "[^")
+          .replace(/\*/g, ".*")
+          .replace(/\?/g, ".")}$`,
+      );
+    } catch {
+      // Not a valid pattern (`a[1`, `[z-a]`): the shell keeps such a word as it is.
+      return [absolute];
+    }
     const next = [];
     for (const base of found) {
       let names = [];
@@ -578,7 +584,7 @@ function writes(words) {
   // anything. A named script is not seen.
   if (INTERPRETERS.has(program)) {
     const inline = args.some((a) => /^-[a-zA-Z]*[cepE]$/.test(a) || /^--(eval|print|command)\b/.test(a));
-    if (inline || args.includes("-") || plainArgs(args).length === 0) return "unknown";
+    if (inline || args.includes("-") || args.length === 0) return "unknown";
   }
   if (isGit(words[0])) {
     const git = gitSubcommand(words, ".");
@@ -606,7 +612,9 @@ function writes(words) {
  * ignored. Programs not listed (formatters, build tools, named scripts) are not seen.
  * `staged` holds what `git rm`/`git mv` write (their redirections included), which the commit prediction counts
  * itself.
- * @returns {{ paths: string[], staged: string[], unknown: string | null }}
+ * `order[i]` is the position of the command that writes `paths[i]`, `adds` the positions of `git add`/`stage`, so a
+ * caller can tell writes before staging from writes after it.
+ * @returns {{ paths: string[], staged: string[], order: number[], adds: number[], unknown: string | null }}
  */
 export function writtenPaths(line, cwd) {
   const steps = [];
@@ -617,8 +625,12 @@ export function writtenPaths(line, cwd) {
   });
   const paths = [];
   const staged = [];
+  /** For each path in `paths`, the position of the command that writes it; `adds` lists the `git add`/`stage` ones. */
+  const order = [];
+  const adds = [];
   let unknown = null;
-  for (const { words, dir } of steps.slice(0, Math.max(last, 0))) {
+  for (const [k, { words, dir }] of steps.slice(0, Math.max(last, 0)).entries()) {
+    if (isGit(words[0]) && ["add", "stage"].includes(gitSubcommand(words, dir)?.sub ?? "")) adds.push(k);
     const named = writes(words);
     const into = isGit(words[0]) && GIT_WRITES_PATHS.has(gitSubcommand(words, dir)?.sub ?? "") ? staged : paths;
     if (named === "unknown") {
@@ -633,8 +645,10 @@ export function writtenPaths(line, cwd) {
       }
       const full =
         word === "~" || word.startsWith("~/") ? path.join(os.homedir(), word.slice(2)) : path.resolve(dir, word);
-      into.push(...expandGlob(full));
+      const found = expandGlob(full);
+      into.push(...found);
+      if (into === paths) order.push(...found.map(() => k));
     }
   }
-  return { paths, staged, unknown };
+  return { paths, staged, order, adds, unknown };
 }

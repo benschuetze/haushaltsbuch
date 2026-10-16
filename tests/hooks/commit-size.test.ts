@@ -236,13 +236,20 @@ describe("commit-size hook", () => {
       expect(commit("python3 - <<'EOF'\nprint(1)\nEOF\ngit commit -am x").decision).toBe("ask");
     });
 
-    it("asks for writes the commit takes from the working tree, counts a plain mv once, and --only paths", () => {
+    it("asks for writes the commit takes from the working tree, counts a staged mv once, and --only paths", () => {
       stage("app/big.ts", 300);
       commitHere("-m", "big");
       expect(commit("sed -i '' 's/^/x/' app/big.ts && git add -A && git commit -m x").decision).toBe("ask");
+      // Writes after the last `git add` do not reach a commit without -a.
+      expect(commit("git add -A && echo x > lint.txt; git commit -m x").decision).toBeUndefined();
+      // Interpreters with options only and glob words that are no valid pattern neither ask nor crash.
+      expect(commit("node --version && git commit -m x").decision).toBeUndefined();
       execFileSync("mv", [path.join(repo, "app/big.ts"), path.join(repo, "app/renamed.ts")]);
-      expect(commit("git add -A && git commit -m mv").decision).toBeUndefined();
+      // Before staging a plain mv counts as delete plus add (more, never less); once staged, git sees the rename.
+      expect(commit("git add -A && git commit -m mv").decision).toBe("deny");
       git("add", "-A");
+      expect(commit("git commit -m mv").decision).toBeUndefined();
+      expect(commit('echo y > "a[1" && git commit -m mv').decision).toBeUndefined();
       commitHere("-m", "mv");
       stage("app/other.ts", 500);
       writeFileSync(path.join(repo, "app/renamed.ts"), "changed\n");
