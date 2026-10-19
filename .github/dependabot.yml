@@ -17,3 +17,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # One PR per week for all action bumps; security fixes still come as their own PRs.
+      alle:
+        patterns: ["*"]

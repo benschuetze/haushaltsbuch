@@ -62,7 +62,18 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Browsers come from the cache keyed by the Playwright version; the system packages are not cacheable.
+      - id: pw-version
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
       - run: pnpm exec playwright install --with-deps chromium webkit
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - run: pnpm exec playwright install-deps chromium webkit
+        if: steps.pw-cache.outputs.cache-hit == 'true'
       - run: pnpm db:migrate
       - run: pnpm db:seed
       - run: pnpm test:e2e
