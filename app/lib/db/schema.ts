@@ -10,12 +10,15 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ColumnMapping } from "~/lib/import/formats/mapping";
 
 export const categoryKind = pgEnum("category_kind", ["expense", "income", "transfer"]);
 export const categorySource = pgEnum("category_source", ["rule", "ai", "manual"]);
+/** import: from a bank file; voice: dictated in the quick capture. */
+export const transactionSource = pgEnum("transaction_source", ["import", "voice"]);
 export const ruleField = pgEnum("rule_field", ["counterparty", "purpose"]);
 export const ruleMatchType = pgEnum("rule_match_type", ["contains", "equals", "regex"]);
 export const formatSource = pgEnum("format_source", ["heuristic", "ai"]);
@@ -108,9 +111,17 @@ export const transactions = pgTable(
     aiPromptVersion: text("ai_prompt_version"),
     aiModel: text("ai_model"),
     needsReview: boolean("needs_review").notNull().default(false),
+    // Existing rows all came from bank files, so the default is also their backfill.
+    source: transactionSource("source").notNull().default("import"),
+    /** The dictated sentence of a quick-capture entry. Personal text: never log it, never send it to the LLM unredacted. */
+    captureText: text("capture_text"),
+    /** Client idempotency key; replaces the dedupe hash for cash entries, so a double-sent request books once. */
+    captureKey: text("capture_key"),
     createdAt: createdAt(),
   },
   (t) => [
+    // Postgres treats nulls as distinct, so rows without a key never collide.
+    uniqueIndex("transactions_account_id_capture_key_idx").on(t.accountId, t.captureKey),
     index("transactions_account_id_idx").on(t.accountId),
     index("transactions_import_id_idx").on(t.importId),
     index("transactions_category_id_idx").on(t.categoryId),
