@@ -79,6 +79,15 @@ description: Use for every code change before calling it done - writing the righ
     getrackte), fragt der Hook: deren Größe ist vorher nicht sichtbar.
   - Laufzeit: ein Zeitbudget für alle git-Aufrufe, Zeilen zählen bricht ab, sobald die Grenze überschritten ist.
 
+## Sprach- und Browser-APIs
+
+- Ein spätes oder vorläufiges Ergebnis einer Browser-API darf nach der Aktion, zu der es gehörte, nichts mehr in den
+  Zustand schreiben. Testen mit einem Ergebnis, das erst nach dem Absenden eintrifft (Handler beim Absenden kappen).
+- Den Fehlercode der API auslesen (`event.error`), statt eine allgemeine Meldung für alles zu zeigen; die Zuordnung
+  Code → Text als reine Funktion testen.
+- Datenschutztexte auf einer Seite müssen zu dem passen, was der Browser-Hersteller wirklich mit den Daten tut
+  (Chrome und Safari schicken Audio an Google bzw. Apple), und zur Seite Datenschutz.
+
 ## CI
 
 - Job `check`: typecheck, lint, `pnpm test`.
