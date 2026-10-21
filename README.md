@@ -131,6 +131,7 @@ curl -X POST https://<host>/api/capture \
 
 - `key` macht den Aufruf wiederholbar: derselbe Schlüssel bucht nur einmal, die Antwort ist dann HTTP 200 mit der ersten Buchung (neu: 201).
 - Der Satz wird nie abgelehnt. Ohne Betrag entsteht ein Entwurf (0 €), ein unsicherer Betrag oder eine unsichere Kategorie landet in „prüfen“, ebenso eine Buchung, wenn das Modell ausfällt. Der Satz bleibt in `capture_text` erhalten.
+- Ein Entwurf ohne Betrag (0 €) bleibt in „prüfen“, auch wenn später eine Regel passt oder die Kategorie von Hand gewählt wird, und geht nie an das Modell. Bekannte Grenze: Ein unsicherer, aber gebuchter Betrag („Döner 7 Euro und Cola 2,50“ wird 7,00 €) verliert das Flag, sobald eine Regel oder der Nutzer ihn später kategorisiert. Der Betrag steht dem Nutzer bei der Buchung vor Augen, die geplante Seite „Erfassen“ bekommt eine Rückgängig-Taste.
 - Kategorie: erst Regeln und Händlerliste, das Modell nur, wenn nichts passt. Es sieht Empfänger (der Satz ohne Betrag), Betrag und Datum.
 - „gestern“ und „vorgestern“ setzen das Datum, sonst gilt der heutige Tag in Deutschland.
 - Falsche Tokens zählen zur selben Sperre wie falsche Passwörter (429).
