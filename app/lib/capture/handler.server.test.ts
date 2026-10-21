@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "~/lib/db/client";
 import { loginAttempts, transactions } from "~/lib/db/schema";
-import { MAX_PER_IP } from "~/lib/login-throttle.server";
+import { isLoginBlocked, MAX_PER_IP } from "~/lib/login-throttle.server";
+import { hashIp } from "~/lib/security.server";
 import { createTestDb } from "../../../tests/helpers/db";
 import { failingModel } from "../../../tests/helpers/models";
 import { handleCapture } from "./handler.server";
@@ -96,6 +97,25 @@ describe("POST /api/capture", () => {
 
       expect((await run(post({ text: "7 Euro Döner", key: "k" }))).status).toBe(429);
       expect(await rows()).toHaveLength(0);
+    });
+
+    it("Anfragen ohne Bearer-Header (z. B. von einer fremden Seite) füllen die Sperre nicht", async () => {
+      const foreign = { "sec-fetch-site": "cross-site", "content-type": "text/plain" };
+      const requests = Array.from({ length: 40 }, (_, i) =>
+        run(
+          post(
+            { text: "7 Euro Döner", key: `k${i}` },
+            i % 3 === 0 ? foreign : i % 3 === 1 ? { authorization: "Basic eDp5" } : {},
+          ),
+        ),
+      );
+      const statuses = (await Promise.all(requests)).map((r) => r.status);
+
+      expect(new Set(statuses)).toEqual(new Set([401]));
+      expect(await db.$count(loginAttempts)).toBe(0);
+      expect(await isLoginBlocked(db, hashIp("capture:203.0.113.7"))).toBe(false);
+      // The owner is not locked out: the right token still books.
+      expect((await run(post({ text: "7 Euro Döner", key: "ok" }))).status).toBe(201);
     });
 
     it("Demo verweigert Schreiben, auch mit richtigem Token", async () => {

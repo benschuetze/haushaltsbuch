@@ -60,7 +60,12 @@ export async function handleCapture(
     return reply({ error: "Zu viele Fehlversuche, bitte später erneut." }, 429, { "retry-after": "900" });
   }
   if (!tokenMatches(request, token)) {
-    await recordFailedLogin(deps.db, ipHash, deps.now);
+    // Only a wrong Bearer token counts as a guess. This path is exempt from the cross-site check, so any foreign page
+    // can POST here without a header; counting those would let it fill the shared cap and lock the owner out. A
+    // browser cannot send an Authorization header cross-site without a preflight, so this needs a real client.
+    if (request.headers.get("authorization")?.startsWith("Bearer ")) {
+      await recordFailedLogin(deps.db, ipHash, deps.now);
+    }
     return reply({ error: "Nicht autorisiert." }, 401, { "www-authenticate": "Bearer" });
   }
 
