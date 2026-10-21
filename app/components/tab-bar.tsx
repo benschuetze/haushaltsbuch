@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router";
 import { cn } from "~/lib/utils";
 
 const MORE = [
+  { to: "/erfassen", label: "Erfassen" },
   { to: "/ziele", label: "Sparziele" },
   { to: "/abos", label: "Abos" },
   { to: "/rueckblick", label: "Monatsrückblick" },

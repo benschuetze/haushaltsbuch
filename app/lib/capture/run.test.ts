@@ -4,7 +4,7 @@ import type { Db } from "~/lib/db/client";
 import { accounts, categories, rules, transactions } from "~/lib/db/schema";
 import { createTestDb } from "../../../tests/helpers/db";
 import { failingModel, promptText, scriptedModel } from "../../../tests/helpers/models";
-import { captureSpoken } from "./run";
+import { captureSpoken, counterpartyFrom } from "./run";
 
 let db: Db;
 let cat: Record<string, string>;
@@ -44,7 +44,7 @@ describe("captureSpoken", () => {
       importId: null,
       purpose: "",
     });
-    expect(row?.counterparty).toBe("hab für Döner gezahlt");
+    expect(row?.counterparty).toBe("Döner");
     const [bar] = await db
       .select()
       .from(accounts)
@@ -131,7 +131,7 @@ describe("captureSpoken", () => {
 
       expect(calls).toHaveLength(1);
       const prompt = promptText(calls[0] as never);
-      expect(prompt).toContain("hab für Döner gezahlt");
+      expect(prompt).toContain('\\"counterparty\\":\\"Döner\\"');
       expect(prompt).not.toContain("hab 7 Euro für Döner gezahlt");
       expect(transaction).toMatchObject({
         categoryId: cat["Restaurant & Lieferdienst"],
@@ -217,5 +217,29 @@ describe("captureSpoken", () => {
     );
     expect(transaction.counterparty.length).toBeLessThanOrEqual(80);
     expect(transaction.counterparty.startsWith("Bäckerei")).toBe(true);
+  });
+});
+
+describe("counterpartyFrom", () => {
+  it.each([
+    ["hab grad 7€ für nen döner gezahlt", "Döner"],
+    ["hab grad 7 Euro für nen Döner gezahlt", "Döner"],
+    ["gerade beim Bäcker 3,20 ausgegeben", "Bäcker"],
+    ["hab mir eben nen Kaffee für 3,50 gekauft", "Kaffee"],
+    ["zwanzig Euro beim Friseur bezahlt", "Friseur"],
+    ["12 Euro im Kino", "Kino"],
+    ["Bäckerei am Markt 4 Euro", "Bäckerei am Markt"],
+    ["7,50€ Pizza", "Pizza"],
+    ["€7 Pizza", "Pizza"],
+    ["gestern 5 Euro zum Bäcker", "Bäcker"],
+    ["Kaffee bei Anna 3 Euro", "Kaffee bei Anna"],
+  ])("„%s“ → „%s“", (text, payee) => {
+    expect(counterpartyFrom(text)).toBe(payee);
+  });
+
+  it("gibt nie einen leeren Empfänger zurück", () => {
+    // Only filler and amount: the sentence without the amount is better than nothing.
+    expect(counterpartyFrom("hab grad 7€ gezahlt")).toBe("Hab grad gezahlt");
+    expect(counterpartyFrom("7 Euro")).toBe("7 Euro");
   });
 });
