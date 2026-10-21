@@ -35,11 +35,11 @@ const MONEY_WORDS = new Set(["euro", "euros", "eur", "cent", "cents", "ct", "kom
 const DATE_WORDS = new Set(["gestern", "vorgestern"]);
 
 /** The calendar day in Germany, because "heute" at 01:30 is not yesterday's UTC date. */
-function berlinDay(now: Date): string {
+export function berlinDay(now: Date): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(now);
 }
 
-function shiftDay(day: string, days: number): string {
+export function shiftDay(day: string, days: number): string {
   const d = new Date(`${day}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
