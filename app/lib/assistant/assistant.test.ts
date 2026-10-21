@@ -15,6 +15,9 @@ import { createMockAssistantModel } from "./mock-model";
 
 let db: Db;
 
+// The fixtures use fixed 2026 bookings, so the assistant must see a fixed "today" or the test rots with the calendar.
+const FIXTURE_NOW = new Date("2026-09-10T12:00:00Z");
+
 beforeEach(async () => {
   ({ db } = await createTestDb());
   const [account] = await db.select().from(accounts);
@@ -45,7 +48,7 @@ beforeEach(async () => {
 });
 
 const ask = (question: string, model = createMockAssistantModel()) =>
-  askAssistant(db, model, [{ role: "user", content: question }]);
+  askAssistant(db, model, [{ role: "user", content: question }], FIXTURE_NOW);
 
 describe("Assistent", () => {
   it("findet versteckte Abos, auch wenn sie nicht als Abo einsortiert sind", async () => {
@@ -157,7 +160,7 @@ describe("Assistent", () => {
         };
       },
     });
-    const reply = await askAssistant(db, model, [{ role: "user", content: "Wo kann ich 100 € sparen?" }]);
+    const reply = await askAssistant(db, model, [{ role: "user", content: "Wo kann ich 100 € sparen?" }], FIXTURE_NOW);
     expect(reply.answer).toBe("Fang bei den Abos an.");
     expect(reply.tools).toEqual(["abos_und_fixkosten"]);
     // The summary sees what the tools returned, and may not call any more.
