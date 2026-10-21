@@ -6,7 +6,7 @@ type Recognition = {
   interimResults: boolean;
   continuous: boolean;
   onresult: ((event: RecognitionEvent) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
   start(): void;
   stop(): void;
@@ -20,6 +20,25 @@ export function detectSpeech(win: object): RecognitionConstructor | null {
   const w = win as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
   const found = w.SpeechRecognition ?? w.webkitSpeechRecognition;
   return typeof found === "function" ? (found as RecognitionConstructor) : null;
+}
+
+/** What went wrong and what to do, by the recognizer's error code. Null for "aborted": the app causes that itself. */
+export function speechErrorMessage(code: string | undefined): string | null {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Kein Zugriff aufs Mikrofon. Erlaube es in den Browser-Einstellungen oder tippe den Satz.";
+    case "no-speech":
+      return "Nichts gehört. Tippe nochmal aufs Mikrofon und sprich den Satz.";
+    case "audio-capture":
+      return "Kein Mikrofon gefunden.";
+    case "network":
+      return "Die Spracherkennung braucht Internet.";
+    case "aborted":
+      return null;
+    default:
+      return "Die Spracheingabe hat nicht geklappt. Prüfe die Mikrofon-Freigabe oder tippe den Satz.";
+  }
 }
 
 /**
@@ -73,8 +92,7 @@ export function useSpeech(onText: (text: string) => void) {
         .trim();
       latest.current(text);
     };
-    rec.onerror = () =>
-      setError("Die Spracheingabe hat nicht geklappt. Prüfe die Mikrofon-Freigabe oder tippe den Satz.");
+    rec.onerror = (event) => setError(speechErrorMessage(event?.error));
     // The reference outlives the session on purpose: a result can arrive after "end", and cancel() must reach it.
     rec.onend = () => setListening(false);
     recognition.current = rec;

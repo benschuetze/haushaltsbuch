@@ -188,6 +188,9 @@ const say = (page: import("@playwright/test").Page, text: string, final: boolean
     [text, final],
   );
 
+const fail = (page: import("@playwright/test").Page, code: string) =>
+  page.evaluate((c) => (window as unknown as { __fail: (a: string) => void }).__fail(c), code);
+
 test("ein spätes Ergebnis der Spracherkennung füllt das Feld nach dem Buchen nicht wieder, es wird nur einmal gebucht", async ({
   page,
 }) => {
@@ -226,6 +229,21 @@ test("während des Diktierens ist „Buchen“ gesperrt, auch per Eingabetaste",
   await page.getByRole("button", { name: "Diktat beenden" }).click();
   await page.evaluate(() => (window as unknown as { __end: () => void }).__end());
   await expect(page.getByRole("button", { name: "Buchen" })).toBeEnabled();
+});
+
+test("ein Spracherkennungs-Fehler nennt den Grund, ein selbst ausgelöster Abbruch bleibt still", async ({ page }) => {
+  await manualSpeech(page);
+  await page.goto("/erfassen");
+  await page.getByRole("button", { name: "Diktieren" }).click();
+  // Like a browser: the error is followed by the end of the session.
+  await fail(page, "not-allowed");
+  await page.evaluate(() => (window as unknown as { __end: () => void }).__end());
+  await expect(page.getByRole("alert")).toContainText("Kein Zugriff aufs Mikrofon");
+
+  await page.getByRole("button", { name: "Diktieren" }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await fail(page, "aborted");
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 test.describe("Demo-Modus", () => {
