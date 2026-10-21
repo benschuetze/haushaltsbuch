@@ -55,18 +55,32 @@ function bookingDate(text: string, now: Date): string {
 
 function isAmountWord(token: string): boolean {
   const word = token.toLocaleLowerCase("de");
-  if (/^\d+(?:[.,]\d+)*$/.test(word) || MONEY_WORDS.has(word)) return true;
+  // "7", "7,50", "7€", "7,50€", "€7": the euro sign sticks to the number in dictation.
+  if (/^€?\d+(?:[.,]\d+)*€?$/.test(word) || MONEY_WORDS.has(word)) return true;
   if (/einhalb$/.test(fold(word))) return true;
   return parseNumberWord(word) !== null;
 }
 
+/** Narration around the payment that says nothing about the payee, wherever it stands in the sentence. */
+const FILLER_WORDS = new Set([
+  ...["ich", "hab", "habe", "hab's", "mir", "grad", "grade", "gerade", "eben", "mal", "so", "noch", "halt"],
+  ...["gezahlt", "bezahlt", "gekauft", "ausgegeben"],
+]);
+/** Articles and prepositions: noise at the edges ("für nen Döner"), but part of a name inside ("Bäckerei am Markt"). */
+const EDGE_WORDS = new Set([
+  ...["für", "fürn", "nen", "n", "ein", "eine", "einen", "einem", "einer", "der", "die", "das", "den", "dem"],
+  ...["im", "in", "beim", "bei", "am", "an", "zum", "zur", "mit", "vom", "von", "auf"],
+]);
+
 /**
- * The sentence minus the amount phrase and the day word, which are not part of the payee. A heuristic by design: the
- * parser decides the amount, this only keeps the rest readable and rule-matchable.
+ * The payee: the sentence minus the amount phrase, the day word, narration and edge words. A heuristic by design: the
+ * parser decides the amount, this only keeps the rest readable and rule-matchable. Never empty: a sentence that is
+ * all narration falls back to itself without the amount, then to the original.
  */
 export function counterpartyFrom(text: string): string {
   const tokens = text.split(/\s+/).filter(Boolean);
   const bare = (t: string) => t.replace(/^[^\p{L}\p{N}€]+|[^\p{L}\p{N}€]+$/gu, "");
+  const key = (t: string) => bare(t).toLocaleLowerCase("de").replace("’", "'");
   const drop = tokens.map((t) => {
     const word = bare(t);
     return word !== "" && (isAmountWord(word) || DATE_WORDS.has(word.toLocaleLowerCase("de")));
@@ -75,8 +89,12 @@ export function counterpartyFrom(text: string): string {
   tokens.forEach((t, i) => {
     if (bare(t).toLocaleLowerCase("de") === "und" && drop[i - 1] && drop[i + 1]) drop[i] = true;
   });
-  const rest = tokens.filter((_, i) => !drop[i]).join(" ");
-  return (rest || text).slice(0, COUNTERPARTY_MAX).trim();
+  const withoutAmount = tokens.filter((_, i) => !drop[i]);
+  const words = withoutAmount.filter((t) => !FILLER_WORDS.has(key(t)));
+  while (words[0] && EDGE_WORDS.has(key(words[0]))) words.shift();
+  while (words.length > 0 && EDGE_WORDS.has(key(words[words.length - 1] as string))) words.pop();
+  const payee = words.join(" ") || withoutAmount.join(" ") || text.trim();
+  return (payee.charAt(0).toLocaleUpperCase("de") + payee.slice(1)).slice(0, COUNTERPARTY_MAX).trim();
 }
 
 /** Voice rows have no CSV line to hash; the key takes its place so the unique dedupe_hash stays satisfied. */
