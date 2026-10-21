@@ -117,7 +117,7 @@ export default function Erfassen({ loaderData }: Route.ComponentProps) {
         </p>
       </header>
 
-      <book.Form method="post" className="space-y-3">
+      <book.Form method="post" className="space-y-3" onSubmit={speech.cancel}>
         <input type="hidden" name="intent" value="book" />
         <input type="hidden" name="key" value={key} />
         <div className="space-y-1">
@@ -153,7 +153,11 @@ export default function Erfassen({ loaderData }: Route.ComponentProps) {
             ) : null}
           </div>
         </div>
-        <Button type="submit" className="h-12 w-full text-base" disabled={readOnly || busy || text.trim() === ""}>
+        <Button
+          type="submit"
+          className="h-12 w-full text-base"
+          disabled={readOnly || busy || speech.listening || text.trim() === ""}
+        >
           {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
           Buchen
         </Button>

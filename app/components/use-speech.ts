@@ -40,9 +40,25 @@ export function useSpeech(onText: (text: string) => void) {
     return () => recognition.current?.abort();
   }, []);
 
+  /**
+   * Ends the session and cuts the handlers: a recognizer may still deliver a final result after the text was
+   * submitted, and that must not write into a field that was cleared for the next sentence.
+   */
+  const cancel = useCallback(() => {
+    const rec = recognition.current;
+    if (!rec) return;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
+    rec.abort();
+    recognition.current = null;
+    setListening(false);
+  }, []);
+
   const start = useCallback(() => {
     const Ctor = detectSpeech(window);
     if (!Ctor) return;
+    cancel();
     setError(null);
     const rec = new Ctor();
     rec.lang = "de-DE";
@@ -58,10 +74,8 @@ export function useSpeech(onText: (text: string) => void) {
     };
     rec.onerror = () =>
       setError("Die Spracheingabe hat nicht geklappt. Prüfe die Mikrofon-Freigabe oder tippe den Satz.");
-    rec.onend = () => {
-      setListening(false);
-      recognition.current = null;
-    };
+    // The reference outlives the session on purpose: a result can arrive after "end", and cancel() must reach it.
+    rec.onend = () => setListening(false);
     recognition.current = rec;
     setListening(true);
     try {
@@ -70,9 +84,9 @@ export function useSpeech(onText: (text: string) => void) {
       setListening(false);
       setError("Die Spracheingabe konnte nicht starten.");
     }
-  }, []);
+  }, [cancel]);
 
   const stop = useCallback(() => recognition.current?.stop(), []);
 
-  return { supported, listening, error, start, stop };
+  return { supported, listening, error, start, stop, cancel };
 }

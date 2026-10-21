@@ -137,6 +137,86 @@ test("mit Spracherkennung füllt das Mikrofon das Textfeld, gebucht wird erst pe
   await expect(page.getByRole("status")).toContainText("9,00 €");
 });
 
+/**
+ * A recognizer the test drives by hand, like the real one it can deliver results at any moment, also after the
+ * session ended. __say/__end call whatever handlers are set at that moment, as a browser would.
+ */
+async function manualSpeech(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    type Handlers = {
+      onresult: ((e: unknown) => void) | null;
+      onend: (() => void) | null;
+      onerror: ((e: unknown) => void) | null;
+    };
+    class ManualRecognition implements Handlers {
+      lang = "";
+      interimResults = false;
+      continuous = false;
+      onresult: Handlers["onresult"] = null;
+      onend: Handlers["onend"] = null;
+      onerror: Handlers["onerror"] = null;
+      start() {
+        (window as unknown as { __rec: ManualRecognition }).__rec = this;
+      }
+      stop() {}
+      abort() {}
+    }
+    const w = window as unknown as Record<string, unknown>;
+    w.__say = (transcript: string, isFinal: boolean) =>
+      (w.__rec as Handlers).onresult?.({ results: [Object.assign([{ transcript }], { isFinal })] });
+    w.__end = () => (w.__rec as Handlers).onend?.();
+    w.__fail = (error: string) => (w.__rec as Handlers).onerror?.({ error });
+    Object.defineProperty(window, "SpeechRecognition", { value: ManualRecognition, configurable: true });
+    Object.defineProperty(window, "webkitSpeechRecognition", { value: ManualRecognition, configurable: true });
+  });
+}
+
+const say = (page: import("@playwright/test").Page, text: string, final: boolean) =>
+  page.evaluate(
+    ([t, f]) => (window as unknown as { __say: (a: string, b: boolean) => void }).__say(t as string, f as boolean),
+    [text, final],
+  );
+
+test("ein spätes Ergebnis der Spracherkennung füllt das Feld nach dem Buchen nicht wieder, es wird nur einmal gebucht", async ({
+  page,
+}) => {
+  await manualSpeech(page);
+  await page.goto("/erfassen");
+  const field = page.getByLabel("Was hast du bezahlt?");
+  await page.getByRole("button", { name: "Diktieren" }).click();
+  await say(page, "neun Euro", false);
+  await expect(field).toHaveValue("neun Euro");
+  // The session ended, but the recognizer still owes the final result.
+  await page.evaluate(() => (window as unknown as { __end: () => void }).__end());
+  await expect(page.getByRole("button", { name: "Diktieren" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Buchen" }).click();
+  await expect(page.getByRole("status")).toContainText("9,00 €");
+  await expect(field).toHaveValue("");
+  await say(page, "neun Euro Kaffee", true);
+  await expect(field).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Buchen" })).toBeDisabled();
+
+  await page.goto("/buchungen");
+  await expect(page.getByTestId("transaction")).toHaveCount(1);
+});
+
+test("während des Diktierens ist „Buchen“ gesperrt, auch per Eingabetaste", async ({ page }) => {
+  await manualSpeech(page);
+  await page.goto("/erfassen");
+  const field = page.getByLabel("Was hast du bezahlt?");
+  await page.getByRole("button", { name: "Diktieren" }).click();
+  await say(page, "neun Euro Kaffee", false);
+  await expect(field).toHaveValue("neun Euro Kaffee");
+  await expect(page.getByRole("button", { name: "Buchen" })).toBeDisabled();
+  await field.press("Enter");
+  await expect(page.getByRole("status")).toBeEmpty();
+
+  await page.getByRole("button", { name: "Diktat beenden" }).click();
+  await page.evaluate(() => (window as unknown as { __end: () => void }).__end());
+  await expect(page.getByRole("button", { name: "Buchen" })).toBeEnabled();
+});
+
 test.describe("Demo-Modus", () => {
   test.use({ storageState: { cookies: [], origins: [] }, baseURL: DEMO_URL });
 
