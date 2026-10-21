@@ -23,8 +23,9 @@ export function detectSpeech(win: object): RecognitionConstructor | null {
 }
 
 /**
- * Dictation through the browser's own recognizer. Audio is handled by the browser alone; the app only ever receives
- * the transcript. `supported` is null until mounted so server and first client render agree.
+ * Dictation through the browser's own recognizer. The browser, and in Chrome and Safari its vendor's server (Google,
+ * Apple), handles the audio; the app only ever receives the transcript. `supported` is null until mounted so server
+ * and first client render agree.
  */
 export function useSpeech(onText: (text: string) => void) {
   const [supported, setSupported] = useState<boolean | null>(null);

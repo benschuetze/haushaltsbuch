@@ -95,6 +95,17 @@ test("ohne Spracherkennung gibt es keinen Mikrofon-Knopf, dafür den Hinweis auf
   await expect(page.getByText("Diktierfunktion der Tastatur nutzen")).toBeVisible();
 });
 
+test("der Datenschutzhinweis sagt, dass der Browser-Hersteller die Sprache erkennt", async ({ page }) => {
+  await withoutSpeech(page);
+  await page.goto("/erfassen");
+  // Must match what /datenschutz says: Chrome and Safari send the audio to Google and Apple.
+  await expect(
+    page.getByText(
+      "Die Spracherkennung übernimmt dein Browser bzw. dessen Hersteller (Google bei Chrome, Apple bei Safari). Die App bekommt kein Audio, nur den Text.",
+    ),
+  ).toBeVisible();
+});
+
 test("mit Spracherkennung füllt das Mikrofon das Textfeld, gebucht wird erst per „Buchen“", async ({ page }) => {
   await page.addInitScript(() => {
     class FakeRecognition {

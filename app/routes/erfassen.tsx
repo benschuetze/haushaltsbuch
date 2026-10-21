@@ -165,7 +165,8 @@ export default function Erfassen({ loaderData }: Route.ComponentProps) {
           <p className="text-sm text-muted-foreground">Diktierfunktion der Tastatur nutzen</p>
         ) : null}
         <p className="text-xs text-muted-foreground">
-          Die Spracherkennung läuft im Browser deines Geräts. Die App speichert kein Audio, nur den Text.
+          Die Spracherkennung übernimmt dein Browser bzw. dessen Hersteller (Google bei Chrome, Apple bei Safari). Die
+          App bekommt kein Audio, nur den Text.
         </p>
       </book.Form>
 
