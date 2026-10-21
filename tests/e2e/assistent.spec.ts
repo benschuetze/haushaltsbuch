@@ -5,12 +5,13 @@ test.beforeEach(resetDb);
 
 const panel = (page: Page) => page.getByRole("dialog", { name: "Assistent" });
 
+// Relative to today: the server judges "still running" against the real clock, fixed dates rot.
 async function addGym() {
   await sql(`
     insert into transactions (account_id, import_id, booking_date, amount_cents, counterparty, purpose, raw, dedupe_hash, category_id, category_source)
-    select t.account_id, t.import_id, d::date, -2990, 'Fitnessstudio Kraftwerk', 'Mitgliedsbeitrag', '{}'::jsonb, 'gym-' || d, c.id, 'rule'
+    select t.account_id, t.import_id, m.d, -2990, 'Fitnessstudio Kraftwerk', 'Mitgliedsbeitrag', '{}'::jsonb, 'gym-' || m.d, c.id, 'rule'
     from (select account_id, import_id from transactions limit 1) t, categories c,
-         unnest(array['2026-07-03','2026-08-03','2026-09-03']) as d
+         generate_series(0, 2) as n, lateral (select (current_date - 2 - n * 30) as d) as m
     where c.name = 'Freizeit'`);
 }
 
