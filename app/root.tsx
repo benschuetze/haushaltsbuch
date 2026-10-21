@@ -85,6 +85,7 @@ const CANCELLABLE = new Set(["subscription_found", "price_increase", "cancellati
 const NAV = [
   { to: "/", label: "Übersicht", end: true },
   { to: "/buchungen", label: "Buchungen", end: false },
+  { to: "/erfassen", label: "Erfassen", end: false },
   { to: "/budgets", label: "Budgets", end: false },
   { to: "/ziele", label: "Sparziele", end: false },
   { to: "/abos", label: "Abos", end: false },

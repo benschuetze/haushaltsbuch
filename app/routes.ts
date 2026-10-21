@@ -14,6 +14,7 @@ export default [
   route("rueckblick", "routes/rueckblick.tsx"),
   route("hinweise", "routes/hinweise.tsx"),
   route("pruefen", "routes/pruefen.tsx"),
+  route("erfassen", "routes/erfassen.tsx"),
   route("banken", "routes/banken.tsx"),
   route("bank/callback", "routes/bank.callback.ts"),
   route("bank/sync", "routes/bank.sync.ts"),
