@@ -41,8 +41,13 @@ function wordToken(word: string): Token {
   if (folded === "cent" || folded === "cents" || folded === "ct") return { kind: "cent" };
   if (folded === "und") return { kind: "und" };
   if (folded === "komma") return { kind: "komma" };
-  // "ein"/"eine" are mostly articles ("ein Döner"); they only count as a number in front of a unit.
-  if (folded === "ein" || folded === "eine") return { kind: "article" };
+  // Articles are mostly just articles ("ein Döner"); they only count as 1 in front of a unit. After "bezahlt" German
+  // needs the accusative ("einen Euro fünfzig") and speech shortens it to "nen".
+  if (["ein", "eine", "einen", "einem", "einer", "nen"].includes(folded)) return { kind: "article" };
+  if (folded === "anderthalb") return { kind: "num", int: 1, frac: 50, word: true };
+  const half = /^(.+)einhalb$/.exec(folded);
+  const whole = half?.[1] ? parseNumberWord(half[1]) : null;
+  if (whole !== null && whole > 0 && whole <= 999_999) return { kind: "num", int: whole, frac: 50, word: true };
   const value = parseNumberWord(word);
   if (value === null || value > 999_999_999) return { kind: "other" };
   return { kind: "num", int: value, word: true };
@@ -109,14 +114,28 @@ function findAmount(tokens: Token[]): SpokenAmount | null {
     used.add(source);
     let cents = head.int * 100 + (head.frac ?? 0);
     if (head.frac === undefined && source === i - 1) {
-      let j = i + 1;
-      if (tokens[j]?.kind === "und") j++;
-      const tail = numAt(j);
-      const unit = tokens[j + 1]?.kind === "cent";
-      if (tail && tail.frac === undefined && tail.int >= 1 && tail.int <= 99 && (unit || tail.int >= 10)) {
+      const lead = numAt(i - 2);
+      if (lead && lead.frac === undefined && lead.int >= 1 && lead.int <= 99 && head.int >= 10 && head.int <= 99) {
+        // "sieben fünfzig Euro": the unit closes a spoken price, the first number is the euros.
+        cents = lead.int * 100 + head.int;
+        used.add(i - 2);
+      } else {
+        let j = i + 1;
+        if (tokens[j]?.kind === "und") j++;
+        const tail = numAt(j);
+        const unit = tokens[j + 1]?.kind === "cent";
+        if (tail && tail.frac === undefined && tail.int >= 1 && tail.int <= 99 && (unit || tail.int >= 10)) {
+          cents += tail.int;
+          used.add(j);
+          if (unit) used.add(j + 1);
+        }
+      }
+    } else if (head.frac === undefined) {
+      // "EUR 7 50": the unit comes first, the cents follow the number.
+      const tail = numAt(i + 2);
+      if (tail && tail.frac === undefined && tail.int >= 10 && tail.int <= 99) {
         cents += tail.int;
-        used.add(j);
-        if (unit) used.add(j + 1);
+        used.add(i + 2);
       }
     }
     if (cents > 0) amounts.push(cents);
@@ -133,29 +152,49 @@ function findAmount(tokens: Token[]): SpokenAmount | null {
 
   if (amounts.length > 0) {
     const cents = amounts.reduce((sum, n) => sum + n, 0);
-    return { cents, certain: amounts.length === 1 && cents <= MAX_CERTAIN_CENTS };
+    // "Döner 7 Euro und Cola 2,50": a second price without a unit is not in the sum, so the result is a guess.
+    const leftover =
+      tokens.some((t, i) => t.kind === "num" && !used.has(i) && t.frac !== undefined && t.int * 100 + t.frac > 0) ||
+      findPairs(tokens, used).length > 0;
+    return { cents, certain: amounts.length === 1 && !leftover && cents <= MAX_CERTAIN_CENTS };
   }
   return findUnitless(tokens);
+}
+
+/** People say "sieben fünfzig" for 7,50: two number words side by side, the second one 10–99. Returns the first index. */
+function findPairs(tokens: Token[], used: Set<number>): number[] {
+  const found: number[] = [];
+  for (let i = 0; i < tokens.length - 1; i++) {
+    const a = tokens[i];
+    const b = tokens[i + 1];
+    if (a?.kind !== "num" || b?.kind !== "num" || used.has(i) || used.has(i + 1)) continue;
+    if (!a.word || !b.word || a.frac !== undefined || b.frac !== undefined) continue;
+    if (a.int >= 1 && a.int <= 99 && b.int >= 10 && b.int <= 99) {
+      found.push(i);
+      i++;
+    }
+  }
+  return found;
 }
 
 /** No "Euro" in the sentence: "Kaffee 3,80", "sieben fünfzig", "hab 7 für Döner". */
 function findUnitless(tokens: Token[]): SpokenAmount | null {
   const nums = tokens.flatMap((token) => (token.kind === "num" ? [token] : []));
+  const pairs = findPairs(tokens, new Set());
 
   const decimals = nums.filter((n) => n.frac !== undefined && n.int * 100 + (n.frac ?? 0) > 0);
   const lastDecimal = decimals[decimals.length - 1];
   if (lastDecimal) {
-    return { cents: lastDecimal.int * 100 + (lastDecimal.frac ?? 0), certain: decimals.length === 1 };
+    return {
+      cents: lastDecimal.int * 100 + (lastDecimal.frac ?? 0),
+      certain: decimals.length === 1 && pairs.length === 0,
+    };
   }
 
-  // People say "sieben fünfzig" for 7,50; two number words side by side, the second one 10–99.
-  for (let i = tokens.length - 2; i >= 0; i--) {
-    const a = tokens[i];
-    const b = tokens[i + 1];
-    if (a?.kind === "num" && b?.kind === "num" && a.word && b.word && a.frac === undefined && b.frac === undefined) {
-      if (a.int >= 1 && a.int <= 99 && b.int >= 10 && b.int <= 99) return { cents: a.int * 100 + b.int, certain: true };
-    }
-  }
+  const lastPair = pairs[pairs.length - 1];
+  const a = lastPair === undefined ? undefined : tokens[lastPair];
+  const b = lastPair === undefined ? undefined : tokens[lastPair + 1];
+  if (a?.kind === "num" && b?.kind === "num") return { cents: a.int * 100 + b.int, certain: pairs.length === 1 };
 
   const whole = nums.filter((n) => n.int > 0);
   const last = whole[whole.length - 1];

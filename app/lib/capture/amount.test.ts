@@ -96,6 +96,19 @@ const CERTAIN: Case[] = [
   ["sieben komma fünf Euro", 750, true],
   ["sieben komma fünfzig Euro", 750, true],
   ["drei komma neunundneunzig", 399, true],
+  // review round 1: accusative and slang articles, a price closed by the unit, halves
+  ["einen Euro fünfzig", 150, true],
+  ["hab einen Euro fünfzig für nen Kaffee bezahlt", 150, true],
+  ["nen Euro fünfzig", 150, true],
+  ["einen Euro und fünfzig Cent", 150, true],
+  ["eine Cola für einen Euro", 100, true],
+  ["sieben fünfzig Euro", 750, true],
+  ["7 50 Euro", 750, true],
+  ["Euro sieben fünfzig", 750, true],
+  ["EUR 7 50", 750, true],
+  ["zweieinhalb Euro", 250, true],
+  ["dreieinhalb Euro für Brot", 350, true],
+  ["anderthalb Euro", 150, true],
 ];
 
 const FLAGGED: Case[] = [
@@ -106,6 +119,12 @@ const FLAGGED: Case[] = [
   ["achtzehn", 1800, false],
   // an absurd amount is read, but flagged
   ["2000000 Euro", 200000000, false],
+  // review round 1: a second price without a unit is not in the sum, so the result is only a guess
+  ["Döner 6,50 plus 1 Euro Trinkgeld", 100, false],
+  ["Döner 7 Euro und Cola 2,50", 700, false],
+  ["Döner 7,50, mit 10 Euro bezahlt", 1000, false],
+  ["Döner sieben fünfzig und Cola zwei fünfzig", 250, false],
+  ["Döner 7,50 und Cola zwei fünfzig", 750, false],
 ];
 
 const NONE = ["", "   ", "Döner", "ein Döner", "hab einen Döner gekauft", "0 Euro", "null", "Euro", "€", "komma"];
