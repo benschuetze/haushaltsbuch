@@ -49,6 +49,7 @@ test("ein Satz ohne Betrag wird als Entwurf gebucht und verweist auf „Prüfen�
   const card = page.getByRole("status");
   await expect(card).toContainText("Bitte prüfen");
   await expect(card).toContainText("Kein Betrag erkannt");
+  await expect(card).toContainText("hab einen Döner gekauft");
   await card.getByRole("link", { name: "Bitte prüfen" }).click();
   await expect(page).toHaveURL(/\/pruefen$/);
   await expect(page.getByRole("heading", { level: 1, name: "Prüfen" })).toBeVisible();

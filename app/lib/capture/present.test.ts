@@ -15,6 +15,7 @@ function result(over: Partial<Transaction>, rest: Partial<CaptureResult> = {}): 
       bookingDate: "2026-10-21",
       amountCents: -700,
       counterparty: "Döner",
+      captureText: "hab grad 7 Euro für nen Döner gezahlt",
       needsReview: false,
       ...over,
     } as Transaction,
@@ -27,6 +28,7 @@ describe("describeBooking", () => {
     expect(describeBooking(result({}), NOW)).toMatchObject({
       amountLabel: "7,00 €",
       counterparty: "Döner",
+      sentence: "hab grad 7 Euro für nen Döner gezahlt",
       categoryLabel: "Restaurant & Lieferdienst",
       dayLabel: "heute",
       needsReview: false,
@@ -42,6 +44,10 @@ describe("describeBooking", () => {
     expect(describeBooking(result({ bookingDate: "2026-10-22" }), new Date("2026-10-21T22:30:00Z")).dayLabel).toBe(
       "heute",
     );
+  });
+
+  it("ohne gespeicherten Satz steht der Empfänger dort", () => {
+    expect(describeBooking(result({ captureText: null }), NOW).sentence).toBe("Döner");
   });
 
   it("ein Entwurf hat keinen Betrag und keine Kategorie", () => {

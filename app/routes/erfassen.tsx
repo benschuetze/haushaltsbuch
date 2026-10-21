@@ -65,7 +65,7 @@ function Card({ card, onUndo }: { card: BookingCard; onUndo: React.ReactNode }) 
       </h2>
       {card.draft ? (
         <p className="text-lg">
-          <span className="font-semibold">Kein Betrag erkannt.</span> Dein Satz „{card.counterparty}“ ist als Entwurf
+          <span className="font-semibold">Kein Betrag erkannt.</span> Dein Satz „{card.sentence}“ ist als Entwurf
           gespeichert, {card.dayLabel}.
         </p>
       ) : (

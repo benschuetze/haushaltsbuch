@@ -13,6 +13,8 @@ export type BookingCard = {
   /** Without sign, because the card says "booked"; null for a draft. */
   amountLabel: string | null;
   counterparty: string;
+  /** What the user said or typed, so a draft can show it back as it was. */
+  sentence: string;
   categoryLabel: string | null;
   dayLabel: string;
 };
@@ -34,6 +36,7 @@ export function describeBooking(result: CaptureResult, now: Date = new Date()): 
     needsReview: tx.needsReview,
     amountLabel: result.draft ? null : formatCents(Math.abs(tx.amountCents)),
     counterparty: tx.counterparty,
+    sentence: tx.captureText ?? tx.counterparty,
     categoryLabel: result.categoryName,
     dayLabel: dayLabel(tx.bookingDate, now),
   };
