@@ -20,6 +20,12 @@ type Assignment = {
   model?: string | null;
 };
 
+/**
+ * A quick-capture sentence without an amount (0 EUR, source voice) is only a note of what the user said. Whatever
+ * category it gets later, the missing amount still needs the user, so no path may clear its review flag.
+ */
+const isVoiceDraft = sql`(${transactions.source} = 'voice' and ${transactions.amountCents} = 0)`;
+
 /** One UPDATE for all rows. The WHERE clause guards manual categories at the database level, not just in app code. */
 async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void> {
   if (assignments.length === 0) return;
@@ -32,7 +38,7 @@ async function writeAssignments(db: Db, assignments: Assignment[]): Promise<void
   );
   await db.execute(sql`
     update ${transactions} as t
-    set category_id = v.category_id, category_source = v.source, ai_confidence = v.confidence, needs_review = v.needs_review,
+    set category_id = v.category_id, category_source = v.source, ai_confidence = v.confidence, needs_review = v.needs_review or (t.source = 'voice' and t.amount_cents = 0),
       ai_prompt_version = v.prompt_version, ai_model = v.model
     from (values ${values}) as v(id, category_id, source, confidence, needs_review, prompt_version, model)
     where t.id = v.id and t.category_source is distinct from 'manual'
@@ -106,6 +112,10 @@ export async function categorizeTransactions(
     if (categoryId) {
       assignments.push({ id: tx.id, categoryId, source: "rule", confidence: null, needsReview: false });
       stats.byRule++;
+    } else if (tx.source === "voice" && tx.amountCents === 0) {
+      // Nothing to judge without an amount, and not worth a paid call.
+      assignments.push({ id: tx.id, categoryId: null, source: null, confidence: null, needsReview: true });
+      stats.needsReview++;
     } else {
       forLlm.push(tx);
     }
@@ -216,7 +226,7 @@ export async function reapplyRules(db: Db): Promise<number> {
 export async function setManualCategory(db: Db, transactionId: string, categoryId: string): Promise<void> {
   await db
     .update(transactions)
-    .set({ categoryId, categorySource: "manual", needsReview: false })
+    .set({ categoryId, categorySource: "manual", needsReview: isVoiceDraft })
     .where(eq(transactions.id, transactionId));
 }
 

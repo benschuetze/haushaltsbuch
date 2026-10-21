@@ -7,6 +7,7 @@ import { DEFAULT_CATEGORIES, seed } from "../../app/lib/db/seed";
 
 export const DEMO_CSV = "beispieldaten/demo-umsaetze.csv";
 export const E2E_PASSWORD = "e2e-test-passwort";
+export const E2E_CAPTURE_TOKEN = "e2e-capture-token-nur-fuer-tests-000000";
 export const DEMO_URL = "http://127.0.0.1:5198";
 export const FAKE_BANK_URL = "http://127.0.0.1:5437";
 

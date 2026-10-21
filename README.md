@@ -119,6 +119,23 @@ Korrektur in der UI ──► manuell (nie wieder überschrieben) ──► opti
 - **Alarm Fehlerrate:** Sentry-Alarmregel „Number of events > 10 in 1 hour“ für das Projekt, Aktion E-Mail. Einrichten unter Alerts → Create Alert → Issues (einmalig, im Sentry-Konto).
 - **Alarm Anteil „prüfen“:** Der tägliche Cron (`/bank/sync`, 5 Uhr) prüft, welcher Anteil der Buchungen der letzten 7 Tage, die beim Modell lagen, noch in „prüfen“ wartet. Über 50 % (ab 10 Buchungen) schreibt er `review_share_high` als Warnung, die in Sentry als eigenes Issue mit E-Mail ankommt. Begründung der Schwelle in [`review-alarm.ts`](app/lib/observability/review-alarm.ts): Ein ausgefallenes Modell (Key abgelaufen, Modell-ID abgeschaltet) schickt sonst still alles in „prüfen“.
 
+## Schnellerfassung
+
+`POST /api/capture` bucht eine diktierte Barzahlung ins Konto „Bar“ (z. B. aus einem iOS-Kurzbefehl). Eingeschaltet wird sie mit `CAPTURE_TOKEN` (mindestens 32 Zeichen, `openssl rand -hex 32`); ohne Token antwortet der Endpunkt mit 503, in der Demo mit 403.
+
+```bash
+curl -X POST https://<host>/api/capture \
+  -H "Authorization: Bearer $CAPTURE_TOKEN" -H "Content-Type: application/json" \
+  -d '{"text": "hab 7 Euro für Döner gezahlt", "key": "<einmalige-id>"}'
+```
+
+- `key` macht den Aufruf wiederholbar: derselbe Schlüssel bucht nur einmal, die Antwort ist dann HTTP 200 mit der ersten Buchung (neu: 201).
+- Der Satz wird nie abgelehnt. Ohne Betrag entsteht ein Entwurf (0 €), ein unsicherer Betrag oder eine unsichere Kategorie landet in „prüfen“, ebenso eine Buchung, wenn das Modell ausfällt. Der Satz bleibt in `capture_text` erhalten.
+- Ein Entwurf ohne Betrag (0 €) bleibt in „prüfen“, auch wenn später eine Regel passt oder die Kategorie von Hand gewählt wird, und geht nie an das Modell. Bekannte Grenze: Ein unsicherer, aber gebuchter Betrag („Döner 7 Euro und Cola 2,50“ wird 7,00 €) verliert das Flag, sobald eine Regel oder der Nutzer ihn später kategorisiert. Der Betrag steht dem Nutzer bei der Buchung vor Augen, die geplante Seite „Erfassen“ bekommt eine Rückgängig-Taste.
+- Kategorie: erst Regeln und Händlerliste, das Modell nur, wenn nichts passt. Es sieht Empfänger (der Satz ohne Betrag), Betrag und Datum.
+- „gestern“ und „vorgestern“ setzen das Datum, sonst gilt der heutige Tag in Deutschland.
+- Falsche Bearer-Tokens zählen zur selben Sperre wie falsche Passwörter (429); Anfragen ohne Bearer-Header werden nur mit 401 abgewiesen.
+
 ## Datenmodell
 
 `accounts` · `imports` · `categories` · `transactions` · `rules`, Details in [`PLAN.md`](PLAN.md) und [`app/lib/db/schema.ts`](app/lib/db/schema.ts). Das Drizzle-Schema ist die einzige Quelle für Typen, Zod prüft alle Eingänge (Formulare, CSV-Zeilen, LLM-Antworten).

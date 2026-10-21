@@ -46,6 +46,9 @@ export function applySecurityHeaders(headers: Headers): void {
  */
 export function isCrossSiteWrite(request: Request): boolean {
   if (request.method === "GET" || request.method === "HEAD" || request.method === "OPTIONS") return false;
+  // Called by an iOS Shortcut, which sends no Origin. Safe without the check: it authenticates with a bearer token
+  // in a header, which a browser never attaches on its own and a foreign page cannot add without a CORS preflight.
+  if (new URL(request.url).pathname === "/api/capture") return false;
   const site = request.headers.get("Sec-Fetch-Site");
   if (site) return site !== "same-origin" && site !== "none";
   const expected = new URL(request.url).origin;

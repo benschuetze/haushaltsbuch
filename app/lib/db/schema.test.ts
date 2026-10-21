@@ -94,6 +94,15 @@ describe("Datenbank", () => {
       expect(account.id).not.toBe(other.id);
     });
 
+    it("eine Sprachbuchung braucht keinen Import", async () => {
+      const { db, tx } = await setup();
+      const [row] = await db
+        .insert(transactions)
+        .values(tx({ importId: null, source: "voice", captureKey: "k3" }))
+        .returning();
+      expect(row?.importId).toBeNull();
+    });
+
     it("Buchungen ohne capture_key kollidieren nie", async () => {
       const { db, tx } = await setup();
       await db.insert(transactions).values(tx());

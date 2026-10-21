@@ -1,6 +1,6 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_PASSWORD } from "./tests/e2e/helpers";
+import { E2E_CAPTURE_TOKEN, E2E_PASSWORD } from "./tests/e2e/helpers";
 
 const CI = !!process.env.CI;
 const PORT = 5199;
@@ -30,6 +30,7 @@ const appEnv = {
   DATABASE_URL,
   AI_MOCK: "1",
   APP_PASSWORD: E2E_PASSWORD,
+  CAPTURE_TOKEN: E2E_CAPTURE_TOKEN,
   SESSION_SECRET: "e2e-session-secret-nur-fuer-tests",
   NODE_ENV: "production",
   INSECURE_COOKIES: "1",

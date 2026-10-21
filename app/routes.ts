@@ -18,6 +18,7 @@ export default [
   route("bank/callback", "routes/bank.callback.ts"),
   route("bank/sync", "routes/bank.sync.ts"),
   route("assistent", "routes/assistent.ts"),
+  route("api/capture", "routes/api.capture.ts"),
   route("datenschutz", "routes/datenschutz.tsx"),
   route("nutzungsbedingungen", "routes/nutzungsbedingungen.tsx"),
   route("impressum", "routes/impressum.tsx"),

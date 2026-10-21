@@ -30,6 +30,12 @@ describe("CSRF: isCrossSiteWrite", () => {
   ])("%j → abgelehnt: %s", (headers, rejected) => {
     expect(isCrossSiteWrite(post(headers as Record<string, string>))).toBe(rejected);
   });
+  it("/api/capture ist ausgenommen (Bearer-Token, kein Cookie), andere Pfade nicht", () => {
+    const bare = (path: string) => new Request(`https://app.example${path}`, { method: "POST" });
+    expect(isCrossSiteWrite(bare("/api/capture"))).toBe(false);
+    expect(isCrossSiteWrite(bare("/api/capture-x"))).toBe(true);
+    expect(isCrossSiteWrite(bare("/import"))).toBe(true);
+  });
   it("Fetch Metadata hat Vorrang vor einem passenden Origin", () => {
     expect(isCrossSiteWrite(post({ "Sec-Fetch-Site": "cross-site", Origin: "https://app.example" }))).toBe(true);
   });
