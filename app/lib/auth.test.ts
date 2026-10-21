@@ -52,6 +52,14 @@ describe("guard", () => {
   });
 });
 
+describe("guard: Schnellerfassung", () => {
+  it("privat: /api/capture braucht kein Login, es prüft sein eigenes Token", async () => {
+    vi.stubEnv("DEMO_MODE", "false");
+    expect(await outcome(new Request("http://x/api/capture", { method: "POST" }))).toBe("ok");
+    expect(await outcome(new Request("http://x/api/capture-alt", { method: "POST" }))).toBe(401);
+  });
+});
+
 describe("passwordMatches", () => {
   it("vergleicht mit APP_PASSWORD und lehnt ohne gesetztes Passwort alles ab", () => {
     const configured = randomUUID();

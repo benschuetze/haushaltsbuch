@@ -121,6 +121,8 @@ const PUBLIC_PATHS = new Set([
   "/login",
   "/favicon.ico",
   "/bank/sync",
+  // Own bearer token (CAPTURE_TOKEN), checked in the handler; a Shortcut has no session cookie.
+  "/api/capture",
   "/datenschutz",
   "/nutzungsbedingungen",
   "/impressum",
