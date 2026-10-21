@@ -239,7 +239,7 @@ export function createAssistantTools(db: Db, now = new Date()) {
         "Erkannte wiederkehrende Zahlungen: Abos, feste Kosten und beendete. Mit Rhythmus, letztem Betrag, Jahreskosten und Preisänderung. Erkennt auch Abos, die nicht als Abo kategorisiert sind.",
       inputSchema: z.object({}),
       execute: async () => {
-        const all = await recurringPayments(db);
+        const all = await recurringPayments(db, now);
         return {
           zahlungen: all.map((r) => ({
             name: redactIbans(r.merchant),
