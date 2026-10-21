@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ALTER COLUMN "import_id" DROP NOT NULL;

@@ -94,9 +94,8 @@ export const transactions = pgTable(
     accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id),
-    importId: uuid("import_id")
-      .notNull()
-      .references(() => imports.id),
+    /** Null for quick-capture entries (source = 'voice'): they come from no file, so there is no import to point at. */
+    importId: uuid("import_id").references(() => imports.id),
     bookingDate: date("booking_date", { mode: "string" }).notNull(),
     amountCents: integer("amount_cents").notNull(),
     currency: text("currency").notNull().default("EUR"),
