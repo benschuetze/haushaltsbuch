@@ -95,7 +95,10 @@ description: Use for every code change before calling it done - writing the righ
 
 ## CI
 
-- Job `check`: typecheck, lint, `pnpm test`.
+- Job `check`: `pnpm audit --prod --audit-level high`, `security:osv`, typecheck, lint, `pnpm test`. Meldet `audit` ein
+  transitives Paket, dessen Eltern noch nicht nachgezogen haben: Override in `pnpm-workspace.yaml` unter `overrides`
+  mit Major im Schlüssel (`"body-parser@1": ^1.20.9`). Das Feld `pnpm.overrides` in `package.json` ignoriert pnpm 12
+  stillschweigend (27.10.). Der Montags-Lauf (`schedule`) findet neue Advisories auch ohne Commit.
 - Job `e2e`: Postgres als Service-Container, Migrationen, Seed, `pnpm test:e2e`, Playwright-Report und Traces bei Fehlschlag als Artifact hochladen.
 - Actions auf Commit-SHA gepinnt, Version als Kommentar daneben. `permissions: contents: read`.
 - Install mit `--frozen-lockfile`. Install-Scripts nur für Pakete, die sie brauchen (`pnpm.onlyBuiltDependencies`).
