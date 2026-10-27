@@ -3,6 +3,7 @@ import type { LanguageModel } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { categorizeTransactions } from "~/lib/categorize/apply";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { categories, type Transaction, transactions } from "~/lib/db/schema";
 import { resolveAccount } from "~/lib/import/accounts";
@@ -122,7 +123,7 @@ export async function captureSpoken(
   input: CaptureInput,
   options: { model: LanguageModel | null; now?: Date },
 ): Promise<CaptureResult> {
-  const now = options.now ?? new Date();
+  const now = options.now ?? clockNow();
   const { account } = await resolveAccount(db, CASH_ACCOUNT);
 
   const find = async () => {

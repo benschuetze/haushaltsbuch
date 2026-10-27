@@ -18,6 +18,7 @@ import {
   type RuleProposal,
 } from "~/lib/categorize/rule-agent";
 import { ruleInputSchema } from "~/lib/categorize/rules";
+import { clockNow } from "~/lib/clock";
 import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { getDb } from "~/lib/db/client";
@@ -43,7 +44,7 @@ type ActionData =
 /** Model calls for rule wishes per day; local parsing does not count. */
 const AGENT_DAILY_LIMIT = 40;
 
-async function withinAgentLimit(db: Db, now = new Date()): Promise<boolean> {
+async function withinAgentLimit(db: Db, now = clockNow()): Promise<boolean> {
   return (await takeFromDailyBudget(db, "rule_agent_calls", 1, AGENT_DAILY_LIMIT, now)) === 1;
 }
 

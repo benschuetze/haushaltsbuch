@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { subscriptionCancellations } from "~/lib/db/schema";
 import { refreshInsights } from "~/lib/insights";
 import { merchantKey } from "~/lib/insights/recurring";
 
 /** Records the user's "done, cancelled" and lets the hints react at once. Saying it twice keeps the first date. */
-export async function markCancelled(db: Db, merchant: string, now = new Date()): Promise<void> {
+export async function markCancelled(db: Db, merchant: string, now = clockNow()): Promise<void> {
   const key = merchantKey(merchant);
   if (!key) throw new Error("Unbekannter Händler");
   await db
@@ -15,7 +16,7 @@ export async function markCancelled(db: Db, merchant: string, now = new Date()):
   await refreshInsights(db, now);
 }
 
-export async function undoCancellation(db: Db, key: string, now = new Date()): Promise<void> {
+export async function undoCancellation(db: Db, key: string, now = clockNow()): Promise<void> {
   await db.delete(subscriptionCancellations).where(eq(subscriptionCancellations.merchantKey, key));
   await refreshInsights(db, now);
 }

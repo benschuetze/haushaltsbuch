@@ -1,3 +1,4 @@
+import { clockNow } from "~/lib/clock";
 import { formatDate } from "~/lib/format";
 import { formatCents } from "~/lib/money";
 import { berlinDay, type CaptureResult, shiftDay } from "./run";
@@ -27,7 +28,7 @@ function dayLabel(bookingDate: string, now: Date): string {
   return formatDate(bookingDate);
 }
 
-export function describeBooking(result: CaptureResult, now: Date = new Date()): BookingCard {
+export function describeBooking(result: CaptureResult, now: Date = clockNow()): BookingCard {
   const { transaction: tx } = result;
   return {
     id: tx.id,

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { formatCents } from "../../app/lib/money";
 import { expect, test } from "./fixtures";
-import { importDemo, resetDb } from "./helpers";
+import { E2E_NOW, importDemo, resetDb } from "./helpers";
 
 const expected: { months: Record<string, { income_cents: number; expense_cents: number; transfer_cents: number }> } =
   JSON.parse(readFileSync("beispieldaten/erwartet.json", "utf8"));
@@ -49,7 +49,7 @@ test("Vergleich mit dem Vormonat in Worten statt mit Vorzeichen", async ({ page 
 });
 
 test("kein Link in einen Monat, der noch nicht begonnen hat", async ({ page }) => {
-  const now = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date()).slice(0, 7);
+  const now = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date(E2E_NOW)).slice(0, 7);
   await page.goto(`/monat/${now}`);
   await expect(page.getByRole("navigation", { name: "Monat wechseln" }).getByRole("link")).toHaveCount(1);
 });

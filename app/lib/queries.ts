@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, gte, isNull, lt, sql, sum } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { accounts, categories, rules, transactions } from "~/lib/db/schema";
 
@@ -15,7 +16,7 @@ export function previousMonth(month: string): string {
   return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
 }
 
-export function currentMonth(now = new Date()): string {
+export function currentMonth(now = clockNow()): string {
   return now.toISOString().slice(0, 7);
 }
 

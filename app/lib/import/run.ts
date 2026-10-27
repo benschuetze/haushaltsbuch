@@ -1,6 +1,7 @@
 import type { LanguageModel } from "ai";
 import { and, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
 import { categorizeTransactions } from "~/lib/categorize/apply";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { type Account, accounts, imports, transactions } from "~/lib/db/schema";
 import { refreshInsights } from "~/lib/insights";
@@ -37,7 +38,7 @@ const ABANDONED_AFTER_MS = 15 * 60 * 1000;
  * review flag. Rules and the model get a second go; without a model they go to "prüfen".
  */
 async function pickUpInterrupted(db: Db, model: LanguageModel | null): Promise<void> {
-  const cutOff = new Date(Date.now() - ABANDONED_AFTER_MS);
+  const cutOff = new Date(clockNow().getTime() - ABANDONED_AFTER_MS);
   const broken = await db
     .select({ id: imports.id })
     .from(imports)
