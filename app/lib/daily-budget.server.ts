@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 
 /**
@@ -11,7 +12,7 @@ export async function takeFromDailyBudget(
   name: string,
   amount: number,
   limit: number,
-  now = new Date(),
+  now = clockNow(),
 ): Promise<number> {
   if (amount <= 0) return 0;
   const key = `${name}_${now.toISOString().slice(0, 10)}`;

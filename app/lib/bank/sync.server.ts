@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { LanguageModel } from "ai";
 import { and, eq, lt } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import { decryptSecret, encryptSecret } from "~/lib/crypto.server";
 import type { Db } from "~/lib/db/client";
 import { accounts, type BankConnection, bankAccounts, bankAuthStates, bankConnections } from "~/lib/db/schema";
@@ -29,7 +30,7 @@ export function hashState(state: string): string {
   return createHash("sha256").update(state).digest("hex");
 }
 
-export async function createAuthState(db: Db, aspsp: { name: string; country: string }, now = new Date()) {
+export async function createAuthState(db: Db, aspsp: { name: string; country: string }, now = clockNow()) {
   const state = randomBytes(32).toString("base64url");
   await db.delete(bankAuthStates).where(lt(bankAuthStates.expiresAt, now));
   await db.insert(bankAuthStates).values({
@@ -45,7 +46,7 @@ export async function createAuthState(db: Db, aspsp: { name: string; country: st
  * The state from the bank's redirect must match the one in this browser's cookie, exist, be fresh and unused.
  * It is deleted on first use, so a callback URL cannot be replayed.
  */
-export async function consumeAuthState(db: Db, fromUrl: string | null, fromCookie: string | null, now = new Date()) {
+export async function consumeAuthState(db: Db, fromUrl: string | null, fromCookie: string | null, now = clockNow()) {
   if (!fromUrl || !fromCookie) return null;
   const a = Buffer.from(hashState(fromUrl));
   const b = Buffer.from(hashState(fromCookie));
@@ -107,7 +108,7 @@ export async function completeConnection(
   const session = await client.createSession(code);
   const validUntil = session.access?.valid_until
     ? new Date(session.access.valid_until)
-    : new Date(Date.now() + CONSENT_DAYS * 86_400_000);
+    : new Date(clockNow().getTime() + CONSENT_DAYS * 86_400_000);
   const [connection] = await db
     .insert(bankConnections)
     .values({
@@ -156,7 +157,7 @@ export async function syncConnection(
   client: EnableBankingClient,
   connection: BankConnection,
   model: LanguageModel | null,
-  now = new Date(),
+  now = clockNow(),
 ): Promise<SyncResult> {
   const result: SyncResult = { connectionId: connection.id, inserted: 0, duplicates: 0, skipped: 0, rejected: 0 };
   if (connection.status !== "active") return { ...result, error: "Verbindung nicht aktiv" };
@@ -214,7 +215,7 @@ export async function syncConnection(
   }
 }
 
-export async function syncAll(db: Db, client: EnableBankingClient, model: LanguageModel | null, now = new Date()) {
+export async function syncAll(db: Db, client: EnableBankingClient, model: LanguageModel | null, now = clockNow()) {
   const active = await db.select().from(bankConnections).where(eq(bankConnections.status, "active"));
   const results: SyncResult[] = [];
   // One after another: banks limit unattended calls, and parallel writes to the same account gain nothing.

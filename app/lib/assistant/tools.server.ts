@@ -3,6 +3,7 @@ import { and, desc, eq, gte, ilike, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { canAfford } from "~/lib/budget/available";
 import { redactIbans } from "~/lib/categorize/llm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { categories, transactions } from "~/lib/db/schema";
 import { budgetStatus, openInsights, purchasePlan, recurringPayments, spendingToday, weekToday } from "~/lib/insights";
@@ -16,7 +17,7 @@ const month = z.string().regex(MONTH_PATTERN).describe("Monat als JJJJ-MM, z. B.
  * Read-only tools over the user's own data. Nothing here writes, and every text that goes back to the model
  * passes through redactIbans, like everything else that reaches the LLM.
  */
-export function createAssistantTools(db: Db, now = new Date()) {
+export function createAssistantTools(db: Db, now = clockNow()) {
   return {
     heute_verfuegbar: tool({
       description:

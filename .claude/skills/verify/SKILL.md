@@ -59,6 +59,11 @@ description: Use for every code change before calling it done - writing the righ
 - `trace: 'retain-on-failure'`, `screenshot: 'only-on-failure'`, `retries` nur in CI.
 - Vor dem Lauf: Datenbank leeren, migrieren, seeden. Jede Testdatei startet mit bekanntem Zustand.
 - „Sichtbar“ reicht nicht, wenn etwas überdeckt sein kann (Sticky Header, Dialog): mit `elementFromPoint` prüfen, dass das Element wirklich oben liegt.
+- Der Server läuft mit gepinnter Uhr: `FIXED_NOW` = `E2E_NOW` aus `tests/e2e/helpers.ts` (20.10.2026), gelesen über
+  `clockNow()` in `app/lib/clock.ts`. Die Demo-Daten sind fest auf August/September 2026 datiert; ohne Pin wurden ab dem
+  22.10. Abos inaktiv (45 Tage nach der letzten Buchung) und CI rot. Neue Server-Logik, die „heute“ braucht, nimmt
+  `now = clockNow()` als Parameter, nie `new Date()` direkt. Tests, die ein Datum relativ zu heute bilden, rechnen mit
+  `E2E_NOW`, nicht mit der Browser-Uhr. Ausnahmen bleiben echte Zeit: Session-Alter, Login-Drossel, Bank-JWT, Zeitstempel.
 
 ## Leitplanken (Claude Code Hooks)
 
@@ -90,7 +95,10 @@ description: Use for every code change before calling it done - writing the righ
 
 ## CI
 
-- Job `check`: typecheck, lint, `pnpm test`.
+- Job `check`: `pnpm audit --prod --audit-level high`, `security:osv`, typecheck, lint, `pnpm test`. Meldet `audit` ein
+  transitives Paket, dessen Eltern noch nicht nachgezogen haben: Override in `pnpm-workspace.yaml` unter `overrides`
+  mit Major im Schlüssel (`"body-parser@1": ^1.20.9`). Das Feld `pnpm.overrides` in `package.json` ignoriert pnpm 12
+  stillschweigend (27.10.). Der Montags-Lauf (`schedule`) findet neue Advisories auch ohne Commit.
 - Job `e2e`: Postgres als Service-Container, Migrationen, Seed, `pnpm test:e2e`, Playwright-Report und Traces bei Fehlschlag als Artifact hochladen.
 - Actions auf Commit-SHA gepinnt, Version als Kommentar daneben. `permissions: contents: read`.
 - Install mit `--frozen-lockfile`. Install-Scripts nur für Pakete, die sie brauchen (`pnpm.onlyBuiltDependencies`).

@@ -1,4 +1,5 @@
 import { and, eq, lt, or, sql } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { accounts, bankAccounts, bankConnections } from "~/lib/db/schema";
 import { bankConfig, EnableBankingClient } from "./enable-banking.server";
@@ -36,7 +37,7 @@ export async function listConnections(db: Db) {
 const WARN_DAYS = 7;
 
 /** Connections that need the user: expired, failing, or running out within a week. */
-export async function bankIssues(db: Db, now = new Date()) {
+export async function bankIssues(db: Db, now = clockNow()) {
   const soon = new Date(now.getTime() + WARN_DAYS * 86_400_000);
   const rows = await db
     .select({

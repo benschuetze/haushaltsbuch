@@ -1,4 +1,5 @@
 import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { categories, savingsDeposits, savingsGoals, transactions } from "~/lib/db/schema";
 import { merchantKey } from "~/lib/insights/recurring";
@@ -77,7 +78,7 @@ export async function deposit(db: Db, goalId: string, amountCents: number, today
   const deposits = await db.select().from(savingsDeposits).where(eq(savingsDeposits.goalId, goalId));
   const saved = deposits.reduce((s, d) => s + d.amountCents, 0);
   if (goal.achievedAt === null && saved >= goal.targetCents) {
-    await db.update(savingsGoals).set({ achievedAt: new Date() }).where(eq(savingsGoals.id, goalId));
+    await db.update(savingsGoals).set({ achievedAt: clockNow() }).where(eq(savingsGoals.id, goalId));
     return true;
   }
   return false;

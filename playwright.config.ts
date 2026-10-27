@@ -1,6 +1,6 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_CAPTURE_TOKEN, E2E_PASSWORD } from "./tests/e2e/helpers";
+import { E2E_CAPTURE_TOKEN, E2E_NOW, E2E_PASSWORD } from "./tests/e2e/helpers";
 
 const CI = !!process.env.CI;
 const PORT = 5199;
@@ -34,6 +34,8 @@ const appEnv = {
   SESSION_SECRET: "e2e-session-secret-nur-fuer-tests",
   NODE_ENV: "production",
   INSECURE_COOKIES: "1",
+  // Pinned server clock, see E2E_NOW. The browser keeps its real clock.
+  FIXED_NOW: E2E_NOW,
 };
 
 export default defineConfig({

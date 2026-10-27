@@ -1,5 +1,6 @@
 import { generateText, isStepCount, type LanguageModel, type ModelMessage } from "ai";
 import { z } from "zod";
+import { clockNow } from "~/lib/clock";
 import { takeFromDailyBudget } from "~/lib/daily-budget.server";
 import type { Db } from "~/lib/db/client";
 import { log } from "~/lib/observability/log.server";
@@ -74,7 +75,7 @@ export async function askAssistant(
   db: Db,
   model: LanguageModel,
   history: ChatMessage[],
-  now = new Date(),
+  now = clockNow(),
   tone: Tone = "freundlich",
 ): Promise<AssistantReply> {
   if (!(await withinDailyLimit(db, now))) {

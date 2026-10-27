@@ -1,4 +1,5 @@
 import { and, count, eq, gte, isNull, or, sql } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { transactions } from "~/lib/db/schema";
 
@@ -17,7 +18,7 @@ export const REVIEW_ALARM = { share: 0.5, minBookings: 10, days: 7 } as const;
 
 export type ReviewShare = { total: number; open: number; share: number; alarm: boolean };
 
-export async function reviewShare(db: Db, now = new Date()): Promise<ReviewShare> {
+export async function reviewShare(db: Db, now = clockNow()): Promise<ReviewShare> {
   const since = new Date(now.getTime() - REVIEW_ALARM.days * 24 * 60 * 60 * 1000);
   const [row] = await db
     .select({

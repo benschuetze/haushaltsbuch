@@ -3,6 +3,7 @@ import { availableToSpend } from "~/lib/budget/available";
 import { type MonthFlow, planPurchase } from "~/lib/budget/goals";
 import { loadGoalInputs } from "~/lib/budget/goals.server";
 import { weekReview } from "~/lib/budget/week";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { budgets, categories, insights, meta, subscriptionCancellations, transactions } from "~/lib/db/schema";
 import { currentMonth } from "~/lib/queries";
@@ -30,7 +31,7 @@ type Bookings = Awaited<ReturnType<typeof loadBookings>>;
 /** Same rule as the overview: this month if it has bookings, otherwise the latest month with data. */
 export function referenceMonth(
   bookings: Bookings,
-  now = new Date(),
+  now = clockNow(),
 ): { month: string; dayOfMonth: number | null; daysInMonth: number } {
   const current = currentMonth(now);
   const latest = bookings.reduce((max, b) => (b.bookingDate > max ? b.bookingDate : max), "").slice(0, 7);
@@ -52,7 +53,7 @@ async function loadBudgets(db: Db) {
  * Recomputes all hints for the reference month. Cheap (a few queries, no model calls), so it runs after every
  * import and every correction. Hints keep their read/dismissed state; ones that no longer apply disappear.
  */
-export async function refreshInsights(db: Db, now = new Date()): Promise<void> {
+export async function refreshInsights(db: Db, now = clockNow()): Promise<void> {
   const [bookings, budgetRows, cancellations] = await Promise.all([
     loadBookings(db),
     loadBudgets(db),
@@ -138,7 +139,7 @@ export type BudgetStatus = {
   projectedCents: number | null;
 };
 
-export async function budgetStatus(db: Db, now = new Date()): Promise<{ month: string; items: BudgetStatus[] }> {
+export async function budgetStatus(db: Db, now = clockNow()): Promise<{ month: string; items: BudgetStatus[] }> {
   const [bookings, budgetRows] = await Promise.all([loadBookings(db), loadBudgets(db)]);
   const ref = referenceMonth(bookings, now);
   const spent = new Map<string, number>();
@@ -173,7 +174,7 @@ export async function budgetStatus(db: Db, now = new Date()): Promise<{ month: s
   };
 }
 
-export async function recurringPayments(db: Db, now = new Date()) {
+export async function recurringPayments(db: Db, now = clockNow()) {
   const bookings = await loadBookings(db);
   const reference = bookings.reduce(
     (max, b) => (b.bookingDate > max ? b.bookingDate : max),
@@ -183,7 +184,7 @@ export async function recurringPayments(db: Db, now = new Date()) {
 }
 
 /** Recurring payments plus what the user cancelled and whether the bookings agree, from one read. */
-export async function subscriptionOverview(db: Db, now = new Date()) {
+export async function subscriptionOverview(db: Db, now = clockNow()) {
   const [bookings, cancellations] = await Promise.all([
     loadBookings(db),
     db.select().from(subscriptionCancellations).orderBy(desc(subscriptionCancellations.cancelledOn)),
@@ -204,18 +205,18 @@ export async function subscriptionOverview(db: Db, now = new Date()) {
 }
 
 /** Today in Germany; a UTC date would switch to tomorrow at 1 or 2 a.m. local time. */
-export function todayInGermany(now = new Date()): string {
+export function todayInGermany(now = clockNow()): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(now);
 }
 
 /** "How much can I spend today": see availableToSpend. Open savings goals are reserved. */
-export async function spendingToday(db: Db, now = new Date()) {
+export async function spendingToday(db: Db, now = clockNow()) {
   const [bookings, goals] = await Promise.all([loadBookings(db), loadGoalInputs(db)]);
   return availableToSpend(bookings, todayInGermany(now), goals);
 }
 
 /** This week's everyday spending against the usual, plus the streak of good weeks. */
-export async function weekToday(db: Db, now = new Date()) {
+export async function weekToday(db: Db, now = clockNow()) {
   return weekReview(await loadBookings(db), todayInGermany(now));
 }
 
@@ -237,7 +238,7 @@ export async function monthFlows(db: Db): Promise<MonthFlow[]> {
   return [...flows.values()].sort((a, b) => a.month.localeCompare(b.month));
 }
 
-export async function purchasePlan(db: Db, amountCents: number, now = new Date()) {
+export async function purchasePlan(db: Db, amountCents: number, now = clockNow()) {
   const [available, flows] = await Promise.all([spendingToday(db, now), monthFlows(db)]);
   const goalsPerMonth = available.goals.reduce((s, g) => s + g.perMonthCents, 0);
   return { available, plan: planPurchase(flows, amountCents, available.today, available.freeCents, goalsPerMonth) };
@@ -246,7 +247,7 @@ export async function purchasePlan(db: Db, amountCents: number, now = new Date()
 const STALE_MS = 6 * 60 * 60 * 1000;
 
 /** Projections change with the calendar, not only with new bookings; recompute at most every six hours on a visit. */
-export async function refreshInsightsIfStale(db: Db, now = new Date()): Promise<void> {
+export async function refreshInsightsIfStale(db: Db, now = clockNow()): Promise<void> {
   const [last] = await db.select().from(meta).where(eq(meta.key, "insights_refreshed_at"));
   if (last && now.getTime() - Date.parse(last.value) < STALE_MS) return;
   await refreshInsights(db, now);
