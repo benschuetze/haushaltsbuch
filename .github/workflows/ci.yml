@@ -56,16 +56,55 @@ jobs:
       DATABASE_URL: postgres://postgres@localhost:5432/haushaltsbuch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      # The browser suite takes 8 to 20 minutes and only the web app can break it. Changes confined to the iOS
+      # app, docs or Markdown skip it; the job still reports green so the ruleset's required check is met.
+      # Scheduled runs and anything the diff cannot tell run the full suite.
+      - id: web
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          base=""
+          case "$EVENT" in
+            pull_request) git fetch --quiet --depth=1 origin "$PR_BASE" && base=FETCH_HEAD ;;
+            push) git fetch --quiet --depth=1 origin "$PUSH_BEFORE" && base=FETCH_HEAD ;;
+          esac
+          if [ -z "$base" ] || git diff --name-only "$base" HEAD | grep -qvE '^(ios/|docs/|\.claude/|[^/]+\.md$)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Only ios/, docs/, .claude/ or Markdown changed: browser tests skipped."
+          fi
+      - if: steps.web.outputs.changed == 'true'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - if: steps.web.outputs.changed == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium webkit
-      - run: pnpm db:migrate
-      - run: pnpm db:seed
-      - run: pnpm test:e2e
+      - if: steps.web.outputs.changed == 'true'
+        run: pnpm install --frozen-lockfile
+      # Browsers come from the cache keyed by the Playwright version; the system packages are not cacheable.
+      - if: steps.web.outputs.changed == 'true'
+        id: pw-version
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - if: steps.web.outputs.changed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+      - if: steps.web.outputs.changed == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium webkit
+      - if: steps.web.outputs.changed == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium webkit
+      - if: steps.web.outputs.changed == 'true'
+        run: pnpm db:migrate
+      - if: steps.web.outputs.changed == 'true'
+        run: pnpm db:seed
+      - if: steps.web.outputs.changed == 'true'
+        run: pnpm test:e2e
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

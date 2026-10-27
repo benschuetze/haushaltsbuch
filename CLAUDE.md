@@ -15,7 +15,8 @@ pnpm typecheck           # react-router typegen && tsc --noEmit
 pnpm lint                # biome check .
 pnpm test                # vitest run: Unit- und DB-Tests (PGlite, kein Netz, kein LLM)
 pnpm test:e2e            # playwright: Port 5199 (Demo 5198), PGlite lokal / Postgres in CI, LLM gemockt
-pnpm check               # typecheck + lint + test + test:e2e
+pnpm check:quick         # typecheck + lint + test (vor jedem Commit)
+pnpm check               # check:quick + test:e2e (nur bei Web-Änderungen, siehe unten)
 pnpm db:generate         # drizzle-kit generate
 pnpm db:migrate          # Migrationen gegen DATABASE_URL (Neon oder Postgres)
 pnpm db:local            # lokale Datenbank ohne Postgres-Installation (PGlite, Port 5433)
@@ -23,7 +24,8 @@ pnpm db:seed             # Standardkategorien und Demo-Konto
 pnpm eval                # Eval-Set gegen das echte LLM, braucht ANTHROPIC_API_KEY
 ```
 
-Vor jedem Commit: `pnpm check`. Schlägt etwas fehl, erst beheben, dann committen.
+Vor jedem Commit: `pnpm check:quick`. Playwright (`pnpm test:e2e`, 4 Minuten) nur, wenn Routen, Komponenten oder
+E2E-Tests geändert wurden, dann einmal vor dem Push. Schlägt etwas fehl, erst beheben, dann committen.
 Nichts als erledigt melden, was nicht gelaufen und gesehen wurde.
 
 ## Struktur
@@ -93,7 +95,10 @@ Details und Pflichtfälle: Skill `verify`.
   Er sagt den Commit voraus, bevor der Befehl läuft: `git add`/`rm`/`mv` davor im selben Befehl, `-a`, `--amend`,
   Pfade und `sh -c` zählen mit (Parser in `shell.mjs`). Ändert oder nennt ein Commit-Befehl Workflows, Hooks,
   Settings oder `beispieldaten/erwartet.json`, fragt er Ben.
-- Arbeit auf Feature-Branches (`feat/…`, `fix/…`), Merge nach `main` per Pull Request mit grüner CI.
+- Arbeit auf Feature-Branches (`feat/…`, `fix/…`), Merge nach `main` per Pull Request mit grüner CI. Wenige PRs:
+  zusammenhängende Arbeit in einem Branch bündeln statt pro Thema zu splitten; Commits bleiben klein. Jeder PR
+  kostet einen CI-Lauf. In CI läuft `e2e` nur, wenn außer `ios/`, `docs/`, `.claude/` und Markdown etwas geändert
+  wurde (Pfadfilter im Job, bleibt als Pflicht-Check grün).
   Erzwungen per GitHub-Ruleset „main“: PR Pflicht, Checks `check`, `e2e`, `gitleaks`, `analyze (…)` grün,
   kein Force-Push, kein Löschen. Ein neuer Pflicht-Check muss erst einmal auf einem PR gelaufen sein, bevor er ins Ruleset kommt.
 - Jeder Push läuft durch CI. `main` deployt automatisch auf Vercel, Branches bekommen eine Preview.

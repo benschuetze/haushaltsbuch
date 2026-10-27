@@ -9,8 +9,10 @@ description: Use for every code change before calling it done - writing the righ
 
 1. Bei einem Fehlerbericht: zuerst einen Test schreiben, der den Fehler zeigt. Er muss rot sein. Dann fixen, dann grün.
 2. Bei neuer Funktion: Tests für das Versprechen an den Nutzer schreiben (siehe Pflichtfälle).
-3. `pnpm typecheck && pnpm lint && pnpm test`
-4. Bei UI-Änderungen zusätzlich `pnpm test:e2e` und die Seite im Browser öffnen (Preview aus `.claude/launch.json` oder Claude in Chrome). Desktop und schmale Breite (390 px) ansehen.
+3. `pnpm check:quick` (typecheck, lint, Unit- und DB-Tests) vor jedem Commit.
+4. Nur bei Änderungen an Routen, Komponenten oder E2E-Tests: `pnpm test:e2e` einmal vor dem Push (4 Minuten, braucht
+   `dangerouslyDisableSandbox`) und die Seite im Browser öffnen (Preview aus `.claude/launch.json` oder Claude in
+   Chrome). Desktop und schmale Breite (390 px) ansehen. Ben (27.10.): Playwright nur, wenn es nötig ist.
 5. Dem Nutzer berichten, was getestet wurde und was im Browser zu sehen war. Nichts melden, was nicht gelaufen ist.
 
 ## Testebenen
@@ -100,6 +102,9 @@ description: Use for every code change before calling it done - writing the righ
   mit Major im Schlüssel (`"body-parser@1": ^1.20.9`). Das Feld `pnpm.overrides` in `package.json` ignoriert pnpm 12
   stillschweigend (27.10.). Der Montags-Lauf (`schedule`) findet neue Advisories auch ohne Commit.
 - Job `e2e`: Postgres als Service-Container, Migrationen, Seed, `pnpm test:e2e`, Playwright-Report und Traces bei Fehlschlag als Artifact hochladen.
+  Läuft nur, wenn der Diff zur Basis etwas außer `ios/`, `docs/`, `.claude/` und Markdown enthält (Schritt `web` im Job);
+  sonst endet der Job sofort grün, damit der Pflicht-Check im Ruleset erfüllt bleibt. Browser aus `actions/cache`
+  (Schlüssel: Playwright-Version); `playwright install --with-deps` hing am 27.10. einmal 20 Minuten bis zum Job-Timeout.
 - Actions auf Commit-SHA gepinnt, Version als Kommentar daneben. `permissions: contents: read`.
 - Install mit `--frozen-lockfile`. Install-Scripts nur für Pakete, die sie brauchen (`pnpm.onlyBuiltDependencies`).
 - Workflow `eval` nur per `workflow_dispatch`, mit `ANTHROPIC_API_KEY` als Secret.
