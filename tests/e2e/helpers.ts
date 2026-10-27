@@ -10,6 +10,11 @@ export const E2E_PASSWORD = "e2e-test-passwort";
 export const E2E_CAPTURE_TOKEN = "e2e-capture-token-nur-fuer-tests-000000";
 export const DEMO_URL = "http://127.0.0.1:5198";
 export const FAKE_BANK_URL = "http://127.0.0.1:5437";
+/**
+ * The server clock during the browser tests (FIXED_NOW). The demo bookings are dated August and September 2026;
+ * a Tuesday in October keeps the September subscriptions "active" and the running month empty, whatever today is.
+ */
+export const E2E_NOW = "2026-10-20T09:00:00Z";
 
 /**
  * Every spec starts from the same state: default categories and budgets, the demo account, nothing else.

@@ -1,5 +1,5 @@
 import { expect, test } from "./fixtures";
-import { DEMO_URL, expectNoHorizontalOverflow, expectNoSeriousA11yViolations, resetDb, sql } from "./helpers";
+import { DEMO_URL, E2E_NOW, expectNoHorizontalOverflow, expectNoSeriousA11yViolations, resetDb, sql } from "./helpers";
 
 test.beforeEach(resetDb);
 
@@ -63,14 +63,16 @@ test("ein älterer Entwurf ohne Betrag lässt sich noch zurücknehmen, eine ält
   await page.getByLabel("Was hast du bezahlt?").fill("irgendwas beim Bäcker");
   await page.getByRole("button", { name: "Buchen" }).click();
   await expect(page.getByRole("status")).toContainText("Kein Betrag erkannt");
-  await sql("update transactions set created_at = now() - interval '2 days' where source = 'voice'");
+  // Aged against the pinned server clock, not the database clock: the server decides what counts as "old".
+  await sql(`update transactions set created_at = timestamptz '${E2E_NOW}' - interval '2 days' where source = 'voice'`);
   await page.getByRole("button", { name: "Rückgängig" }).click();
   await expect(page.getByRole("status")).toContainText("Buchung entfernt");
 
   await page.getByLabel("Was hast du bezahlt?").fill("9 Euro Kino");
   await page.getByRole("button", { name: "Buchen" }).click();
   await expect(page.getByRole("status")).toContainText("Kino");
-  await sql("update transactions set created_at = now() - interval '2 days' where source = 'voice'");
+  // Aged against the pinned server clock, not the database clock: the server decides what counts as "old".
+  await sql(`update transactions set created_at = timestamptz '${E2E_NOW}' - interval '2 days' where source = 'voice'`);
   await page.getByRole("button", { name: "Rückgängig" }).click();
   await expect(page.getByRole("alert")).toContainText("10 Minuten");
 });

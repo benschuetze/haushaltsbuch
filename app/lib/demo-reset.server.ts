@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { getModel } from "~/lib/categorize/model";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { DEMO_FILES, importDemoData } from "~/lib/db/demo-data";
 import { meta } from "~/lib/db/schema";
@@ -62,7 +63,7 @@ let checkedDay: string | null = null;
  * Once a night the demo starts over, whatever visitors did the day before. The first request of the day claims the
  * reset with one insert; every other request (and every other server instance) sees the claim and moves on.
  */
-export async function resetDemoNightly(db: Db, now = new Date()): Promise<boolean> {
+export async function resetDemoNightly(db: Db, now = clockNow()): Promise<boolean> {
   // Off in the browser tests, where the demo server shares its database with every other test.
   if (process.env.DEMO_NIGHTLY_RESET === "0") return false;
   const day = todayInGermany(now);

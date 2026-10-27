@@ -1,4 +1,5 @@
 import { and, count, eq, inArray, like } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { accounts, categories, imports, transactions } from "~/lib/db/schema";
 import { refreshInsights } from "~/lib/insights";
@@ -14,7 +15,7 @@ const PREFIX = "mock:";
 export async function connectMock(
   db: Db,
   tile: Pick<BankTile, "id" | "name">,
-  now = new Date(),
+  now = clockNow(),
 ): Promise<{ accountName: string; inserted: number; existed: boolean }> {
   const key = `${PREFIX}${tile.id}`;
   const name = `${tile.name} (Mock)`;
@@ -65,7 +66,7 @@ export async function listMockAccounts(db: Db) {
 }
 
 /** Only ever touches accounts marked as mock; a real account id is ignored. */
-export async function removeMock(db: Db, accountId: string, now = new Date()): Promise<string | null> {
+export async function removeMock(db: Db, accountId: string, now = clockNow()): Promise<string | null> {
   const [account] = await db
     .select()
     .from(accounts)

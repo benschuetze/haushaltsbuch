@@ -13,6 +13,7 @@ import { connectMock, listMockAccounts, removeMock } from "~/lib/bank/mock.serve
 import { bankStateCookie } from "~/lib/bank/state-cookie.server";
 import { createAuthState, disconnect, syncConnection } from "~/lib/bank/sync.server";
 import { getModel } from "~/lib/categorize/model";
+import { clockNow } from "~/lib/clock";
 import { getDb } from "~/lib/db/client";
 import { bankConnections } from "~/lib/db/schema";
 import { formatDate } from "~/lib/format";
@@ -121,7 +122,7 @@ export async function action({ request }: Route.ActionArgs) {
     if (!aspsp) return data({ ok: false as const, message: "Diese Bank ist nicht in der Liste." }, { status: 400 });
     const { state, validUntil } = await createAuthState(db, { name: aspsp.name, country: aspsp.country });
     const maxValid = aspsp.maximum_consent_validity
-      ? new Date(Date.now() + aspsp.maximum_consent_validity * 1000)
+      ? new Date(clockNow().getTime() + aspsp.maximum_consent_validity * 1000)
       : validUntil;
     try {
       const auth = await client.startAuth({

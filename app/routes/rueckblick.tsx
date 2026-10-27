@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { data, Link } from "react-router";
 import { Button } from "~/components/ui/button";
 import { monthStory } from "~/lib/budget/story";
+import { clockNow } from "~/lib/clock";
 import { getDb } from "~/lib/db/client";
 import { categories, savingsDeposits, transactions } from "~/lib/db/schema";
 import { formatMonth } from "~/lib/format";
@@ -20,7 +21,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const db = getDb();
   const months = await monthsWithData(db); // newest first
   const asked = new URL(request.url).searchParams.get("monat");
-  const current = new Date().toISOString().slice(0, 7);
+  const current = clockNow().toISOString().slice(0, 7);
   // By default the last finished month: a story about half a month is half a story.
   const month = asked && MONTH_PATTERN.test(asked) ? asked : (months.find((m) => m < current) ?? months[0]);
   if (!month || !months.includes(month)) {

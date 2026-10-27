@@ -1,4 +1,5 @@
 import { and, eq, gt, or } from "drizzle-orm";
+import { clockNow } from "~/lib/clock";
 import type { Db } from "~/lib/db/client";
 import { transactions } from "~/lib/db/schema";
 
@@ -13,7 +14,7 @@ export type UndoResult = { ok: true } | { ok: false; error: string };
  * month the user has looked at. The exception is a draft without amount: the app has no amount editor yet, so
  * deleting is the only way out of "prüfen" for it. One conditional delete, so a check and a delete cannot drift apart.
  */
-export async function undoCapture(db: Db, id: string, now: Date = new Date()): Promise<UndoResult> {
+export async function undoCapture(db: Db, id: string, now: Date = clockNow()): Promise<UndoResult> {
   const cutoff = new Date(now.getTime() - UNDO_WINDOW_MINUTES * 60_000);
   const deleted = await db
     .delete(transactions)
