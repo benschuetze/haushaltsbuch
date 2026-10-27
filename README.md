@@ -4,7 +4,7 @@ Ein Haushaltsbuch, das zuerst die Frage beantwortet, die man wirklich hat: **Wie
 
 | | |
 |---|---|
-| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, zum Ausprobieren: Import (mit Beispieldateien), Regeln, Budgets, Ziele, Prüfen. Jede Nacht und per Knopf zurück auf die Beispiele. Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
+| **Demo** | [haushaltsbuch-demo.vercel.app](https://haushaltsbuch-demo.vercel.app): erfundene Daten, ohne Login, zum Ausprobieren: Import (mit Beispieldateien), Regeln, Budgets, Ziele, Prüfen. Jede Nacht und per Knopf zurück auf die Beispiele. Die Beispielmonate wandern mit dem Kalender mit (die Dateien sind für Oktober 2026 geschrieben, der Import verschiebt sie um die seither vergangenen Monate). Der Assistent antwortet dort mit dem echten Claude-Modell (begrenzte Zahl Fragen pro Tag). |
 | **Code** | [github.com/benschuetze/haushaltsbuch](https://github.com/benschuetze/haushaltsbuch) |
 
 ## Was die App kann
