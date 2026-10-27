@@ -25,3 +25,7 @@ playwright/.auth/
 
 # Personal Claude Code overrides
 .claude/settings.local.json
+
+# iOS app (ios/): Xcode user state and build output
+ios/**/xcuserdata/
+ios/**/DerivedData/

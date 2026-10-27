@@ -54,6 +54,7 @@ tests/
 drizzle/                  # generierte Migrationen, nie von Hand ändern
 evals/                    # Eval-Set und Runner
 beispieldaten/            # erfundene Demo-Daten und nachgerechnete Erwartungswerte
+ios/                      # eigenständige iPhone-App ohne Server (Swift): Core = Portierung aus app/lib, App = SwiftUI
 .claude/skills/           # Arbeitsabläufe für wiederkehrende Aufgaben
 ```
 
@@ -118,5 +119,6 @@ Die Hooks selbst und `.claude/settings.json` stehen ebenfalls unter Rückfrage, 
 | `categorizer-eval` | Prompt, Modell oder Kategorien der KI-Zuordnung ändern |
 | `e-ink-design` | Neue oder geänderte UI im E-Ink-Look (Papier, Tinte, Stiftblau) |
 | `ship` | Feature abschließen und deployen |
+| `ios-app` | Die iPhone-App unter `ios/` ändern, Logik aus `app/lib` nach Swift nachziehen, App installieren |
 
 Neue Skills anlegen, sobald eine Aufgabe zum zweiten Mal gleich abläuft.
