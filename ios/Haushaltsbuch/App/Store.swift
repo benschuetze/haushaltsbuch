@@ -100,11 +100,27 @@ final class Store: ObservableObject {
             try? await Task.sleep(nanoseconds: 200_000_000)
             if Task.isCancelled { return }
             do {
-                let data = try JSONEncoder().encode(snapshot)
-                try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+                try Store.write(snapshot, to: url)
             } catch {
                 await MainActor.run { self.lastError = "Speichern fehlgeschlagen: \(error.localizedDescription)" }
             }
         }
+    }
+
+    /// Writes right away. iOS may suspend or kill the app before the coalesced save fires, e.g. when the user books
+    /// and swipes the app away; the scene calls this whenever the app leaves the foreground.
+    func flush() {
+        saveTask?.cancel()
+        saveTask = nil
+        do {
+            try Store.write(ledger, to: fileURL)
+        } catch {
+            lastError = "Speichern fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    private nonisolated static func write(_ snapshot: Ledger, to url: URL) throws {
+        let data = try JSONEncoder().encode(snapshot)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 }

@@ -99,17 +99,20 @@ extension Ledger {
                              needsReview: needsReview)
     }
 
-    /// Money between own accounts shows up on both sides. With several accounts imported, an outgoing amount that
-    /// comes in on another account within a few days is a transfer, not spending, on both sides.
+    /// Money between own accounts shows up on both sides. With several bank accounts imported, an outgoing amount that
+    /// comes in on another account within a few days is a transfer, not spending, on both sides. Dictated cash payments
+    /// have no bank counterpart and stay out; a booking the user's own rule has filed is not re-filed either.
     mutating func linkOwnTransfers() {
-        guard let transfer = categoryNamed("Umbuchung"), accounts.count > 1 else { return }
+        let bankAccounts = accounts.filter { $0.id != Ledger.cashAccount.id }
+        guard let transfer = categoryNamed("Umbuchung"), bankAccounts.count > 1 else { return }
+        let eligible: (Transaction) -> Bool = { !$0.isManual && $0.source != .voice && $0.categorySource != .rule }
         var used = Set<String>()
-        for i in transactions.indices where transactions[i].amountCents < 0 && !transactions[i].isManual {
+        for i in transactions.indices where transactions[i].amountCents < 0 && eligible(transactions[i]) {
             let out = transactions[i]
             guard let j = transactions.indices.first(where: { k in
                 let t = transactions[k]
                 return !used.contains(t.id) && t.accountKey != out.accountKey && t.amountCents == -out.amountCents
-                    && !t.isManual && abs(Day.daysBetween(t.bookingDate, out.bookingDate)) <= 5
+                    && eligible(t) && abs(Day.daysBetween(t.bookingDate, out.bookingDate)) <= 5
             }) else { continue }
             used.insert(transactions[j].id)
             for k in [i, j] {
@@ -157,16 +160,21 @@ extension Ledger {
         reapplyRules()
     }
 
-    /// Rules win over the merchant list; manual choices are never touched.
+    /// Rules win over the merchant list; manual choices are never touched. Re-filing settles bookings, it never puts
+    /// one back on the review list the user has already been through ("Passt so"), and the transfer pairs between
+    /// own accounts are linked again afterwards, since re-filing starts every booking from scratch.
     mutating func reapplyRules() {
         for i in transactions.indices where !transactions[i].isManual {
+            let reviewed = !transactions[i].needsReview
             Categorize.apply(to: &transactions[i], ledger: self)
             // A dictated amount that was doubtful stays on the review list even when the payee is now known.
             if transactions[i].source == .voice, let text = transactions[i].captureText,
                !(SpokenAmountParser.parse(text)?.certain ?? false) {
                 transactions[i].needsReview = true
             }
+            if reviewed { transactions[i].needsReview = false }
         }
+        linkOwnTransfers()
     }
 
     mutating func confirm(transactionId: String) {

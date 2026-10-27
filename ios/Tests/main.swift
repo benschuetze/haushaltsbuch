@@ -321,6 +321,39 @@ check(voice.transactions.first { $0.id == doener.transaction.id }?.isManual == t
 check(voice.transactions.first { $0.id == draft.transaction.id }?.categoryId == "Restaurant & Lieferdienst", "rule applies to the draft with the same payee")
 check(voice.transactions.first { $0.id == draft.transaction.id }?.needsReview == true, "draft without amount stays on review")
 
+// MARK: Transfers between own accounts, confirmations and re-filing (review findings 27.10.)
+func row(_ id: String, _ date: String, _ cents: Int, account: String, payee: String, source: TransactionSource = .import) -> Transaction {
+    Transaction(id: id, bookingDate: date, amountCents: cents, counterparty: payee, purpose: "", accountKey: account,
+                dedupeHash: id, categoryId: nil, categorySource: nil, needsReview: true, source: source, captureText: nil, createdAt: noon)
+}
+var two = Ledger()
+two.accounts = [Account(id: "iban:a", name: "Giro"), Account(id: "iban:b", name: "Zweitkonto"), Ledger.cashAccount]
+two.transactions = [
+    row("out", "2026-10-02", -50000, account: "iban:a", payee: "Kontoinhaber"),
+    row("in", "2026-10-03", 50000, account: "iban:b", payee: "Kontoinhaber"),
+    row("cash", "2026-10-03", -2000, account: "cash", payee: "Friseur", source: .voice),
+    row("refund", "2026-10-05", 2000, account: "iban:a", payee: "Freundin"),
+    row("spotify", "2026-10-04", -1299, account: "iban:a", payee: "Spotify AB"),
+    row("spotify-in", "2026-10-06", 1299, account: "iban:b", payee: "Spotify AB"),
+    row("club", "2026-10-07", -1500, account: "iban:a", payee: "Club Hafen"),
+]
+two.rules = [Rule(id: "r1", field: .counterparty, matchType: .equals, pattern: "Spotify AB", categoryId: "Abos & Verträge", priority: 0, createdAt: noon)]
+two.reapplyRules()
+func filed(_ id: String) -> String? { two.category(two.transactions.first { $0.id == id }?.categoryId)?.name }
+equal(filed("out"), "Umbuchung", "outgoing leg between own accounts is a transfer")
+equal(filed("in"), "Umbuchung", "incoming leg between own accounts is a transfer")
+check(filed("cash") != "Umbuchung" && two.transactions.first { $0.id == "cash" }?.needsReview == true, "dictated cash payment is not paired with a bank inflow")
+check(filed("refund") != "Umbuchung", "a refund of the same amount is not a transfer")
+equal(filed("spotify"), "Abos & Verträge", "a user rule outranks the transfer pairing")
+check(filed("spotify-in") != "Umbuchung", "the inflow matching a ruled booking is not re-filed")
+// "Passt so" and the transfer links survive the next category decision, which re-files everything.
+two.confirm(transactionId: "club")
+two.setCategory(transactionId: "refund", categoryId: "Sonstiges")
+check(two.transactions.first { $0.id == "club" }?.needsReview == false, "confirmed booking stays off the review list after another decision")
+equal(filed("out"), "Umbuchung", "transfer link survives re-filing")
+equal(filed("in"), "Umbuchung", "transfer link survives re-filing (incoming leg)")
+check(two.transactions.first { $0.id == "cash" }?.needsReview == true, "an unreviewed booking stays on the list")
+
 // Ledger round trip through JSON
 let encoded = try! JSONEncoder().encode(ledger)
 let decoded = try! JSONDecoder().decode(Ledger.self, from: encoded)

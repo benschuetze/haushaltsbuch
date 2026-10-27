@@ -108,7 +108,10 @@ enum Assistant {
     /// POST /v1/messages with the tool loop: run tools locally, hand back results, until the model answers in text.
     static func ask(history: [Message], ledger: Ledger, today: String = Day.today()) async throws -> String {
         guard let key = Keychain.read(keychainAccount), !key.isEmpty else { throw Failure.noKey }
-        var messages: [[String: Any]] = history.suffix(maxHistory).map { ["role": $0.role, "content": $0.text] }
+        // The API insists on a user turn first; after an even cut the window could start with an answer.
+        var recent = Array(history.suffix(maxHistory))
+        if let firstUser = recent.firstIndex(where: { $0.role == "user" }) { recent.removeFirst(firstUser) }
+        var messages: [[String: Any]] = recent.map { ["role": $0.role, "content": $0.text] }
         for _ in 0..<6 {
             let body: [String: Any] = ["model": model, "max_tokens": 2048, "system": system, "tools": tools, "messages": messages]
             var request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)

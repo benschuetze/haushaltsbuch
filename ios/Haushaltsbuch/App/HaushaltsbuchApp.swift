@@ -3,10 +3,15 @@ import SwiftUI
 @main
 struct HaushaltsbuchApp: App {
     @StateObject private var store = Store()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             RootView().environmentObject(store)
+        }
+        // Save before iOS suspends the app, otherwise the last booking may wait in the coalescing timer and be lost.
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { store.flush() }
         }
     }
 }

@@ -77,6 +77,9 @@ Testfall aus der `.test.ts` in `Tests/main.swift` übernommen.
 - Kein Budget je Kategorie, keine Sparziele, keine Abos-Seite, keine Monatsübersicht als Ansicht (der Assistent kann
   sie über `monatsuebersicht` nennen).
 - Umbuchungen zwischen eigenen Konten werden erst verknüpft, wenn beide Auszüge importiert sind oder der Wortlaut
-  (Tagesgeld, Sparrate …) sie verrät.
+  (Tagesgeld, Sparrate …) sie verrät. Verknüpft wird nur zwischen Bankkonten (nie mit Barzahlungen), und eine eigene
+  Regel geht vor. Eine Erstattung in gleicher Höhe von einem fremden Konto kann trotzdem als Umbuchung gelten.
+- Bekannte Kleinigkeiten ohne Alltagsfall: eine Datei wird beim Import zweimal gelesen; gleich teure wiederkehrende
+  Zahlungen haben keine feste Reihenfolge; ein Entwurf ohne Betrag lässt sich mit „Passt so“ mit 0 € bestätigen.
 - Das Projekt wurde ohne Xcode geschrieben; die UI-Schicht ist beim ersten Öffnen ungebaut. Compile-Fehler dort sind
   erwartbar klein (Signaturen, Modifier) und in Xcode schnell behoben.
