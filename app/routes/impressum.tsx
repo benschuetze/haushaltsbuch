@@ -34,8 +34,8 @@ export default function Impressum({ loaderData }: Route.ComponentProps) {
       )}
       <h2 className="text-lg font-semibold">Hinweis</h2>
       <p>
-        Das Haushaltsbuch ist eine private, nicht kommerzielle Anwendung. Inhaltlich verantwortlich ist die oben
-        genannte Person.
+        Das Haushaltsbuch ist eine private, nicht kommerzielle Anwendung.
+        {complete && " Inhaltlich verantwortlich ist die oben genannte Person."}
       </p>
     </article>
   );
